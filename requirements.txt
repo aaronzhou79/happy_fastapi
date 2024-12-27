@@ -1,1 +1,7 @@
-fastapi==0.115.6
+fastapi
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+pydantic-settings
+uvicorn
+sqlalchemy
