@@ -126,8 +126,8 @@ class PydanticSchemaGenerator(Generic[ModelT]):
 
         return create_model(
             f"{name_prefix}{self.model.__name__}",
-            **fields,
             __config__=ConfigDict(from_attributes=True),
+            **fields,
         )   # type: ignore
 
     def _get_python_type(self, column: Column) -> type:
