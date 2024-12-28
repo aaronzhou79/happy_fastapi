@@ -40,5 +40,6 @@ def get_settings() -> Settings:
     """获取全局配置"""
     return Settings()
 
+
 # 创建配置实例
 settings = get_settings()

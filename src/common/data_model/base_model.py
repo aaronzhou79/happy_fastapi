@@ -5,12 +5,12 @@ from typing import Any, AsyncGenerator, TypeVar
 from sqlalchemy import Column, DateTime, Integer, inspect, select
 from sqlalchemy.ext.asyncio import AsyncAttrs, AsyncSession
 from sqlalchemy.ext.declarative import declared_attr
-from sqlalchemy.orm import DeclarativeBase, MappedAsDataclass
+from sqlalchemy.orm import DeclarativeBase
 
 T = TypeVar('T', bound='DatabaseModel')
 
 
-class DatabaseModel(AsyncAttrs, MappedAsDataclass, DeclarativeBase):
+class DatabaseModel(AsyncAttrs, DeclarativeBase):
     """
     数据库模型基类，提供基础能力支持
     """
@@ -104,6 +104,7 @@ class BaseModelMixin(DatabaseModel):
     """
     模型扩展混入类，提供额外的功能
     """
+    __abstract__ = True
 
     @classmethod
     def filter_attrs(cls, data: dict[str, Any]) -> dict[str, Any]:

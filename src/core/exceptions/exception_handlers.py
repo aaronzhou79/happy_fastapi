@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, Request, status
-from fastapi.exceptions import RequestValidationError
+from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -15,12 +15,21 @@ class GlobalExceptionHandler:
     @staticmethod
     async def validation_exception_handler(request: Request, exc: RequestValidationError):
         """处理请求参数验证异常"""
+        # 格式化验证错误信息
+        error_messages = []
+        for error in exc.errors():
+            field = error["loc"][-1]  # 获取字段名
+            msg = error["msg"]  # 获取错误信息
+            error_messages.append(f"字段 '{field}': {msg}")
+
+        formatted_message = "; ".join(error_messages)
+
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={
                 "code": ResponseCode.PARAMS_ERROR,
-                "message": ResponseMessage.zh_CN[ResponseCode.PARAMS_ERROR],
-                "data": str(exc.errors())
+                "message": formatted_message,
+                "data": None  # 改为 None，因为详细错误信息已经包含在 message 中
             }
         )
 
@@ -94,3 +103,23 @@ def register_exception(app: FastAPI):
     @app.exception_handler(SQLAlchemyError)
     async def database_exception_handler(request: Request, exc: SQLAlchemyError) -> JSONResponse:
         return await DatabaseExceptionHandler.database_exception_handler(request, exc)
+
+    @app.exception_handler(ResponseValidationError)
+    async def response_validation_exception_handler(request: Request, exc: ResponseValidationError) -> JSONResponse:
+        """处理响应验证异常"""
+        error_messages = []
+        for error in exc.errors():
+            field = error["loc"][-1]  # 获取字段名
+            msg = error["msg"]  # 获取错误信息
+            error_messages.append(f"字段 '{field}': {msg}")
+
+        formatted_message = "; ".join(error_messages)
+
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "code": ResponseCode.SERVER_ERROR,
+                "message": f"响应格式错误: {formatted_message}",
+                "data": None
+            }
+        )
