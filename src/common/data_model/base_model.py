@@ -1,10 +1,13 @@
+from contextlib import asynccontextmanager
 from datetime import datetime
-from typing import Any
+from typing import Any, AsyncGenerator, TypeVar
 
-from sqlalchemy import Column, DateTime, Integer, inspect
-from sqlalchemy.ext.asyncio import AsyncAttrs
+from sqlalchemy import Column, DateTime, Integer, inspect, select
+from sqlalchemy.ext.asyncio import AsyncAttrs, AsyncSession
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import DeclarativeBase, MappedAsDataclass
+
+T = TypeVar('T', bound='DatabaseModel')
 
 
 class DatabaseModel(AsyncAttrs, MappedAsDataclass, DeclarativeBase):
@@ -62,6 +65,40 @@ class DatabaseModel(AsyncAttrs, MappedAsDataclass, DeclarativeBase):
         """模型的字符串表示"""
         return f"<{self.__class__.__name__}(id={self.primary_key_value})>"
 
+    @classmethod
+    @asynccontextmanager
+    async def transaction(
+        cls,
+        session: AsyncSession
+    ) -> AsyncGenerator[AsyncSession, None]:
+        """事务上下文管理器"""
+        async with session.begin():
+            try:
+                yield session
+            except Exception:
+                await session.rollback()
+                raise
+
+
+    @classmethod
+    async def get_by_id(cls: type[T], session: AsyncSession, id: int) -> T | None:
+        """通过ID获取记录"""
+        stmt = select(cls).where(cls.id == id)
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    @classmethod
+    async def get_all(
+        cls: type[T],
+        session: AsyncSession,
+        offset: int = 0,
+        limit: int = 100
+    ) -> list[T]:
+        """获取所有记录，支持分页"""
+        stmt = select(cls).offset(offset).limit(limit)
+        result = await session.execute(stmt)
+        return list(result.scalars().all())
+
 
 class BaseModelMixin(DatabaseModel):
     """
@@ -73,15 +110,40 @@ class BaseModelMixin(DatabaseModel):
         """过滤掉不存在的属性"""
         return {k: v for k, v in data.items() if hasattr(cls, k)}
 
-    def to_dict(self, exclude: list[str] | None = None) -> dict[str, Any]:
+    def to_dict(
+        self,
+        exclude: list[str] | None = None,
+        include: list[str] | None = None
+    ) -> dict[str, Any]:
         """
-        转换为字典，支持排除特定字段
+        增强的字典转换方法
+        :param exclude: 要排除的字段
+        :param include: 要包含的字段（如果指定，则只返回这些字段）
         """
-        exclude = exclude or []
-        return {
-            k: v for k, v in self._dict.items()
-            if k not in exclude
-        }
+        data = self._dict
+        if include:
+            data = {k: v for k, v in data.items() if k in include}
+        if exclude:
+            data = {k: v for k, v in data.items() if k not in exclude}
+
+        # 处理关系对象
+        for rel_name, rel in self.get_relationships().items():
+            if include and rel_name not in include:
+                continue
+            if exclude and rel_name in exclude:
+                continue
+
+            value = getattr(self, rel_name, None)
+            if value is not None:
+                if hasattr(value, 'to_dict'):
+                    data[rel_name] = value.to_dict()
+                elif isinstance(value, list):
+                    data[rel_name] = [
+                        item.to_dict() if hasattr(item, 'to_dict') else item
+                        for item in value
+                    ]
+
+        return data
 
     def to_api_dict(self) -> dict[str, Any]:
         """
