@@ -1,12 +1,15 @@
 from datetime import datetime, timedelta, timezone
-from typing import Any, Union
+from typing import Any
+
 from jose import jwt
 from passlib.context import CryptContext
+
 from src.core.conf import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-def create_access_token(subject: Union[str, Any], expires_delta: timedelta | None = None) -> str:
+
+def create_access_token(subject: str | Any, expires_delta: timedelta | None = None) -> str:
     """
     生成JWT token
     """

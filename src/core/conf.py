@@ -49,6 +49,8 @@ class Settings(BaseSettings):
     DB_HOST: str = "localhost"
     DB_PORT: int = 3306
 
+    # 日期时间格式
+    DATETIME_FORMAT: str = "%Y-%m-%d %H:%M:%S"
 
 @lru_cache
 def get_settings() -> Settings:

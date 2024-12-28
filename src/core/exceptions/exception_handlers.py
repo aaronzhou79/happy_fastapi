@@ -27,8 +27,8 @@ class GlobalExceptionHandler:
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={
-                "code": ResponseCode.PARAMS_ERROR,
-                "message": formatted_message,
+                "code": ResponseCode.PARAMS_ERROR.code,
+                "msg": formatted_message,
                 "data": None  # 改为 None，因为详细错误信息已经包含在 message 中
             }
         )
@@ -40,7 +40,7 @@ class GlobalExceptionHandler:
             status_code=exc.status_code,
             content={
                 "code": exc.code,
-                "message": exc.message,
+                "msg": exc.message,
                 "data": None
             }
         )
@@ -52,7 +52,7 @@ class GlobalExceptionHandler:
             status_code=exc.status_code,
             content={
                 "code": str(exc.status_code),
-                "message": exc.detail,
+                "msg": exc.detail,
                 "data": None
             }
         )
@@ -63,8 +63,8 @@ class GlobalExceptionHandler:
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
-                "code": ResponseCode.SERVER_ERROR,
-                "message": ResponseMessage.zh_CN[ResponseCode.SERVER_ERROR],
+                "code": ResponseCode.SERVER_ERROR.code,
+                "msg": ResponseMessage.zh_CN[ResponseCode.SERVER_ERROR],
                 "data": str(exc) if settings.APP_DEBUG else None
             }
         )
@@ -90,8 +90,8 @@ def register_exception(app: FastAPI):
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={
-                "code": ResponseCode.PARAMS_ERROR,
-                "message": str(exc) or ResponseMessage.zh_CN[ResponseCode.PARAMS_ERROR],
+                "code": ResponseCode.PARAMS_ERROR.code,
+                "msg": str(exc) or ResponseMessage.zh_CN[ResponseCode.PARAMS_ERROR],
                 "data": None
             }
         )
@@ -118,8 +118,8 @@ def register_exception(app: FastAPI):
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
-                "code": ResponseCode.SERVER_ERROR,
-                "message": f"响应格式错误: {formatted_message}",
+                "code": ResponseCode.SERVER_ERROR.code,
+                "msg": f"响应格式错误: {formatted_message}",
                 "data": None
             }
         )

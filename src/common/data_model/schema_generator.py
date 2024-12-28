@@ -88,7 +88,7 @@ class PydanticSchemaGenerator(Generic[ModelT]):
                     from_attributes=True,
                     populate_by_name=True
                 ),
-                **related_fields,
+                **related_fields,   # type: ignore
             )   # type: ignore
 
             # 设置字段类型
@@ -102,7 +102,7 @@ class PydanticSchemaGenerator(Generic[ModelT]):
                 from_attributes=True,
                 populate_by_name=True
             ),
-            **fields,
+            **fields,   # type: ignore
         )   # type: ignore
 
 
@@ -127,7 +127,7 @@ class PydanticSchemaGenerator(Generic[ModelT]):
         return create_model(
             f"{name_prefix}{self.model.__name__}",
             __config__=ConfigDict(from_attributes=True),
-            **fields,
+            **fields,   # type: ignore
         )   # type: ignore
 
     def _get_python_type(self, column: Column) -> type:
@@ -170,7 +170,7 @@ class PydanticSchemaGenerator(Generic[ModelT]):
                 from_attributes=True,
                 populate_by_name=True
             ),
-            **fields,
+            **fields,   # type: ignore
         )   # type: ignore
 
     def generate_list(
@@ -213,7 +213,7 @@ class PydanticSchemaGenerator(Generic[ModelT]):
                     }
                 }
             ),
-            **fields
+            **fields   # type: ignore
         )   # type: ignore
 
         # 创建列表响应模型

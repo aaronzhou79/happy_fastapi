@@ -1,22 +1,25 @@
-from typing import Generic, TypeVar
+from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel
 
-T = TypeVar("T")
+from src.core.conf import settings
 
 
-class ResponseSchema(BaseModel, Generic[T]):
-    code: str
-    message: str
-    data: T | None = None
+class ResponseSchema(BaseModel):
+    """
+    响应数据模型
+    """
+    code: int
+    msg: str
+    data: Any | None = None
 
     class Config:
-        arbitrary_types_allowed = True  # 允许任意类型
-        from_attributes = True  # 支持从对象属性读取
+        json_encoders = {datetime: lambda x: x.strftime(settings.DATETIME_FORMAT)}
         json_schema_extra = {
             "example": {
                 "code": "200",
-                "message": "成功",
+                "msg": "成功",
                 "data": None
             }
         }

@@ -43,8 +43,8 @@ class DBErrorHandler:
             "unique violation",
             DBErrorInfo(
                 status.HTTP_400_BAD_REQUEST,
-                ResponseCode.PARAMS_ERROR,
-                "数据已存在",
+                ResponseCode.PARAMS_ERROR.code,
+                ResponseMessage.zh_CN[ResponseCode.PARAMS_ERROR],
                 "违反唯一约束"
             )
         ),
@@ -52,8 +52,8 @@ class DBErrorHandler:
             "foreign key violation",
             DBErrorInfo(
                 status.HTTP_400_BAD_REQUEST,
-                ResponseCode.PARAMS_ERROR,
-                "关联数据不存在",
+                ResponseCode.PARAMS_ERROR.code,
+                ResponseMessage.zh_CN[ResponseCode.PARAMS_ERROR],
                 "违反外键约束"
             )
         ),
@@ -72,8 +72,8 @@ class DBErrorHandler:
                     return error_info
             return DBErrorInfo(
                 status.HTTP_400_BAD_REQUEST,
-                ResponseCode.PARAMS_ERROR,
-                "数据违反完整性约束",
+                ResponseCode.PARAMS_ERROR.code,
+                ResponseMessage.zh_CN[ResponseCode.PARAMS_ERROR],
                 "违反数据库约束"
             )
 
@@ -82,7 +82,7 @@ class DBErrorHandler:
             if "numeric" in error_msg:
                 return DBErrorInfo(
                     status.HTTP_400_BAD_REQUEST,
-                    ResponseCode.PARAMS_ERROR,
+                    ResponseCode.PARAMS_ERROR.code,
                     "数值类型错误",
                     "数据格式不符合要求"
                 )
@@ -91,7 +91,7 @@ class DBErrorHandler:
         # 默认错误信息
         return DBErrorInfo(
             status.HTTP_500_INTERNAL_SERVER_ERROR,
-            ResponseCode.SERVER_ERROR,
+            ResponseCode.SERVER_ERROR.code,
             ResponseMessage.zh_CN[ResponseCode.SERVER_ERROR],
             "数据库操作异常"
         )
@@ -109,7 +109,7 @@ class DatabaseExceptionHandler:
             status_code=error_info.status_code,
             content={
                 "code": error_info.code,
-                "message": error_info.message,
+                "msg": error_info.message,
                 "data": {
                     "detail": error_info.detail,
                     "error": str(exc) if settings.APP_DEBUG else None
