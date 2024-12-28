@@ -1,6 +1,5 @@
-from contextlib import asynccontextmanager
 from datetime import datetime
-from typing import Any, AsyncGenerator, TypeVar
+from typing import Any, TypeVar
 
 from sqlalchemy import Column, DateTime, Integer, inspect, select
 from sqlalchemy.ext.asyncio import AsyncAttrs, AsyncSession
@@ -14,6 +13,7 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
     """
     数据库模型基类，提供基础能力支持
     """
+    query_session: AsyncSession
 
     # 使用类名小写作为表名
     @declared_attr.directive
@@ -66,37 +66,21 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
         return f"<{self.__class__.__name__}(id={self.primary_key_value})>"
 
     @classmethod
-    @asynccontextmanager
-    async def transaction(
-        cls,
-        session: AsyncSession
-    ) -> AsyncGenerator[AsyncSession, None]:
-        """事务上下文管理器"""
-        async with session.begin():
-            try:
-                yield session
-            except Exception:
-                await session.rollback()
-                raise
-
-
-    @classmethod
-    async def get_by_id(cls: type[T], session: AsyncSession, id: int) -> T | None:
+    async def get_by_id(cls: type[T], id: int) -> T | None:
         """通过ID获取记录"""
         stmt = select(cls).where(cls.id == id)
-        result = await session.execute(stmt)
+        result = await cls.query_session.execute(stmt)
         return result.scalar_one_or_none()
 
     @classmethod
     async def get_all(
         cls: type[T],
-        session: AsyncSession,
         offset: int = 0,
         limit: int = 100
     ) -> list[T]:
         """获取所有记录，支持分页"""
         stmt = select(cls).offset(offset).limit(limit)
-        result = await session.execute(stmt)
+        result = await cls.query_session.execute(stmt)
         return list(result.scalars().all())
 
 
@@ -111,16 +95,17 @@ class BaseModelMixin(DatabaseModel):
         """过滤掉不存在的属性"""
         return {k: v for k, v in data.items() if hasattr(cls, k)}
 
-    def to_dict(
+    async def to_dict(
         self,
         exclude: list[str] | None = None,
-        include: list[str] | None = None
+        include: list[str] | None = None,
+        _parent_type: type | None = None,
+        max_depth: int = 2,
+        _depth: int = 1
     ) -> dict[str, Any]:
-        """
-        增强的字典转换方法
-        :param exclude: 要排除的字段
-        :param include: 要包含的字段（如果指定，则只返回这些字段）
-        """
+        if _depth > max_depth:
+            return {"id": self.id}
+
         data = self._dict
         if include:
             data = {k: v for k, v in data.items() if k in include}
@@ -134,25 +119,41 @@ class BaseModelMixin(DatabaseModel):
             if exclude and rel_name in exclude:
                 continue
 
-            value = getattr(self, rel_name, None)
+            # 跳过父级类型的关系
+            if _parent_type and rel.mapper.class_ == _parent_type:
+                continue
+
+            value = await getattr(self.awaitable_attrs, rel_name)
             if value is not None:
                 if hasattr(value, 'to_dict'):
-                    data[rel_name] = value.to_dict()
+                    data[rel_name] = await value.to_dict(
+                        exclude=exclude,
+                        include=include,
+                        _parent_type=self.__class__,
+                        max_depth=max_depth,
+                        _depth=_depth + 1
+                    )
                 elif isinstance(value, list):
                     data[rel_name] = [
-                        item.to_dict() if hasattr(item, 'to_dict') else item
+                        await item.to_dict(
+                            exclude=exclude,
+                            include=include,
+                            _parent_type=self.__class__,
+                            max_depth=max_depth,
+                            _depth=_depth + 1
+                        ) if hasattr(item, 'to_dict') else item
                         for item in value
                     ]
 
         return data
 
-    def to_api_dict(self) -> dict[str, Any]:
+    async def to_api_dict(self) -> dict[str, Any]:
         """
         转换为API响应格式的字典
         默认排除一些敏感或内部字段
         """
         exclude_fields = ['password', 'deleted_at']
-        return self.to_dict(exclude=exclude_fields)
+        return await self.to_dict(exclude=exclude_fields)
 
 
 class SoftDeleteMixin:

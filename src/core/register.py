@@ -9,20 +9,19 @@
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, Request, status
-from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
-from sqlalchemy.exc import SQLAlchemyError
+from fastapi import FastAPI
 
 from src.apps import router as apps_router
 from src.core.conf import settings
-from src.core.exceptions.custom_exceptions import CustomException
-from src.core.exceptions.exception_handlers import GlobalExceptionHandler, register_exception
-from src.core.responses.response_code import MsgSpecJSONResponse, ResponseCode, ResponseMessage
+from src.core.exceptions.exception_handlers import register_exception
+from src.core.responses.response_code import MsgSpecJSONResponse
+from src.database.db_session import create_table
 
 
 @asynccontextmanager
 async def register_init(app: FastAPI):
+    await create_table()
+
     yield
 
 

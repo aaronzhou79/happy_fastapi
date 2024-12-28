@@ -1,36 +1,17 @@
 
-from datetime import datetime
-from typing import Union
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends
 
-from src.apps.v1.demo_code.model import User
-from src.core.conf import settings
 from src.core.exceptions.custom_exceptions import CustomException
 from src.core.middleware.jwt import JWTBearer
 from src.core.responses.response_code import ResponseCode, ResponseMessage
 from src.core.responses.response_schema import ResponseSchema
-from src.core.security.jwt import create_access_token
+from src.database.db_session import CurrentSession
 
-from .model import article_schemas, user_schemas
+from .model import Article, Comment, Department, User, article_schemas, comment_schemas, dept_schemas, user_schemas
 
 router = APIRouter()
 
-@router.get("/", response_model=ResponseSchema[dict])
-def read_root():
-    return ResponseSchema(
-        code=ResponseCode.SUCCESS,
-        message=ResponseMessage.zh_CN[ResponseCode.SUCCESS],
-        data={"Hello": settings.JWT_SECRET_KEY}
-    )
-
-@router.get("/items/{item_id}", response_model=ResponseSchema[dict])
-def read_item(item_id: int, q: Union[str, None] = None):
-    return ResponseSchema(
-        code=ResponseCode.SUCCESS,
-        message=ResponseMessage.zh_CN[ResponseCode.SUCCESS],
-        data={"item_id": item_id, "q": q}
-    )
 
 @router.get("/protected", dependencies=[Depends(JWTBearer())], response_model=ResponseSchema[dict])
 def protected_route():
@@ -40,70 +21,116 @@ def protected_route():
         data={"message": "这是一个受保护的接口"}
     )
 
-@router.post("/login", response_model=ResponseSchema[dict])
-def login(username: str, password: str):
-    token = create_access_token(username)
-    return ResponseSchema(
-        code=ResponseCode.SUCCESS,
-        message=ResponseMessage.zh_CN[ResponseCode.SUCCESS],
-        data={"access_token": token, "token_type": "bearer"}
-    )
-
-@router.get("/error-demo")
-def error_demo():
-    # 抛出自义异常示例
-    raise CustomException(
-        message="这是一个自定义错误",
-        status_code=status.HTTP_400_BAD_REQUEST,
-        code="400001"  # 可以自定义错误码
-    )
-
-@router.get("/error-demo2")
-def error_demo2():
-    # 抛出系统异常示例
-    1/0  # 这会触发全局异常处理器
-
-
-@router.get("/demo_user")
-def demo_user(
-    create_user: user_schemas["Create"],
-    update_user: user_schemas["Update"],
-    base_user: user_schemas["Base"],
-    with_relations_user: user_schemas["WithRelations"],
-    list_user: user_schemas["List"],
+@router.post("/create_dept")
+async def create_dept(
+    session: CurrentSession,
+    dept: dept_schemas["Create"]
 ):
-    user_data = {
-        "id": 1,
-        "username": "test_user",
-        "email": "test@example.com",
-        "password": "rtfgkj23rhks",
-        "created_at": datetime.now(),
-        "updated_at": datetime.now(),
-        "deleted_at": datetime.now()
-    }
-    user = user_schemas["Base"](**user_data)
+    dept = Department(**dept.model_dump())
+    session.add(dept)
+    await session.flush()
+
     return ResponseSchema(
         code=ResponseCode.SUCCESS,
         message=ResponseMessage.zh_CN[ResponseCode.SUCCESS],
-        data=user.model_dump()
+        data=await dept.to_dict()
     )
 
-@router.get("/demo_article")
-def demo_article(
-    create_article: article_schemas["Create"],
-    update_article: article_schemas["Update"],
-    base_article: article_schemas["Base"],
-    with_relations_article: article_schemas["WithRelations"],
-    list_article: article_schemas["List"],
+
+@router.get("/get_dept")
+async def get_dept(
+    dept_id: int
 ):
-    article_data = {
-        "id": 1,
-        "title": "test_article",
-        "content": "test_content",
-    }
-    article = article_schemas["Base"](**article_data)
+    dept = await Department.get_by_id(dept_id)
+    if not dept:
+        raise CustomException(message="部门不存在")
     return ResponseSchema(
         code=ResponseCode.SUCCESS,
         message=ResponseMessage.zh_CN[ResponseCode.SUCCESS],
-        data=article.model_dump()
+        data=await dept.to_dict(max_depth=3)
+    )
+
+
+@router.post("/create_user")
+async def create_user(
+    session: CurrentSession,
+    user: user_schemas["Create"]
+):
+    user = User(**user.model_dump())
+    session.add(user)
+    await session.flush()
+
+    return ResponseSchema(
+        code=ResponseCode.SUCCESS,
+        message=ResponseMessage.zh_CN[ResponseCode.SUCCESS],
+        data=await user.to_dict()
+    )
+
+@router.get("/get_user")
+async def get_user(
+    user_id: int
+):
+    user = await User.get_by_id(user_id)
+    if not user:
+        raise CustomException(message="用户不存在")
+    return ResponseSchema(
+        code=ResponseCode.SUCCESS,
+        message=ResponseMessage.zh_CN[ResponseCode.SUCCESS],
+        data=await user.to_dict()
+    )
+
+@router.post("/create_article")
+async def create_article(
+    session: CurrentSession,
+    article: article_schemas["Create"]
+):
+    article = Article(**article.model_dump())
+    session.add(article)
+    await session.flush()
+
+    return ResponseSchema(
+        code=ResponseCode.SUCCESS,
+        message=ResponseMessage.zh_CN[ResponseCode.SUCCESS],
+        data=await article.to_dict()
+    )
+
+@router.get("/get_article")
+async def get_article(
+    article_id: int
+):
+    article = await Article.get_by_id(article_id)
+    if not article:
+        raise CustomException(message="文章不存在")
+    return ResponseSchema(
+        code=ResponseCode.SUCCESS,
+        message=ResponseMessage.zh_CN[ResponseCode.SUCCESS],
+        data=article_schemas["WithRelations"](**await article.to_dict())
+    )
+
+@router.post("/create_comment")
+async def create_comment(
+    session: CurrentSession,
+    comment: comment_schemas["Create"]
+):
+    comment = Comment(**comment.model_dump())
+    session.add(comment)
+    await session.flush()
+
+    return ResponseSchema(
+        code=ResponseCode.SUCCESS,
+        message=ResponseMessage.zh_CN[ResponseCode.SUCCESS],
+        data=await comment.to_dict()
+    )
+
+@router.get("/get_comment")
+async def get_comment(
+    comment_id: int
+):
+    comment = await Comment.get_by_id(comment_id)
+    if not comment:
+        raise CustomException(message="评论不存在")
+    return ResponseSchema(
+        code=ResponseCode.SUCCESS,
+        message=ResponseMessage.zh_CN[ResponseCode.SUCCESS],
+        data=await comment.to_dict()
     )
