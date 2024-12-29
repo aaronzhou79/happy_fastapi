@@ -225,13 +225,14 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
     @classmethod
     async def query(
         cls: type[T],
-        options: QueryOptions | None = None
+        options: QueryOptions | None = None,
+        return_dict: bool = True
     ) -> list[T] | list[dict]:
         """
         通用查询方法
         """
-        data, _ = await cls.query_with_count(options=options)
-        return data
+        items, _ = await cls.query_with_count(options=options, return_dict=return_dict)
+        return items
 
     @classmethod
     async def query_with_count(
@@ -270,13 +271,13 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
         total = rows[0].total_count
 
         # 提取实体对象
-        data = [row[0] for row in rows]
+        items = [row[0] for row in rows]
 
         # 如果需要返回字典
         if return_dict:
-            data = [await instance.to_dict() for instance in data]
+            items = [await instance.to_dict() for instance in items]
 
-        return data, total
+        return items, total
 
     @classmethod
     async def count(

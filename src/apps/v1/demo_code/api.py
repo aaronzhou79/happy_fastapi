@@ -94,8 +94,8 @@ async def get_dept(
 async def query_dept(
     options: QueryOptions
 ):
-    instances, total = await Department.query_with_count(options=options)
-    return response_base.success(data={"total": total, "instances": instances})
+    items, total = await Department.query_with_count(options=options)
+    return response_base.success(data={"total": total, "items": items})
 
 @router.get("/get_dept_list")
 async def get_dept_list(
