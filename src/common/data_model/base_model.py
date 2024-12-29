@@ -24,9 +24,9 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
         return cls.__name__.lower()
 
     # 基础字段
-    id = mapped_column(sa.Integer, primary_key=True, autoincrement=True, comment="主键ID")
-    created_at = mapped_column(sa.DateTime, nullable=False, default=TimeZone.now(), comment="创建时间")
-    updated_at = mapped_column(sa.DateTime, nullable=False, default=TimeZone.now(), onupdate=TimeZone.now(), comment="更新时间")
+    id: Mapped[int] = mapped_column(sa.Integer, primary_key=True, autoincrement=True, comment="主键ID")
+    created_at: Mapped[datetime] = mapped_column(sa.DateTime, nullable=False, default=TimeZone.now(), comment="创建时间")
+    updated_at: Mapped[datetime] = mapped_column(sa.DateTime, nullable=False, default=TimeZone.now(), onupdate=TimeZone.now(), comment="更新时间")
 
     @property
     def _dict(self) -> dict[str, Any]:
@@ -163,7 +163,7 @@ class SoftDeleteMixin:
     """
     软删除混入类
     """
-    deleted_at = mapped_column(sa.DateTime, nullable=True, comment="删除时间")
+    deleted_at: Mapped[datetime | None] = mapped_column(sa.DateTime, nullable=True, comment="删除时间")
 
     def soft_delete(self) -> None:
         """软删除"""
@@ -183,8 +183,12 @@ class TimestampMixin:
     """
     时间戳混入类
     """
-    created_at = mapped_column(sa.DateTime, nullable=False, default=TimeZone.now(), comment="创建时间")
-    updated_at = mapped_column(sa.DateTime, nullable=False, default=TimeZone.now(), onupdate=TimeZone.now(), comment="更新时间")
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime, nullable=False, default=TimeZone.now(), comment="创建时间"
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        sa.DateTime, nullable=False, default=TimeZone.now(), onupdate=TimeZone.now(), comment="更新时间"
+    )
 
     def touch(self) -> None:
         """更新更新时间"""
