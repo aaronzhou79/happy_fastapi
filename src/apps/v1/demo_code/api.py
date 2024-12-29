@@ -38,7 +38,7 @@ async def get_dept(
 ):
     dept = await Department.get_by_id(dept_id)
     if not dept:
-        raise CustomException(message="部门不存在")
+        return response_base.fail(data="部门不存在")
     data = await dept.to_dict(max_depth=3)
     return response_base.success(data=data)
 
@@ -60,7 +60,7 @@ async def get_user(
 ):
     user = await User.get_by_id(user_id)
     if not user:
-        raise CustomException(message="用户不存在")
+        return response_base.fail(data="用户不存在")
     return response_base.success(data=await user.to_dict())
 
 @router.post("/create_article")
@@ -80,7 +80,7 @@ async def get_article(
 ):
     article = await Article.get_by_id(article_id)
     if not article:
-        raise CustomException(message="文章不存在")
+        return response_base.fail(data="文章不存在")
     return response_base.success(data=article_schemas["WithRelations"](**await article.to_dict()))
 
 @router.post("/create_comment")
@@ -100,5 +100,5 @@ async def get_comment(
 ):
     comment = await Comment.get_by_id(comment_id)
     if not comment:
-        raise CustomException(message="评论不存在")
+        return response_base.fail(data="评论不存在")
     return response_base.success(data=await comment.to_dict())

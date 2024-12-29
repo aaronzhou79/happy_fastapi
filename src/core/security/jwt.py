@@ -5,6 +5,7 @@ from jose import jwt
 from passlib.context import CryptContext
 
 from src.core.conf import settings
+from src.utils.timezone import TimeZone
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -14,9 +15,9 @@ def create_access_token(subject: str | Any, expires_delta: timedelta | None = No
     生成JWT token
     """
     if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
+        expire = TimeZone.now() + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(
+        expire = TimeZone.now() + timedelta(
             minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES
         )
 

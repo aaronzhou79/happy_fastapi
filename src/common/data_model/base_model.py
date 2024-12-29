@@ -1,10 +1,13 @@
 from datetime import datetime
 from typing import Any, TypeVar
 
-from sqlalchemy import Column, DateTime, Integer, inspect, select
+import sqlalchemy as sa
+
 from sqlalchemy.ext.asyncio import AsyncAttrs, AsyncSession
 from sqlalchemy.ext.declarative import declared_attr
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+from src.utils.timezone import TimeZone
 
 T = TypeVar('T', bound='DatabaseModel')
 
@@ -21,14 +24,14 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
         return cls.__name__.lower()
 
     # 基础字段
-    id = Column(Integer, primary_key=True, autoincrement=True, comment="主键ID")
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow, comment="创建时间")
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow, comment="更新时间")
+    id = mapped_column(sa.Integer, primary_key=True, autoincrement=True, comment="主键ID")
+    created_at = mapped_column(sa.DateTime, nullable=False, default=TimeZone.now(), comment="创建时间")
+    updated_at = mapped_column(sa.DateTime, nullable=False, default=TimeZone.now(), onupdate=TimeZone.now(), comment="更新时间")
 
     @property
     def _dict(self) -> dict[str, Any]:
         """将模型转换为字典"""
-        return {c.key: getattr(self, c.key) for c in inspect(self).mapper.column_attrs}
+        return {c.key: getattr(self, c.key) for c in sa.inspect(self).mapper.column_attrs}
 
     @property
     def _json(self) -> dict[str, Any]:
@@ -43,14 +46,14 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
     @classmethod
     def get_columns(cls) -> list[str]:
         """获取所有列名"""
-        return [c.key for c in inspect(cls).mapper.column_attrs]
+        return [c.key for c in sa.inspect(cls).mapper.column_attrs]
 
     @classmethod
     def get_relationships(cls) -> dict[str, Any]:
         """获取所有关系"""
-        return {rel.key: rel for rel in inspect(cls).mapper.relationships}
+        return {rel.key: rel for rel in sa.inspect(cls).mapper.relationships}
 
-    def update(self, **kwargs) -> None:
+    async def update(self, **kwargs) -> None:
         """批量更新属性"""
         for key, value in kwargs.items():
             if hasattr(self, key):
@@ -68,7 +71,7 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
     @classmethod
     async def get_by_id(cls: type[T], id: int) -> T | None:
         """通过ID获取记录"""
-        stmt = select(cls).where(cls.id == id)
+        stmt = sa.select(cls).where(cls.id == id)
         result = await cls.query_session.execute(stmt)
         return result.scalar_one_or_none()
 
@@ -79,7 +82,7 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
         limit: int = 100
     ) -> list[T]:
         """获取所有记录，支持分页"""
-        stmt = select(cls).offset(offset).limit(limit)
+        stmt = sa.select(cls).offset(offset).limit(limit)
         result = await cls.query_session.execute(stmt)
         return list(result.scalars().all())
 
@@ -160,11 +163,11 @@ class SoftDeleteMixin:
     """
     软删除混入类
     """
-    deleted_at = Column(DateTime, nullable=True, comment="删除时间")
+    deleted_at = mapped_column(sa.DateTime, nullable=True, comment="删除时间")
 
     def soft_delete(self) -> None:
         """软删除"""
-        self.deleted_at = datetime.utcnow()
+        self.deleted_at = TimeZone.now()
 
     def restore(self) -> None:
         """恢复"""
@@ -180,9 +183,9 @@ class TimestampMixin:
     """
     时间戳混入类
     """
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow, comment="创建时间")
-    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow, comment="更新时间")
+    created_at = mapped_column(sa.DateTime, nullable=False, default=TimeZone.now(), comment="创建时间")
+    updated_at = mapped_column(sa.DateTime, nullable=False, default=TimeZone.now(), onupdate=TimeZone.now(), comment="更新时间")
 
     def touch(self) -> None:
         """更新更新时间"""
-        self.updated_at = datetime.utcnow()
+        self.updated_at = TimeZone.now()

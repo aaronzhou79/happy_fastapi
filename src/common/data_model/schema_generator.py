@@ -259,8 +259,8 @@ def generate_schemas(
 
     # 设置默认排除字段
     exclude_base = exclude_base or set()
-    exclude_create = exclude_create or {"id", "created_at", "updated_at"}
-    exclude_update = exclude_update or {"id", "created_at", "updated_at"}
+    exclude_create = exclude_create or {"id", "created_at", "updated_at", "deleted_at"}
+    exclude_update = exclude_update or {"id", "created_at", "updated_at", "deleted_at"}
     exclude_relations = exclude_relations or set()
 
     # 生成模式

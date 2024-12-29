@@ -50,6 +50,7 @@ class Settings(BaseSettings):
     DB_PORT: int = 3306
 
     # 日期时间格式
+    DATETIME_TIMEZONE: str = 'Asia/Shanghai'
     DATETIME_FORMAT: str = "%Y-%m-%d %H:%M:%S"
 
 @lru_cache
