@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Union
+from typing import Any, Literal, Union
 
 import sqlalchemy as sa
 
@@ -33,8 +33,8 @@ class LogicalOperator(str, Enum):
 class FilterCondition(BaseModel):
     """过滤条件"""
     field: str
-    op: FilterOperator
-    value: Any | None
+    op: FilterOperator | Literal["=", ">", "<", ">=", "<=", "!="]
+    value: Any | None = None
 
     @field_validator('value')
     def validate_value(cls, v, info):
@@ -46,7 +46,7 @@ class FilterCondition(BaseModel):
 
 class FilterGroup(BaseModel):
     """过滤条件组"""
-    op: LogicalOperator = LogicalOperator.AND
+    couple: LogicalOperator = LogicalOperator.AND
     conditions: list[Union[FilterCondition, 'FilterGroup']] = Field(
         description="过滤条件列表,每个条件可以是 FilterCondition 或 FilterGroup"
     )
@@ -68,17 +68,17 @@ class FilterGroup(BaseModel):
                 value = condition.value
 
                 match condition.op:
-                    case FilterOperator.EQ:
+                    case FilterOperator.EQ | "=":
                         clause = field == value
-                    case FilterOperator.NE:
+                    case FilterOperator.NE | "!=":
                         clause = field != value
-                    case FilterOperator.GT:
+                    case FilterOperator.GT | ">":
                         clause = field > value
-                    case FilterOperator.GE:
+                    case FilterOperator.GE | ">=":
                         clause = field >= value
-                    case FilterOperator.LT:
+                    case FilterOperator.LT | "<":
                         clause = field < value
-                    case FilterOperator.LE:
+                    case FilterOperator.LE | "<=":
                         clause = field <= value
                     case FilterOperator.IN:
                         clause = field.in_(value)
@@ -94,7 +94,7 @@ class FilterGroup(BaseModel):
                         clause = ~field.is_(None)
                 clauses.append(clause)
 
-        match self.op:
+        match self.couple:
             case LogicalOperator.AND:
                 return sa.and_(*clauses)
             case LogicalOperator.OR:
