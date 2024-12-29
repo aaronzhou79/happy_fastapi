@@ -21,14 +21,26 @@ async def init_data():
 
         # 批量创建部门
         depts = await Department.bulk_create([
-            {'name': '研发部'}
+            {'name': '研发部'},
+            {'name': '测试部'},
+            {'name': '运维部'},
+            {'name': '人事部'},
+            {'name': '财务部'},
+            {'name': '市场部'},
+            {'name': '行政部'},
+            {'name': '法务部'},
         ])
-        dept = depts[0]
 
         # 批量创建用户
         users = await User.bulk_create([
-            {'name': '张三', 'email': 'zhangsan@example.com', 'password': '123456', 'dept_id': dept.id},
-            {'name': '李四', 'email': 'lisi@example.com', 'password': '123456', 'dept_id': dept.id}
+            {'name': '张三', 'email': 'zhangsan@example.com', 'password': '123456', 'dept_id': depts[0].id},
+            {'name': '李四', 'email': 'lisi@example.com', 'password': '123456', 'dept_id': depts[0].id},
+            {'name': '王五', 'email': 'wangwu@example.com', 'password': '123456', 'dept_id': depts[1].id},
+            {'name': '赵六', 'email': 'zhaoliu@example.com', 'password': '123456', 'dept_id': depts[1].id},
+            {'name': '孙七', 'email': 'sunqi@example.com', 'password': '123456', 'dept_id': depts[2].id},
+            {'name': '周八', 'email': 'zhouba@example.com', 'password': '123456', 'dept_id': depts[2].id},
+            {'name': '吴九', 'email': 'wujiu@example.com', 'password': '123456', 'dept_id': depts[3].id},
+            {'name': '郑十', 'email': 'zhengshi@example.com', 'password': '123456', 'dept_id': depts[3].id},
         ])
 
         # 批量创建文章

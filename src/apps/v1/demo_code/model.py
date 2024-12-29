@@ -3,11 +3,11 @@ from typing import Literal
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, relationship
 
-from src.common.data_model.base_model import AuditLogMixin, BaseModelMixin, SoftDeleteMixin, TimestampMixin
+from src.common.data_model.base_model import AuditLogMixin, DatabaseModel, SoftDeleteMixin, TimestampMixin
 from src.common.data_model.schema_generator import generate_schemas
 
 
-class Comment(TimestampMixin, SoftDeleteMixin, AuditLogMixin, BaseModelMixin):
+class Comment(TimestampMixin, SoftDeleteMixin, AuditLogMixin, DatabaseModel):
     """评论模型示例"""
     __tablename__: Literal["comments"] = "comments"
 
@@ -16,7 +16,7 @@ class Comment(TimestampMixin, SoftDeleteMixin, AuditLogMixin, BaseModelMixin):
     article = relationship("Article", back_populates="comments")
 
 
-class Article(TimestampMixin, SoftDeleteMixin, BaseModelMixin):
+class Article(TimestampMixin, SoftDeleteMixin, DatabaseModel):
     """文章模型示例"""
     __tablename__: Literal["articles"] = "articles"
 
@@ -54,7 +54,7 @@ class Article(TimestampMixin, SoftDeleteMixin, BaseModelMixin):
         }
 
 
-class User(SoftDeleteMixin, BaseModelMixin):
+class User(SoftDeleteMixin, DatabaseModel):
     """用户模型"""
     __tablename__: Literal["users"] = "users"
 
@@ -71,7 +71,7 @@ class User(SoftDeleteMixin, BaseModelMixin):
         return self.to_dict(exclude=["password"])
 
 
-class Department(SoftDeleteMixin, BaseModelMixin):
+class Department(SoftDeleteMixin, DatabaseModel):
     """部门模型"""
     __tablename__: Literal["departments"] = "departments"
 

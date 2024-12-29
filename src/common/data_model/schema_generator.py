@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 from typing import Any, Generic, TypeVar
+
 from pydantic import BaseModel, ConfigDict, create_model
-from sqlalchemy import Column, inspect as sa_inspect
+from sqlalchemy import Column
+from sqlalchemy import inspect as sa_inspect
 
-from src.common.data_model.base_model import BaseModelMixin
+from src.common.data_model.base_model import DatabaseModel
 
-ModelT = TypeVar("ModelT", bound=BaseModelMixin)
+ModelT = TypeVar("ModelT", bound=DatabaseModel)
+
 
 class PydanticSchemaGenerator(Generic[ModelT]):
     def __init__(self, model: type[ModelT]) -> None:

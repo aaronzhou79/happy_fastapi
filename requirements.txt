@@ -6,3 +6,5 @@ pydantic-settings
 uvicorn
 sqlalchemy
 aiosqlite
+aiomysql
+aiopg

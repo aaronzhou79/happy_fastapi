@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
     # 数据库配置
-    DB_TYPE: Literal['sqlite', 'mysql', 'postgresql'] = "sqlite"
+    DB_TYPE: Literal['sqlite', 'mysql', 'postgresql', 'dm', 'kingbase', 'oscar', 'gbase'] = "sqlite"
     DB_NAME: str = "test.db"
     DB_USER: str = "root"
     DB_PASSWORD: str = "root"
@@ -52,6 +52,45 @@ class Settings(BaseSettings):
     # 日期时间格式
     DATETIME_TIMEZONE: str = 'Asia/Shanghai'
     DATETIME_FORMAT: str = "%Y-%m-%d %H:%M:%S"
+
+    # 数据库特性配置
+    DB_FEATURES: dict[str, dict[str, bool]] = {
+        'sqlite': {
+            'supports_window_functions': False,
+            'supports_cte': True,
+            'supports_ilike': False
+        },
+        'mysql': {
+            'supports_window_functions': True,
+            'supports_cte': True,
+            'supports_ilike': False
+        },
+        'postgresql': {
+            'supports_window_functions': True,
+            'supports_cte': True,
+            'supports_ilike': True
+        },
+        'dm': {
+            'supports_window_functions': True,
+            'supports_cte': True,
+            'supports_ilike': False
+        },
+        'kingbase': {
+            'supports_window_functions': True,
+            'supports_cte': True,
+            'supports_ilike': True
+        },
+        'oscar': {
+            'supports_window_functions': False,
+            'supports_cte': True,
+            'supports_ilike': False
+        },
+        'gbase': {
+            'supports_window_functions': False,
+            'supports_cte': False,
+            'supports_ilike': False
+        }
+    }
 
 @lru_cache
 def get_settings() -> Settings:

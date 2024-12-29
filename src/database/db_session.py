@@ -24,6 +24,14 @@ elif settings.DB_TYPE == 'mysql':
     SQLALCHEMY_DATABASE_URL = f"mysql+aiomysql://{settings.DB_USER}:{settings.DB_PASSWORD}@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
 elif settings.DB_TYPE == 'postgresql':
     SQLALCHEMY_DATABASE_URL = f"postgresql+asyncpg://{settings.DB_USER}:{settings.DB_PASSWORD}@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
+elif settings.DB_TYPE == 'dm':
+    SQLALCHEMY_DATABASE_URL = f"dm+dmPython://{settings.DB_USER}:{settings.DB_PASSWORD}@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
+elif settings.DB_TYPE == 'kingbase':
+    SQLALCHEMY_DATABASE_URL = f"kingbase+psycopg2://{settings.DB_USER}:{settings.DB_PASSWORD}@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
+elif settings.DB_TYPE == 'oscar':
+    SQLALCHEMY_DATABASE_URL = f"oscar+pyodbc://{settings.DB_USER}:{settings.DB_PASSWORD}@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
+elif settings.DB_TYPE == 'gbase':
+    SQLALCHEMY_DATABASE_URL = f"gbase+pygbase://{settings.DB_USER}:{settings.DB_PASSWORD}@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
 else:
     raise ValueError(f"Invalid database type: {settings.DB_TYPE}")
 
@@ -58,7 +66,6 @@ async_session = async_sessionmaker(
     class_=AuditAsyncSession,
     expire_on_commit=False,
     autoflush=False,
-    autocommit=False,
 )
 
 
