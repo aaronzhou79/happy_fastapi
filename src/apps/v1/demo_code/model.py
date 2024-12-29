@@ -3,11 +3,11 @@ from typing import Literal
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, relationship
 
-from src.common.data_model.base_model import BaseModelMixin, SoftDeleteMixin, TimestampMixin
+from src.common.data_model.base_model import AuditLogMixin, BaseModelMixin, SoftDeleteMixin, TimestampMixin
 from src.common.data_model.schema_generator import generate_schemas
 
 
-class Comment(TimestampMixin, BaseModelMixin):
+class Comment(TimestampMixin, SoftDeleteMixin, AuditLogMixin, BaseModelMixin):
     """评论模型示例"""
     __tablename__: Literal["comments"] = "comments"
 
@@ -16,7 +16,7 @@ class Comment(TimestampMixin, BaseModelMixin):
     article = relationship("Article", back_populates="comments")
 
 
-class Article(TimestampMixin, BaseModelMixin):
+class Article(TimestampMixin, SoftDeleteMixin, BaseModelMixin):
     """文章模型示例"""
     __tablename__: Literal["articles"] = "articles"
 

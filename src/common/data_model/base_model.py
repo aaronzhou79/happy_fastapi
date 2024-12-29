@@ -210,6 +210,8 @@ class SoftDeleteMixin:
     """
     软删除混入类
     """
+    __abstract__ = True
+
     deleted_at: Mapped[datetime | None] = mapped_column(sa.DateTime, nullable=True, comment="删除时间")
 
 
@@ -217,6 +219,8 @@ class TimestampMixin:
     """
     时间戳混入类
     """
+    __abstract__ = True
+
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime, nullable=False, default=TimeZone.now(), comment="创建时间"
     )
@@ -227,3 +231,123 @@ class TimestampMixin:
     def touch(self) -> None:
         """更新更新时间"""
         self.updated_at = TimeZone.now()
+
+
+class AuditLogMixin(DatabaseModel):
+    """
+    审计日志混入类，提供数据变更记录和恢复功能
+    """
+    __abstract__ = True
+
+    audit_log: Mapped[list[dict]] = mapped_column(
+        sa.JSON,
+        nullable=False,
+        default=[],
+        comment="审计日志记录"
+    )
+
+    def _record_change(
+        self,
+        action: str,
+        changes: dict[str, Any],
+        operator_id: int | None = None,
+        comment: str | None = None
+    ) -> None:
+        """记录变更日志"""
+        log_entry = {
+            "action": action,
+            "changes": changes,
+            "operator_id": operator_id,
+            "comment": comment,
+            "timestamp": TimeZone.now().isoformat()
+        }
+        if not hasattr(self, 'audit_log'):
+            self.audit_log = []
+        self.audit_log.append(log_entry)
+
+    async def update_with_audit(
+        self,
+        changes: dict[str, Any],
+        operator_id: int | None = None,
+        comment: str | None = None
+    ) -> None:
+        """带审计记录的更新操作"""
+        old_values = {
+            key: getattr(self, key)
+            for key in changes.keys()
+            if hasattr(self, key)
+        }
+
+        # 记录变更前的状态
+        self._record_change(
+            action="update",
+            changes={
+                "before": old_values,
+                "after": changes
+            },
+            operator_id=operator_id,
+            comment=comment
+        )
+
+        # 执行更新
+        await super().update(**changes)
+
+    async def delete_with_audit(
+        self,
+        operator_id: int | None = None,
+        comment: str | None = None
+    ) -> None:
+        """带审计记录的删除操作"""
+        self._record_change(
+            action="delete",
+            changes={
+                "before": self._dict,
+                "after": None
+            },
+            operator_id=operator_id,
+            comment=comment
+        )
+        await super().delete()
+
+    async def restore_to_version(
+        self,
+        version_index: int,
+        operator_id: int | None = None,
+        comment: str | None = None
+    ) -> None:
+        """恢复到指定版本"""
+        if not 0 <= version_index < len(self.audit_log):
+            raise ValueError("无效的版本索引")
+
+        target_version = self.audit_log[version_index]
+        if target_version["action"] == "update":
+            old_state = target_version["changes"]["before"]
+
+            # 记录恢复操作
+            self._record_change(
+                action="restore",
+                changes={
+                    "before": self._dict,
+                    "after": old_state,
+                    "restored_from_version": version_index
+                },
+                operator_id=operator_id,
+                comment=comment
+            )
+
+            # 执行恢复
+            await super().update(**old_state)
+
+    def get_change_history(self) -> list[dict[str, Any]]:
+        """获取变更历史"""
+        return self.audit_log
+
+    def get_version_at(self, version_index: int) -> dict[str, Any]:
+        """获取指定版本的数据状态"""
+        if not 0 <= version_index < len(self.audit_log):
+            raise ValueError("无效的版本索引")
+
+        version = self.audit_log[version_index]
+        if version["action"] in ["update", "restore"]:
+            return version["changes"]["before"]
+        return {}
