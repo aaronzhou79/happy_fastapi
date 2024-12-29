@@ -1,14 +1,11 @@
 
 
 from typing import Annotated
-from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel
 
-from src.core.exceptions.custom_exceptions import CustomException
+from fastapi import APIRouter, Depends, Query
+
 from src.core.middleware.jwt import JWTBearer
 from src.core.responses.response import response_base
-from src.core.responses.response_code import ResponseCode, ResponseMessage
-from src.core.responses.response_schema import ResponseSchema
 from src.database.db_session import CurrentSession
 
 from .model import Article, Comment, Department, User, article_schemas, comment_schemas, dept_schemas, user_schemas
