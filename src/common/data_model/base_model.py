@@ -58,11 +58,30 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
         for key, value in kwargs.items():
             if hasattr(self, key):
                 setattr(self, key, value)
+        await self.query_session.flush()
+
+    async def delete(self) -> None:
+        """删除"""
+        if hasattr(self, 'deleted_at'):
+            self.deleted_at = TimeZone.now()
+        else:
+            await self.query_session.delete(self)
+        await self.query_session.flush()
+
+    async def restore(self) -> None:
+        """恢复"""
+        self.deleted_at = None
+        await self.query_session.flush()
 
     @property
     def primary_key_value(self) -> Any:
         """获取主键值"""
         return getattr(self, self.__mapper__.primary_key[0].name)
+
+    @property
+    def is_deleted(self) -> bool:
+        """是否已删除"""
+        return self.deleted_at is not None
 
     def __repr__(self) -> str:
         """模型的字符串表示"""
@@ -78,11 +97,15 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
     @classmethod
     async def get_all(
         cls: type[T],
+        *,
+        include_deleted: bool = False,
         offset: int = 0,
         limit: int = 100
     ) -> list[T]:
         """获取所有记录，支持分页"""
         stmt = sa.select(cls).offset(offset).limit(limit)
+        if hasattr(cls, 'deleted_at') and not include_deleted:
+            stmt = stmt.where(getattr(cls, 'deleted_at').is_(None))
         result = await cls.query_session.execute(stmt)
         return list(result.scalars().all())
 
@@ -164,19 +187,6 @@ class SoftDeleteMixin:
     软删除混入类
     """
     deleted_at: Mapped[datetime | None] = mapped_column(sa.DateTime, nullable=True, comment="删除时间")
-
-    def soft_delete(self) -> None:
-        """软删除"""
-        self.deleted_at = TimeZone.now()
-
-    def restore(self) -> None:
-        """恢复"""
-        self.deleted_at = None
-
-    @property
-    def is_deleted(self) -> bool:
-        """是否已删除"""
-        return self.deleted_at is not None
 
 
 class TimestampMixin:

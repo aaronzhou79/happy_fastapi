@@ -1,6 +1,8 @@
 
 
-from fastapi import APIRouter, Depends
+from typing import Annotated
+from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel
 
 from src.core.exceptions.custom_exceptions import CustomException
 from src.core.middleware.jwt import JWTBearer
@@ -32,6 +34,21 @@ async def create_dept(
     return response_base.success(data=data)
 
 
+@router.put("/update_dept")
+async def update_dept(
+    dept_id: int,
+    dept_update: dept_schemas["Update"]
+):
+    if not dept_id:
+        return response_base.fail(data="部门ID不能为空")
+    dept = await Department.get_by_id(dept_id)
+    if dept is None:
+        return response_base.fail(data="部门不存在")
+    await dept.update(**dept_update.model_dump())
+
+    data = await dept.to_dict()
+    return response_base.success(data=data)
+
 @router.get("/get_dept")
 async def get_dept(
     dept_id: int
@@ -41,6 +58,25 @@ async def get_dept(
         return response_base.fail(data="部门不存在")
     data = await dept.to_dict(max_depth=3)
     return response_base.success(data=data)
+
+@router.delete("/delete_dept")
+async def delete_dept(
+    dept_id: int
+):
+    dept = await Department.get_by_id(dept_id)
+    if not dept:
+        return response_base.fail(data="部门不存在")
+    await dept.delete()
+    return response_base.success(data="部门删除成功")
+
+@router.get("/get_dept_list")
+async def get_dept_list(
+    include_deleted: Annotated[bool, Query(...)] = False
+):
+    depts: list[Department] = await Department.get_all(include_deleted=include_deleted)
+    data = [await dept.to_dict() for dept in depts]
+    return response_base.success(data=data)
+
 
 
 @router.post("/create_user")
