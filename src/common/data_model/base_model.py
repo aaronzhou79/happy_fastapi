@@ -1,7 +1,7 @@
 import asyncio
 
 from datetime import datetime
-from typing import Any, TypeVar
+from typing import Any, TypeVar, Tuple
 
 import sqlalchemy as sa
 
@@ -10,6 +10,10 @@ from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from src.utils.timezone import TimeZone
+
+from sqlalchemy import select, func
+
+from .query_fields import QueryOptions, FilterGroup
 
 T = TypeVar('T', bound='DatabaseModel')
 
@@ -133,6 +137,170 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
         result = await cls.query_session.execute(stmt)
         return list(result.scalars().all())
 
+    @classmethod
+    async def bulk_create(
+        cls: type[T],
+        items: list[dict[str, Any]],
+        return_instances: bool = True
+    ) -> list[T] | None:
+        """批量创建记录"""
+        instances = [cls(**item) for item in items]
+        cls.query_session.add_all(instances)
+        await cls.query_session.flush()
+        return instances if return_instances else None
+
+    @classmethod
+    async def bulk_update(
+        cls: type[T],
+        items: list[tuple[int, dict[str, Any]]],
+        return_instances: bool = True
+    ) -> list[T] | None:
+        """批量更新记录"""
+        # 获取所有ID
+        ids = [item[0] for item in items]
+        # 构建更新映射
+        update_map = {item[0]: item[1] for item in items}
+
+        # 获取所有实例
+        stmt = sa.select(cls).where(cls.id.in_(ids))
+        result = await cls.query_session.execute(stmt)
+        instances = list(result.scalars().all())
+
+        # 更新实例
+        for instance in instances:
+            if instance.id in update_map:
+                for key, value in update_map[instance.id].items():
+                    setattr(instance, key, value)
+
+        await cls.query_session.flush()
+        return instances if return_instances else None
+
+    @classmethod
+    async def bulk_delete(
+        cls: type[T],
+        ids: list[int],
+        soft_delete: bool = True
+    ) -> None:
+        """批量删除记录"""
+        if soft_delete and hasattr(cls, 'deleted_at'):
+            stmt = (
+                sa.update(cls)
+                .where(cls.id.in_(ids))
+                .values(deleted_at=TimeZone.now())
+            )
+        else:
+            stmt = sa.delete(cls).where(cls.id.in_(ids))
+
+        await cls.query_session.execute(stmt)
+        await cls.query_session.flush()
+
+        # 释放相关的锁
+        for id in ids:
+            cls.release_lock(id)
+
+    @classmethod
+    async def bulk_restore(
+        cls: type[T],
+        ids: list[int],
+        return_instances: bool = True
+    ) -> list[T] | None:
+        """批量恢复记录(针对软删除)"""
+        if not hasattr(cls, 'deleted_at'):
+            raise AttributeError(f"{cls.__name__} 不支持软删除")
+
+        stmt = (
+            sa.update(cls)
+            .where(cls.id.in_(ids))
+            .values(deleted_at=None)
+        )
+        await cls.query_session.execute(stmt)
+        await cls.query_session.flush()
+
+        if return_instances:
+            stmt = sa.select(cls).where(cls.id.in_(ids))
+            result = await cls.query_session.execute(stmt)
+            return list(result.scalars().all())
+        return None
+
+    @classmethod
+    async def query(
+        cls: type[T],
+        options: QueryOptions | None = None
+    ) -> list[T] | list[dict]:
+        """
+        通用查询方法
+        """
+        data, _ = await cls.query_with_count(options=options)
+        return data
+
+    @classmethod
+    async def query_with_count(
+        cls: type[T],
+        options: QueryOptions | None = None,
+        return_dict: bool = True
+    ) -> Tuple[list[T] | list[dict], int]:
+        """带总数的通用查询方法"""
+        options = options or QueryOptions()
+
+        # 构建基础查询
+        base_query = select(
+            cls,
+            func.count().over().label('total_count')
+        )
+
+        if options.filters and options.filters:
+            base_query = base_query.where(options.filters.build_query(cls))
+
+        # 添加排序和分页
+        query = base_query.order_by(*(
+            getattr(cls, sort_field.field).desc()
+            if sort_field.order.value == "desc"
+            else getattr(cls, sort_field.field).asc()
+            for sort_field in (options.sort or [])
+        )).offset(options.offset).limit(options.limit)
+
+        # 执行查询
+        result = await cls.query_session.execute(query)
+        rows = result.all()
+
+        if not rows:
+            return [], 0
+
+        # 从第一行获取总数
+        total = rows[0].total_count
+
+        # 提取实体对象
+        data = [row[0] for row in rows]
+
+        # 如果需要返回字典
+        if return_dict:
+            data = [await instance.to_dict() for instance in data]
+
+        return data, total
+
+    @classmethod
+    async def count(
+        cls: type[T],
+        filters: FilterGroup | None = None
+    ) -> int:
+        """
+        获取记录总数
+        """
+        stmt = select(func.count()).select_from(cls)
+        if filters:
+            stmt = stmt.where(filters.build_query(cls))
+        return await cls.query_session.scalar(stmt) or 0
+
+    @classmethod
+    async def exists(
+        cls: type[T],
+        filters: FilterGroup | None = None
+    ) -> bool:
+        """
+        检查记录是否存在
+        """
+        return await cls.count(filters) > 0
+
 
 class BaseModelMixin(DatabaseModel):
     """
@@ -153,6 +321,7 @@ class BaseModelMixin(DatabaseModel):
         max_depth: int = 2,
         _depth: int = 1
     ) -> dict[str, Any]:
+        # 如果超过最大深度,直接返回 ID
         if _depth > max_depth:
             return {"id": self.id}
 
@@ -161,6 +330,10 @@ class BaseModelMixin(DatabaseModel):
             data = {k: v for k, v in data.items() if k in include}
         if exclude:
             data = {k: v for k, v in data.items() if k not in exclude}
+
+        # 如果已达到最大深度,跳过关系对象处理
+        if _depth == max_depth:
+            return data
 
         # 处理关系对象
         for rel_name, rel in self.get_relationships().items():

@@ -58,7 +58,7 @@ class User(SoftDeleteMixin, BaseModelMixin):
     """用户模型"""
     __tablename__: Literal["users"] = "users"
 
-    username = Column(String(50), unique=True, nullable=False, comment="用户名")
+    name = Column(String(50), unique=True, nullable=False, comment="用户名")
     email = Column(String(120), unique=True, nullable=False, comment="邮箱")
     password = Column(String(128), nullable=False, comment="密码")
     dept_id = Column(ForeignKey("departments.id"), nullable=False, comment="部门ID")

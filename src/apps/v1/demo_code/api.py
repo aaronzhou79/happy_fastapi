@@ -6,6 +6,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 
+from src.common.data_model.query_fields import QueryOptions
 from src.core.middleware.jwt import JWTBearer
 from src.core.responses.response import response_base
 from src.database.db_session import CurrentSession
@@ -42,7 +43,7 @@ async def lock_test(
 @router.post("/create_dept")
 async def create_dept(
     session: CurrentSession,
-    dept: dept_schemas["Create"]
+    dept: dept_schemas["Create"]  # type: ignore
 ):
     dept = Department(**dept.model_dump())
     session.add(dept)
@@ -56,7 +57,7 @@ async def create_dept(
 @router.put("/update_dept")
 async def update_dept(
     dept_id: int,
-    dept_update: dept_schemas["Update"]
+    dept_update: dept_schemas["Update"]  # type: ignore
 ):
     if not dept_id:
         return response_base.fail(data="部门ID不能为空")
@@ -68,16 +69,6 @@ async def update_dept(
     data = await dept.to_dict()
     return response_base.success(data=data)
 
-@router.get("/get_dept")
-async def get_dept(
-    dept_id: int
-):
-    dept = await Department.get_by_id(dept_id)
-    if not dept:
-        return response_base.fail(data="部门不存在")
-    data = await dept.to_dict(max_depth=3)
-    return response_base.success(data=data)
-
 @router.delete("/delete_dept")
 async def delete_dept(
     dept_id: int
@@ -87,6 +78,24 @@ async def delete_dept(
         return response_base.fail(data="部门不存在")
     await dept.delete()
     return response_base.success(data="部门删除成功")
+
+@router.get("/get_dept")
+async def get_dept(
+    dept_id: int,
+    max_depth: int = 2
+):
+    dept = await Department.get_by_id(dept_id)
+    if not dept:
+        return response_base.fail(data="部门不存在")
+    data = await dept.to_dict(max_depth=max_depth)
+    return response_base.success(data=data)
+
+@router.post("/query_dept")
+async def query_dept(
+    options: QueryOptions
+):
+    instances, total = await Department.query_with_count(options=options)
+    return response_base.success(data={"total": total, "instances": instances})
 
 @router.get("/get_dept_list")
 async def get_dept_list(
@@ -101,7 +110,7 @@ async def get_dept_list(
 @router.post("/create_user")
 async def create_user(
     session: CurrentSession,
-    user: user_schemas["Create"]
+    user: user_schemas["Create"]  # type: ignore
 ):
     user = User(**user.model_dump())
     session.add(user)
@@ -121,7 +130,7 @@ async def get_user(
 @router.post("/create_article")
 async def create_article(
     session: CurrentSession,
-    article: article_schemas["Create"]
+    article: article_schemas["Create"]  # type: ignore
 ):
     article = Article(**article.model_dump())
     session.add(article)
@@ -141,7 +150,7 @@ async def get_article(
 @router.post("/create_comment")
 async def create_comment(
     session: CurrentSession,
-    comment: comment_schemas["Create"]
+    comment: comment_schemas["Create"]  # type: ignore
 ):
     comment = Comment(**comment.model_dump())
     session.add(comment)
