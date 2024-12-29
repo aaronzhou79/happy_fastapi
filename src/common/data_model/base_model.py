@@ -1,3 +1,5 @@
+import asyncio
+
 from datetime import datetime
 from typing import Any, TypeVar
 
@@ -17,6 +19,25 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
     数据库模型基类，提供基础能力支持
     """
     query_session: AsyncSession
+    _locks: dict[int, asyncio.Lock] = {}  # 用于存储每个实例的锁
+
+    @property
+    def lock(self) -> asyncio.Lock:
+        """获取实例的同步锁"""
+        if self.primary_key_value not in self._locks:
+            self._locks[self.primary_key_value] = asyncio.Lock()
+        return self._locks[self.primary_key_value]
+
+    async def with_lock(self, callback) -> Any:
+        """使用同步锁执行操作"""
+        async with self.lock:
+            return await callback()
+
+    @classmethod
+    def release_lock(cls, id: int) -> None:
+        """释放指定ID的锁"""
+        if id in cls._locks:
+            del cls._locks[id]
 
     # 使用类名小写作为表名
     @declared_attr.directive
@@ -54,19 +75,22 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
         return {rel.key: rel for rel in sa.inspect(cls).mapper.relationships}
 
     async def update(self, **kwargs) -> None:
-        """批量更新属性"""
-        for key, value in kwargs.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
-        await self.query_session.flush()
+        """批量更新属性（带锁保护）"""
+        async with self.lock:
+            for key, value in kwargs.items():
+                if hasattr(self, key):
+                    setattr(self, key, value)
+            await self.query_session.flush()
 
     async def delete(self) -> None:
-        """删除"""
-        if hasattr(self, 'deleted_at'):
-            self.deleted_at = TimeZone.now()
-        else:
-            await self.query_session.delete(self)
-        await self.query_session.flush()
+        """删除（带锁保护）"""
+        async with self.lock:
+            if hasattr(self, 'deleted_at'):
+                self.deleted_at = TimeZone.now()
+            else:
+                await self.query_session.delete(self)
+            await self.query_session.flush()
+            self.release_lock(self.primary_key_value)
 
     async def restore(self) -> None:
         """恢复"""

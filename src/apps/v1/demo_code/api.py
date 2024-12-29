@@ -1,5 +1,7 @@
 
 
+import asyncio
+
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
@@ -16,6 +18,26 @@ router = APIRouter()
 @router.get("/protected", dependencies=[Depends(JWTBearer())])
 def protected_route():
     return response_base.success(data={"message": "这是一个受保护的接口"})
+
+@router.post("/lock_test")
+async def lock_test(
+    dept_id: int,
+    name: str
+):
+    model = await Department.get_by_id(dept_id)
+    if not model:
+        return response_base.fail(data="部门不存在")
+
+    async def do_something():
+        await asyncio.sleep(30)
+        return "done"
+    # 使用 with_lock 执行自定义操作
+    await model.with_lock(lambda: do_something())
+
+    # update 和 delete 方法已经内置了锁保护
+    data = await model.update(name=name)
+    return response_base.success(data=data)
+
 
 @router.post("/create_dept")
 async def create_dept(
