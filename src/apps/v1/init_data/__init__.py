@@ -7,7 +7,8 @@
 # @Software: Cursor
 # @Description: 数据初始化
 
-from src.apps.v1.demo_code.model import Article, Comment, Department, User
+from src.apps.v1.demo_code.model import Article, Comment
+from src.apps.v1.sys.model import Department, User
 from src.database.db_session import async_session
 
 

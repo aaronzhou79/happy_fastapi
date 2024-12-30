@@ -11,8 +11,10 @@ from fastapi import APIRouter
 
 from .demo_code import router as demo_code_router
 from .init_data.api import router as init_data_router
+from .sys import router as sys_router
 
 router = APIRouter(prefix="/v1")
 
 router.include_router(init_data_router)
 router.include_router(demo_code_router)
+router.include_router(sys_router)
