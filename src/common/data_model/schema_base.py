@@ -19,6 +19,7 @@ from typing import Any, Type, TypeVar
 import sqlalchemy as sa
 
 from pydantic import BaseModel, ConfigDict, Field, create_model
+from sqlalchemy.sql.schema import ColumnDefault
 
 T = TypeVar('T', bound='SchemaBase')
 
@@ -46,7 +47,19 @@ def create_schema_model(
         python_type = column.type.python_type
         if column.nullable:
             python_type = python_type | None
-        fields[column.name] = (python_type, None if column.nullable else ...)
+        # 获取默认值
+        default = None
+        if column.default is not None:
+            if isinstance(column.default, ColumnDefault):
+                default = column.default.arg
+            else:
+                default = column.default
+        # 创建带有描述和默认值的字段
+        field = Field(
+            default if default is not None else (None if column.nullable else ...),
+            description=column.comment,
+        )
+        fields[column.name] = (python_type, field)
 
     # 创建新的 SchemaBase 子类
     return create_model(

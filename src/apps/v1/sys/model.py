@@ -14,6 +14,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.common.data_model.base_model import AuditConfig, DatabaseModel, SoftDeleteMixin
 from src.common.data_model.schema_base import generate_schemas
+from src.common.enums import UserStatus
 
 
 class Role(SoftDeleteMixin, DatabaseModel):
@@ -47,6 +48,10 @@ class User(SoftDeleteMixin, DatabaseModel):
     name: Mapped[str] = mapped_column(sa.String(50), nullable=False, comment="用户名")
     email: Mapped[str] = mapped_column(sa.String(120), nullable=False, comment="邮箱")
     password: Mapped[str] = mapped_column(sa.String(128), nullable=False, comment="密码")
+    phone: Mapped[str | None] = mapped_column(sa.String(20), nullable=True, comment="手机号")
+    user_status: Mapped[UserStatus] = mapped_column(
+        sa.Enum(UserStatus), default=UserStatus.ACTIVE, nullable=False, comment="用户状态"
+    )
     dept_id: Mapped[int] = mapped_column(sa.ForeignKey("sys_depts.id"), nullable=False, comment="部门ID")
     department: Mapped["Department"] = relationship("Department", back_populates="users")
 
