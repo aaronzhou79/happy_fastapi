@@ -75,7 +75,7 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
     @classmethod
     async def _do_audit(
         cls,
-        session: AsyncSession,
+        session: AuditAsyncSession,
         action: AuditActionType,
         instance: Optional['DatabaseModel'],
         changes: dict[str, Any] | None = None,
