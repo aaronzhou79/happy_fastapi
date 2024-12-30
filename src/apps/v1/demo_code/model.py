@@ -31,12 +31,12 @@ class Article(TimestampMixin, SoftDeleteMixin, DatabaseModel):
     comments: Mapped[list["Comment"]] = relationship("Comment", back_populates="article")
 
 
-ArticleSchema, ArticleCreate, ArticleUpdate, ArticleList = generate_schemas(
+ArticleSchema, ArticleCreate, ArticleUpdate = generate_schemas(
     Article,
     exclude_create={"id", "created_at", "updated_at", "deleted_at"},
     exclude_update={"id", "created_at", "updated_at", "deleted_at"},
 )
 
-CommentSchema, CommentCreate, CommentUpdate, CommentList = generate_schemas(
+CommentSchema, CommentCreate, CommentUpdate = generate_schemas(
     Comment
 )

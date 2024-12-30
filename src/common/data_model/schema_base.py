@@ -31,9 +31,19 @@ class SchemaBase(BaseModel):
 def create_schema_model(
     model_cls: Type[Any],
     schema_name: str | None = None,
-    exclude: set[str] | None = None
+    exclude: set[str] | None = None,
+    include_relationships: bool = True,
+    max_depth: int = 1
 ) -> Type[SchemaBase]:
-    """从 SQLAlchemy 模型创建 Pydantic 模型"""
+    """从 SQLAlchemy 模型创建 Pydantic 模型
+
+    Args:
+        model_cls: SQLAlchemy 模型类
+        schema_name: schema名称
+        exclude: 排除的字段
+        include_relationships: 是否包含关联字段
+        max_depth: 关联数据的最大深度,默认为1
+    """
     # 获取模型信息
     mapper = sa.inspect(model_cls)
     fields = {}
@@ -60,6 +70,32 @@ def create_schema_model(
         )
         fields[column.name] = (python_type, field)
 
+    # 处理关联字段
+    if include_relationships and max_depth > 0:
+        for name, rel in mapper.relationships.items():
+            if name in exclude:
+                continue
+
+            # 获取关联模型的schema
+            related_schema = create_schema_model(
+                rel.mapper.class_,
+                exclude=exclude,
+                include_relationships=True,
+                max_depth=max_depth - 1
+            )
+
+            # 根据关系类型设置字段类型
+            if rel.uselist:
+                # 一对多/多对多关系
+                field_type = list[related_schema]
+                default_value = []
+            else:
+                # 一对一/多对一关系
+                field_type = related_schema | None
+                default_value = None
+
+            fields[name] = (field_type, Field(default=default_value))
+
     # 创建新的 SchemaBase 子类
     return create_model(
         schema_name or f"{model_cls.__name__}Schema",
@@ -72,33 +108,29 @@ def generate_schemas(
     model_cls: Type[Any],
     exclude_create: set[str] | None = None,
     exclude_update: set[str] | None = None,
-) -> tuple[Type[SchemaBase], Type[SchemaBase], Type[SchemaBase], Type[BaseModel]]:
+) -> tuple[Type[SchemaBase], Type[SchemaBase], Type[SchemaBase]]:
     """生成完整的 CRUD schemas"""
     # 基础 schema
     base_schema = create_schema_model(
         model_cls,
         schema_name=f"{model_cls.__name__}Schema",
+        max_depth=2
     )
 
     # Create schema (排除 id 和时间戳)
     create_schema = create_schema_model(
         model_cls,
         schema_name=f"{model_cls.__name__}Create",
-        exclude=exclude_create or {"id", "created_at", "updated_at", "deleted_at"}
+        exclude=exclude_create or {"id", "created_at", "updated_at", "deleted_at"},
+        include_relationships=False
     )
 
     # Update schema (排除 id 和时间戳)
     update_schema = create_schema_model(
         model_cls,
         schema_name=f"{model_cls.__name__}Update",
-        exclude=exclude_update or {"id", "created_at", "updated_at", "deleted_at"}
+        exclude=exclude_update or {"id", "created_at", "updated_at", "deleted_at"},
+        include_relationships=False
     )
 
-    # List schema
-    class List(BaseModel):
-        items: list[base_schema]  # type: ignore
-        total: int = Field(default=0)
-        page: int = Field(default=1)
-        size: int = Field(default=20)
-
-    return base_schema, create_schema, update_schema, List
+    return base_schema, create_schema, update_schema

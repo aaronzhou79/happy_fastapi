@@ -13,7 +13,7 @@ import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.common.data_model.base_model import AuditConfig, DatabaseModel, SoftDeleteMixin
-from src.common.data_model.schema_base import generate_schemas
+from src.common.data_model.schema_base import create_schema_model, generate_schemas
 from src.common.enums import UserStatus
 
 
@@ -93,14 +93,15 @@ class Department(SoftDeleteMixin, DatabaseModel):
 
 
 # 生成 CRUD 模型
-DepartmentSchema, DepartmentCreate, DepartmentUpdate, DepartmentList = generate_schemas(
-    Department,
+DepartmentSchema, DepartmentCreate, DepartmentUpdate = generate_schemas(
+    Department
 )
 
-UserSchema, UserCreate, UserUpdate, UserList = generate_schemas(
-    User,
+UserSchema, UserCreate, UserUpdate = generate_schemas(
+    User
 )
 
-RoleSchema, RoleCreate, RoleUpdate, RoleList = generate_schemas(
-    Role,
+RoleSchema, RoleCreate, RoleUpdate = generate_schemas(
+    Role
 )
+
