@@ -35,7 +35,6 @@ ArticleSchema, ArticleCreate, ArticleUpdate, ArticleList = generate_schemas(
     Article,
     exclude_create={"id", "created_at", "updated_at", "deleted_at"},
     exclude_update={"id", "created_at", "updated_at", "deleted_at"},
-    exclude_list=set()
 )
 
 CommentSchema, CommentCreate, CommentUpdate, CommentList = generate_schemas(

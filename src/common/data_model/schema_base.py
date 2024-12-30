@@ -30,6 +30,7 @@ class SchemaBase(BaseModel):
 
 def create_schema_model(
     model_cls: Type[Any],
+    schema_name: str | None = None,
     exclude: set[str] | None = None
 ) -> Type[SchemaBase]:
     """从 SQLAlchemy 模型创建 Pydantic 模型"""
@@ -49,7 +50,7 @@ def create_schema_model(
 
     # 创建新的 SchemaBase 子类
     return create_model(
-        f"{model_cls.__name__}Schema",
+        schema_name or f"{model_cls.__name__}Schema",
         __base__=SchemaBase,
         **fields
     )
@@ -59,21 +60,25 @@ def generate_schemas(
     model_cls: Type[Any],
     exclude_create: set[str] | None = None,
     exclude_update: set[str] | None = None,
-    exclude_list: set[str] | None = None
 ) -> tuple[Type[SchemaBase], Type[SchemaBase], Type[SchemaBase], Type[BaseModel]]:
     """生成完整的 CRUD schemas"""
     # 基础 schema
-    base_schema = create_schema_model(model_cls)
+    base_schema = create_schema_model(
+        model_cls,
+        schema_name=f"{model_cls.__name__}Schema",
+    )
 
     # Create schema (排除 id 和时间戳)
     create_schema = create_schema_model(
         model_cls,
+        schema_name=f"{model_cls.__name__}Create",
         exclude=exclude_create or {"id", "created_at", "updated_at", "deleted_at"}
     )
 
     # Update schema (排除 id 和时间戳)
     update_schema = create_schema_model(
         model_cls,
+        schema_name=f"{model_cls.__name__}Update",
         exclude=exclude_update or {"id", "created_at", "updated_at", "deleted_at"}
     )
 
