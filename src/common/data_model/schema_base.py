@@ -12,7 +12,6 @@
     1. 生成基础 schema
     2. 生成创建 schema
     3. 生成更新 schema
-    4. 生成列表 schema
 """
 from typing import Any, Type, TypeVar
 

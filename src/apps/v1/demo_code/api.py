@@ -7,7 +7,10 @@
 # @Software: Cursor
 # @Description: 演示CRUD API代码
 
+from fastapi import Depends
+
 from src.common.base_api import BaseAPI
+from src.core.middleware.jwt import JWTBearer
 
 from .model import Article, ArticleCreate, ArticleUpdate, Comment, CommentCreate, CommentUpdate
 
@@ -17,8 +20,10 @@ article_api = BaseAPI(
     create_schema=ArticleCreate,
     update_schema=ArticleUpdate,
     prefix="/article",
-    gen_delete=True,
     tags=["文章管理"],
+    dependencies=[Depends(JWTBearer())],  # 添加JWT认证
+    gen_delete=True,  # 启用删除接口
+    cache_ttl=300,  # 缓存5分钟
 )
 
 comment_api = BaseAPI(
@@ -29,3 +34,11 @@ comment_api = BaseAPI(
     gen_delete=True,
     tags=["评论管理"],
 )
+
+# 添加自定义路由
+@article_api.router.get("/custom", summary="自定义接口")
+async def custom_route():
+    return {"message": "这是一个自定义接口"}
+
+# 获取路由
+router = article_api.router
