@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Literal
+from typing import Literal
 
 import sqlalchemy as sa
 
@@ -6,7 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.apps.v1.sys.model import User
 from src.common.data_model.base_model import DatabaseModel, SoftDeleteMixin, TimestampMixin
-from src.common.data_model.schema_generator import generate_schemas
+from src.common.data_model.schema_base import generate_schemas
 
 
 class Comment(TimestampMixin, SoftDeleteMixin, DatabaseModel):
@@ -31,16 +31,13 @@ class Article(TimestampMixin, SoftDeleteMixin, DatabaseModel):
     comments: Mapped[list["Comment"]] = relationship("Comment", back_populates="article")
 
 
-comment_schemas = generate_schemas(
-    Comment,
-    prefix="",
-    exclude_create={"id", "created_at", "updated_at"},  # 创建时不需要设置软删除状态
-    exclude_update={"id", "created_at", "updated_at"}  # 更新时不允许修改软删除状态
+ArticleSchema, ArticleCreate, ArticleUpdate, ArticleList = generate_schemas(
+    Article,
+    exclude_create={"id", "created_at", "updated_at", "deleted_at"},
+    exclude_update={"id", "created_at", "updated_at", "deleted_at"},
+    exclude_list=set()
 )
 
-article_schemas = generate_schemas(
-    Article,
-    prefix="",
-    exclude_create={"id", "created_at", "updated_at", "is_published"},  # 创建时不需要设置发布状态
-    exclude_update={"id", "created_at", "updated_at", "author_id"}  # 更新时不允许修改作者
+CommentSchema, CommentCreate, CommentUpdate, CommentList = generate_schemas(
+    Comment
 )

@@ -1,7 +1,7 @@
 # src/core/register.py
 # !/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# @Data    : 2024/12/27 17:19
+# @Date    : 2024/12/27 17:19
 # @Author  : Aaron Zhou
 # @File    : register.py
 # @Software: Cursor
@@ -12,10 +12,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from src.apps import router as apps_router
+from src.common.data_model.base_model import create_table
 from src.core.conf import settings
 from src.core.exceptions.exception_handlers import register_exception
 from src.core.responses.response_code import MsgSpecJSONResponse
-from src.common.data_model.base_model import create_table
 
 
 @asynccontextmanager
@@ -37,7 +37,7 @@ def register_app():
         lifespan=register_init,
     )
 
-    app.include_router(apps_router, prefix="/api")
+    app.include_router(apps_router)
 
     register_exception(app)
 

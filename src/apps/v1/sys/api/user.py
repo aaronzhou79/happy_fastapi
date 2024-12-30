@@ -1,7 +1,7 @@
 # src/apps/v1/sys/api/user.py
 # !/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# @Data    : 2024/12/30
+# @Date    : 2024/12/30
 # @Author  : Aaron Zhou
 # @File    : user.py
 # @Software: Cursor
@@ -12,15 +12,15 @@ from fastapi import APIRouter, Request
 from src.core.responses.response import response_base
 from src.database.db_session import async_audit_session, async_session
 
-from ..model import User, user_schemas
+from ..model import User, UserCreate, UserList, UserUpdate
 
-router = APIRouter(prefix="/user", tags=["用户管理"])
+router = APIRouter(prefix="/user")
 
 
 @router.post("/create_user")
 async def create_user(
     request: Request,
-    user: user_schemas["Create"]  # type: ignore
+    user: UserCreate  # type: ignore
 ):
     async with async_audit_session(async_session(), request) as session:
         data = await User.create(session=session, **user.model_dump())

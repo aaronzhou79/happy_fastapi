@@ -175,7 +175,7 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
         await cls._do_audit(
             session,
             AuditActionType.CREATE,
-            None,
+            instance,
             kwargs,
             AuditMeta(operator_id=session.user_id)
         )
@@ -601,6 +601,7 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
         """
         exclude_fields = ['password', 'deleted_at']
         return await self.to_dict(exclude=exclude_fields, max_depth=max_depth)
+
 
 class SoftDeleteMixin:
     """

@@ -8,7 +8,16 @@ from src.core.middleware.jwt import JWTBearer
 from src.core.responses.response import response_base
 from src.database.db_session import CurrentSession, async_audit_session, async_session
 
-from .model import Article, Comment, article_schemas, comment_schemas
+from .model import (
+    Article,
+    ArticleCreate,
+    ArticleList,
+    ArticleUpdate,
+    Comment,
+    CommentCreate,
+    CommentList,
+    CommentUpdate,
+)
 
 router = APIRouter()
 
@@ -17,33 +26,10 @@ router = APIRouter()
 def protected_route():
     return response_base.success(data={"message": "这是一个受保护的接口"})
 
-@router.post("/lock_test")
-async def lock_test(
-    request: Request,
-    dept_id: int,
-    name: str
-):
-    model = await Department.get_by_id(dept_id)
-    if not model:
-        return response_base.fail(data="部门不存在")
-
-    async def do_something():
-        await asyncio.sleep(30)
-        return "done"
-    # 使用 with_lock 执行自定义操作
-    await model.with_lock(lambda: do_something())
-
-    # update 和 delete 方法已经内置了锁保护
-    async with async_audit_session(async_session(), request) as session:
-        data = await model.update(session=session, pk=model.id, name=name)
-    return response_base.success(data=data)
-
-
-
 @router.post("/create_article")
 async def create_article(
     session: CurrentSession,
-    article: article_schemas["Create"]  # type: ignore
+    article: ArticleCreate  # type: ignore
 ):
     article = Article(**article.model_dump())
     session.add(article)
@@ -58,12 +44,12 @@ async def get_article(
     article = await Article.get_by_id(article_id)
     if not article:
         return response_base.fail(data="文章不存在")
-    return response_base.success(data=article_schemas["WithRelations"](**await article.to_dict()))
+    return response_base.success(data=ArticleList(items=[article]))
 
 @router.post("/create_comment")
 async def create_comment(
     session: CurrentSession,
-    comment: comment_schemas["Create"]  # type: ignore
+    comment: CommentCreate  # type: ignore
 ):
     comment = Comment(**comment.model_dump())
     session.add(comment)
@@ -78,4 +64,4 @@ async def get_comment(
     comment = await Comment.get_by_id(comment_id)
     if not comment:
         return response_base.fail(data="评论不存在")
-    return response_base.success(data=await comment.to_dict())
+    return response_base.success(data=CommentList(items=[comment]))

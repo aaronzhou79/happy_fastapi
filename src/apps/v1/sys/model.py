@@ -1,7 +1,7 @@
 # src/apps/v1/sys/model.py
 # !/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# @Data    : 2024/12/30
+# @Date    : 2024/12/30
 # @Author  : Aaron Zhou
 # @File    : model.py
 # @Software: Cursor
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.common.data_model.base_model import AuditConfig, DatabaseModel, SoftDeleteMixin
-from src.common.data_model.schema_generator import generate_schemas
+from src.common.data_model.schema_base import generate_schemas
 
 
 class Role(SoftDeleteMixin, DatabaseModel):
@@ -76,25 +76,26 @@ class Department(SoftDeleteMixin, DatabaseModel):
         sa.UniqueConstraint('name', name='ix_sys_depts_unique_name'),
     )
 
+    # 启用审计
+    audit_config = AuditConfig(
+        enabled=True,
+        # 只审计这些字段
+        fields={'name'},
+    )
+
     name: Mapped[str] = mapped_column(sa.String(50), nullable=False, comment="部门名称")
     users: Mapped[list["User"]] = relationship("User", back_populates="department")
 
 
-user_schemas = generate_schemas(
-    User,
-    prefix="",
-    exclude_create={"id", "created_at", "updated_at", "deleted_at"},  # 创建时不需要设置软删除状态
-    exclude_update={"id", "created_at", "updated_at", "deleted_at"}  # 更新时不允许修改软删除状态
-)
-dept_schemas = generate_schemas(
+# 生成 CRUD 模型
+DepartmentSchema, DepartmentCreate, DepartmentUpdate, DepartmentList = generate_schemas(
     Department,
-    prefix="",
-    exclude_create={"id", "created_at", "updated_at", "deleted_at"},  # 创建时不需要设置软删除状态
-    exclude_update={"id", "created_at", "updated_at", "deleted_at"}  # 更新时不允许修改软删除状态
 )
-role_schemas = generate_schemas(
+
+UserSchema, UserCreate, UserUpdate, UserList = generate_schemas(
+    User,
+)
+
+RoleSchema, RoleCreate, RoleUpdate, RoleList = generate_schemas(
     Role,
-    prefix="",
-    exclude_create={"id", "created_at", "updated_at", "deleted_at"},  # 创建时不需要设置软删除状态
-    exclude_update={"id", "created_at", "updated_at", "deleted_at"}  # 更新时不允许修改软删除状态
 )
