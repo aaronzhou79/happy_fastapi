@@ -9,12 +9,12 @@
 
 from fastapi import APIRouter
 
-from .api.audit_log import router as audit_log_router
-from .api.dept import router as dept_router
-from .api.user import router as user_router
+from .api.audit_log import audit_log_api
+from .api.dept import dept_api
+from .api.user import user_api
 
-router = APIRouter(prefix="/sys", tags=["系统管理"])
+router = APIRouter(prefix="/sys")
 
-router.include_router(dept_router)
-router.include_router(user_router)
-router.include_router(audit_log_router)
+router.include_router(dept_api.router)
+router.include_router(user_api.router)
+router.include_router(audit_log_api.router)

@@ -9,19 +9,25 @@
 
 import asyncio
 
-from typing import Annotated
+from fastapi import Request
 
-from fastapi import APIRouter, Query, Request
-
-from src.common.data_model.query_fields import QueryOptions
+from src.common.base_api import BaseAPI
 from src.core.responses.response import response_base
 from src.database.db_session import async_audit_session, async_session
 
-from ..model import Department, DepartmentCreate, DepartmentList, DepartmentUpdate
+from ..model import Department, DepartmentCreate, DepartmentUpdate
 
-router = APIRouter(prefix="/dept")
+dept_api = BaseAPI(
+    model=Department,
+    create_schema=DepartmentCreate,
+    update_schema=DepartmentUpdate,
+    prefix="/dept",
+    gen_delete=True,
+    tags=["部门管理"],
+)
 
-@router.post("/lock_test")
+
+@dept_api.router.post("/lock_test")
 async def lock_test(
     request: Request,
     dept_id: int,
@@ -40,61 +46,4 @@ async def lock_test(
     # update 和 delete 方法已经内置了锁保护
     async with async_audit_session(async_session(), request) as session:
         data = await model.update(session=session, pk=model.id, name=name)
-    return response_base.success(data=data)
-
-@router.post("/create")
-async def create(
-    request: Request,
-    dept: DepartmentCreate  # type: ignore
-):
-    async with async_audit_session(async_session(), request) as session:
-        data = await Department.create(session=session, **dept.model_dump())
-
-    return response_base.success(data=data)
-
-
-@router.put("/update")
-async def update(
-    request: Request,
-    dept_id: int,
-    dept_update: DepartmentUpdate  # type: ignore
-):
-    async with async_audit_session(async_session(), request) as session:
-        data = await Department.update(session=session, pk=dept_id, **dept_update.model_dump())
-
-    return response_base.success(data=data)
-
-@router.delete("/delete")
-async def delete(
-    request: Request,
-    dept_id: int
-):
-    async with async_audit_session(async_session(), request) as session:
-        await Department.delete(session=session, pk=dept_id)
-    return response_base.success(data="部门删除成功")
-
-@router.get("/get")
-async def get(
-    dept_id: int,
-    max_depth: int = 2
-):
-    dept = await Department.get_by_id(dept_id)
-    if not dept:
-        return response_base.fail(data="部门不存在")
-    data = await dept.to_api_dict(max_depth=max_depth)
-    return response_base.success(data=data)
-
-@router.post("/query")
-async def query(
-    options: QueryOptions
-):
-    items, total = await Department.query_with_count(options=options)
-    return response_base.success(data={"total": total, "items": items})
-
-@router.get("/get_all")
-async def get_all(
-    include_deleted: Annotated[bool, Query(...)] = False
-):
-    depts: list[Department] = await Department.get_all(include_deleted=include_deleted)
-    data = DepartmentList(items=depts)
     return response_base.success(data=data)

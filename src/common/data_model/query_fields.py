@@ -1,3 +1,14 @@
+# src/common/data_model/query_fields.py
+# !/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# @Date    : 2024/12/30
+# @Author  : Aaron Zhou
+# @File    : query_fields.py
+# @Software: Cursor
+# @Description: 用于生成查询条件
+"""
+    用于生成查询条件
+"""
 from enum import Enum
 from typing import Any, Literal, Union
 
@@ -111,8 +122,8 @@ class SortOrder(str, Enum):
 
 class SortField(BaseModel):
     """排序字段"""
-    field: str
-    order: SortOrder = SortOrder.ASC
+    field: str = Field(default="id", description="排序字段")
+    order: SortOrder = Field(default=SortOrder.DESC, description="排序方向")
 
 
 class QueryOptions(BaseModel):

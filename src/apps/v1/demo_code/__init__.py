@@ -9,8 +9,9 @@
 
 from fastapi import APIRouter
 
-from .api import router as api_router
+from .api import article_api, comment_api
 
 router = APIRouter(prefix="/demo_code")
 
-router.include_router(api_router)
+router.include_router(article_api.router)
+router.include_router(comment_api.router)

@@ -7,31 +7,16 @@
 # @Software: Cursor
 # @Description: 用户管理API
 
-from fastapi import APIRouter, Request
 
-from src.core.responses.response import response_base
-from src.database.db_session import async_audit_session, async_session
+from src.common.base_api import BaseAPI
 
-from ..model import User, UserCreate, UserList, UserUpdate
+from ..model import User, UserCreate, UserUpdate
 
-router = APIRouter(prefix="/user")
-
-
-@router.post("/create_user")
-async def create_user(
-    request: Request,
-    user: UserCreate  # type: ignore
-):
-    async with async_audit_session(async_session(), request) as session:
-        data = await User.create(session=session, **user.model_dump())
-
-    return response_base.success(data=data)
-
-@router.get("/get_user")
-async def get_user(
-    user_id: int
-):
-    user = await User.get_by_id(user_id)
-    if not user:
-        return response_base.fail(data="用户不存在")
-    return response_base.success(data=await user.to_dict())
+user_api = BaseAPI(
+    model=User,
+    create_schema=UserCreate,
+    update_schema=UserUpdate,
+    prefix="/user",
+    gen_delete=True,
+    tags=["用户管理"],
+)

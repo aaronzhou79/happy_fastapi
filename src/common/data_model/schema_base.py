@@ -1,3 +1,19 @@
+# src/common/data_model/schema_base.py
+# !/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# @Date    : 2024/12/30
+# @Author  : Aaron Zhou
+# @File    : schema_base.py
+# @Software: Cursor
+# @Description: schema_base 数据模型类
+"""
+    用于生成 CRUD 的 schema
+
+    1. 生成基础 schema
+    2. 生成创建 schema
+    3. 生成更新 schema
+    4. 生成列表 schema
+"""
 from typing import Any, Type, TypeVar
 
 import sqlalchemy as sa
@@ -9,7 +25,7 @@ T = TypeVar('T', bound='SchemaBase')
 
 class SchemaBase(BaseModel):
     """基础模型类"""
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(use_enum_values=True, from_attributes=True)
 
 
 def create_schema_model(

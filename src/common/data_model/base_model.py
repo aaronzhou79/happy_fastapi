@@ -1,3 +1,14 @@
+# src/common/data_model/base_model.py
+# !/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# @Date    : 2024/12/30
+# @Author  : Aaron Zhou
+# @File    : base_model.py
+# @Software: Cursor
+# @Description: 数据库模型基类，提供基础能力支持
+"""
+    数据库模型基类，提供基础能力支持
+"""
 import asyncio
 
 from dataclasses import dataclass
