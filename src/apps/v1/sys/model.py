@@ -10,10 +10,11 @@ from typing import Literal
 
 import sqlalchemy as sa
 
+from sqlalchemy import and_
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.common.data_model.base_model import AuditConfig, DatabaseModel, SoftDeleteMixin
-from src.common.data_model.schema_base import create_schema_model, generate_schemas
+from src.common.data_model.schema_base import generate_schemas
 from src.common.enums import UserStatus
 
 
@@ -89,16 +90,25 @@ class Department(SoftDeleteMixin, DatabaseModel):
     )
 
     name: Mapped[str] = mapped_column(sa.String(50), nullable=False, comment="部门名称")
-    users: Mapped[list["User"]] = relationship("User", back_populates="department")
+    users: Mapped[list["User"]] = relationship(
+        "User",
+        back_populates="department",
+        primaryjoin=lambda: and_(
+            User.dept_id == Department.id,
+            User.deleted_at.is_(None)  # 过滤掉软删除的用户
+        )
+    )
 
 
 # 生成 CRUD 模型
 DepartmentSchema, DepartmentCreate, DepartmentUpdate = generate_schemas(
-    Department
+    Department,
+    include_relationships={"users"}
 )
 
 UserSchema, UserCreate, UserUpdate = generate_schemas(
-    User
+    User,
+    include_relationships={"roles"}
 )
 
 RoleSchema, RoleCreate, RoleUpdate = generate_schemas(

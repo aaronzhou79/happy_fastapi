@@ -13,12 +13,13 @@
     2. 生成创建 schema
     3. 生成更新 schema
 """
-from typing import Any, Type, TypeVar
+from typing import Any, Type, TypeVar, Optional, Set
 
 import sqlalchemy as sa
 
 from pydantic import BaseModel, ConfigDict, Field, create_model
 from sqlalchemy.sql.schema import ColumnDefault
+from sqlalchemy.orm.relationships import RelationshipProperty
 
 T = TypeVar('T', bound='SchemaBase')
 
@@ -33,7 +34,9 @@ def create_schema_model(
     schema_name: str | None = None,
     exclude: set[str] | None = None,
     include_relationships: bool = True,
-    max_depth: int = 1
+    include_many: bool = False,  # 是否包含一对多关系
+    max_depth: int = 1,
+    _parent_type: Type[Any] | None = None  # 防止循环引用
 ) -> Type[SchemaBase]:
     """从 SQLAlchemy 模型创建 Pydantic 模型
 
@@ -42,7 +45,9 @@ def create_schema_model(
         schema_name: schema名称
         exclude: 排除的字段
         include_relationships: 是否包含关联字段
+        include_many: 是否包含一对多关系字段
         max_depth: 关联数据的最大深度,默认为1
+        _parent_type: 父级模型类型,用于防止循环引用
     """
     # 获取模型信息
     mapper = sa.inspect(model_cls)
@@ -55,7 +60,7 @@ def create_schema_model(
             continue
         python_type = column.type.python_type
         if column.nullable:
-            python_type = python_type | None
+            python_type = Optional[python_type]
         # 获取默认值
         default = None
         if column.default is not None:
@@ -76,22 +81,29 @@ def create_schema_model(
             if name in exclude:
                 continue
 
+            # 跳过父级类型,防止循环引用
+            if _parent_type and rel.mapper.class_ == _parent_type:
+                continue
+
             # 获取关联模型的schema
             related_schema = create_schema_model(
                 rel.mapper.class_,
                 exclude=exclude,
                 include_relationships=True,
-                max_depth=max_depth - 1
+                include_many=include_many,
+                max_depth=max_depth - 1,
+                _parent_type=model_cls
             )
 
             # 根据关系类型设置字段类型
-            if rel.uselist:
-                # 一对多/多对多关系
-                field_type = list[related_schema]
-                default_value = []
-            else:
-                # 一对一/多对一关系
-                field_type = related_schema | None
+            if rel.uselist:  # 一对多关系
+                if include_many:
+                    field_type = list[related_schema]
+                    default_value = []
+                else:
+                    continue  # 不包含一对多关系时跳过
+            else:  # 一对一/多对一关系
+                field_type = Optional[related_schema]
                 default_value = None
 
             fields[name] = (field_type, Field(default=default_value))
@@ -108,29 +120,46 @@ def generate_schemas(
     model_cls: Type[Any],
     exclude_create: set[str] | None = None,
     exclude_update: set[str] | None = None,
+    include_relationships: set[str] | None = None,  # 需要包含的关系字段
 ) -> tuple[Type[SchemaBase], Type[SchemaBase], Type[SchemaBase]]:
-    """生成完整的 CRUD schemas"""
-    # 基础 schema
+    """生成完整的 CRUD schemas
+
+    Args:
+        model_cls: SQLAlchemy 模型类
+        exclude_create: 创建时排除的字段
+        exclude_update: 更新时排除的字段
+        include_relationships: 需要包含的关系字段名称集合
+    """
+    # 基础 schema (包含所有字段)
     base_schema = create_schema_model(
         model_cls,
         schema_name=f"{model_cls.__name__}Schema",
         max_depth=2
     )
 
-    # Create schema (排除 id 和时间戳)
+    # 默认排除的字段
+    default_exclude = {"id", "created_at", "updated_at", "deleted_at"}
+
+    # Create schema
+    create_exclude = (exclude_create or default_exclude) - (include_relationships or set())
     create_schema = create_schema_model(
         model_cls,
         schema_name=f"{model_cls.__name__}Create",
-        exclude=exclude_create or {"id", "created_at", "updated_at", "deleted_at"},
-        include_relationships=False
+        exclude=create_exclude,
+        include_relationships=True,
+        include_many=True,
+        max_depth=1
     )
 
-    # Update schema (排除 id 和时间戳)
+    # Update schema
+    update_exclude = (exclude_update or default_exclude) - (include_relationships or set())
     update_schema = create_schema_model(
         model_cls,
         schema_name=f"{model_cls.__name__}Update",
-        exclude=exclude_update or {"id", "created_at", "updated_at", "deleted_at"},
-        include_relationships=False
+        exclude=update_exclude,
+        include_relationships=True,
+        include_many=True,
+        max_depth=1
     )
 
     return base_schema, create_schema, update_schema

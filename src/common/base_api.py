@@ -149,7 +149,8 @@ class BaseAPI(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             include_deleted: Annotated[bool, Query(description="是否包含已删除数据")] = False
         ):
             items = await self.model.get_all(include_deleted=include_deleted)
-            return response_base.success(data={"items": items})
+            data = [await item.to_api_dict() for item in items]
+            return response_base.success(data=data)
 
     def include_router(self, router: APIRouter):
         """将路由包含到其他路由器中"""

@@ -177,11 +177,114 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
         return {rel.key: rel for rel in sa.inspect(cls).mapper.relationships}
 
     @classmethod
+    async def _handle_relationships(
+        cls,
+        session: AsyncSession,
+        instance: 'DatabaseModel',
+        data: dict[str, Any]
+    ) -> None:
+        """处理关系数据的创建和更新"""
+        for rel_name, rel in cls.get_relationships().items():
+            if rel_name not in data:
+                continue
+
+            rel_data = data[rel_name]
+            if rel_data is None:
+                continue
+
+            # 获取关联模型类
+            related_model = rel.mapper.class_
+
+            # 获取外键字段名
+            foreign_key = None
+            for pair in rel.local_remote_pairs:
+                if pair[0].name in cls.get_columns():
+                    foreign_key = pair[1].name
+                    break
+
+            if rel.uselist:  # 一对多关系
+                # 获取现有关系数据
+                existing_items = await getattr(instance.awaitable_attrs, rel_name)
+                existing_map = {item.id: item for item in existing_items}
+
+                # 处理新的关系数据
+                new_items = []
+                for item_data in rel_data:
+                    item_id = item_data.get('id')
+                    if item_id and item_id in existing_map:
+                        # 更新现有数据
+                        item = existing_map[item_id]
+                        for key, value in item_data.items():
+                            if hasattr(item, key):
+                                setattr(item, key, value)
+                        # 确保外键值正确
+                        if foreign_key:
+                            setattr(item, foreign_key, instance.id)
+                        new_items.append(item)
+                        del existing_map[item_id]
+                    else:
+                        # 创建新数据
+                        new_item = related_model()
+                        for key, value in item_data.items():
+                            if hasattr(new_item, key):
+                                setattr(new_item, key, value)
+                        # 设置外键值
+                        if foreign_key:
+                            setattr(new_item, foreign_key, instance.id)
+                        new_items.append(new_item)
+
+                # 处理不再存在的数据
+                for item in existing_map.values():
+                    if hasattr(item, 'deleted_at'):
+                        # 软删除时只设置deleted_at，保持其他字段不变
+                        setattr(item, 'deleted_at', TimeZone.now())
+                        new_items.append(item)  # 保留在关系中
+                    else:
+                        # 硬删除
+                        await session.delete(item)
+
+                # 更新关系
+                setattr(instance, rel_name, new_items)
+            else:  # 一对一/多对一关系
+                if isinstance(rel_data, dict):
+                    related_instance = await getattr(instance.awaitable_attrs, rel_name)
+                    if related_instance:
+                        # 更新现有数据
+                        for key, value in rel_data.items():
+                            if hasattr(related_instance, key):
+                                setattr(related_instance, key, value)
+                        # 确保外键值正确
+                        if foreign_key:
+                            setattr(related_instance, foreign_key, instance.id)
+                    else:
+                        # 创建新数据
+                        related_instance = related_model(**rel_data)
+                        # 设置外键值
+                        if foreign_key:
+                            setattr(related_instance, foreign_key, instance.id)
+                        setattr(instance, rel_name, related_instance)
+
+    @classmethod
     async def create(cls: type[T], session: AuditAsyncSession, **kwargs) -> dict:
-        """创建记录"""
-        instance = cls(**kwargs)
+        """创建记录(支持关系数据)"""
+        # 分离关系数据
+        relationship_data = {}
+        model_data = {}
+        for key, value in kwargs.items():
+            if key in cls.get_relationships():
+                relationship_data[key] = value
+            else:
+                model_data[key] = value
+
+        # 创建主表记录
+        instance = cls(**model_data)
         session.add(instance)
         await session.flush()
+
+        # 处理关系数据
+        await cls._handle_relationships(session, instance, relationship_data)
+        await session.flush()
+
         # 记录审计
         await cls._do_audit(
             session,
@@ -190,21 +293,38 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
             kwargs,
             AuditMeta(operator_id=session.user_id)
         )
+
         return await instance.to_api_dict()
 
     @classmethod
     async def update(cls: type[T], session: AuditAsyncSession, pk: int, **kwargs) -> dict:
-        """批量更新属性"""
+        """更新记录(支持关系数据)"""
         if not pk:
             raise ValueError("主键ID不能为空")
 
-        # 在同一会话中查询实例
+        # 查询实例
         stmt = select(cls).where(cls.id == pk)
         result = await session.execute(stmt)
         instance = result.scalar_one_or_none()
 
         if instance is None:
             raise ValueError("记录不存在")
+
+        # 分离关系数据
+        relationship_data = {}
+        model_data = {}
+        for key, value in kwargs.items():
+            if key in cls.get_relationships():
+                relationship_data[key] = value
+            elif hasattr(instance, key):
+                model_data[key] = value
+
+        # 更新主表数据
+        for key, value in model_data.items():
+            setattr(instance, key, value)
+
+        # 处理关系数据
+        await cls._handle_relationships(session, instance, relationship_data)
 
         # 记录审计
         await cls._do_audit(
@@ -215,15 +335,7 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
             AuditMeta(operator_id=session.user_id)
         )
 
-        # 更新属性
-        for key, value in kwargs.items():
-            if hasattr(instance, key):
-                setattr(instance, key, value)
-
-        # 显式标记更改
-        session.add(instance)
         await session.flush()
-
         return await instance.to_api_dict()
 
     @classmethod
@@ -610,7 +722,7 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
         转换为API响应格式的字典
         默认排除一些敏感或内部字段
         """
-        exclude_fields = ['password', 'deleted_at']
+        exclude_fields = ['password']
         return await self.to_dict(exclude=exclude_fields, max_depth=max_depth)
 
 
