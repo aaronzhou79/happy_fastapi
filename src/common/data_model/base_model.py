@@ -1,24 +1,63 @@
 import asyncio
 
+from dataclasses import dataclass
 from datetime import datetime
-from functools import wraps
-from typing import Any, Sequence, TypeVar, Tuple
+from enum import StrEnum
+from typing import Any, Literal, Optional, Sequence, Tuple, TypeVar
 
 import sqlalchemy as sa
 
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncAttrs, AsyncSession
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-from src.database.db_session import AsyncSessionScoped, AuditAsyncSession, CurrentSession, async_engine, get_db, async_session
-from src.utils.timezone import TimeZone
 from src.core.conf import settings
+from src.database.db_session import (
+    AuditAsyncSession,
+    async_engine,
+    async_session,
+)
+from src.utils.timezone import TimeZone
 
-from sqlalchemy import select, func
-
-from .query_fields import QueryOptions, FilterGroup
+from .query_fields import FilterGroup, QueryOptions
 
 T = TypeVar('T', bound='DatabaseModel')
+
+
+# 审计操作类型
+class AuditActionType(StrEnum):
+    CREATE = "create"
+    UPDATE = "update"
+    DELETE = "delete"
+    RESTORE = "restore"
+
+
+@dataclass
+class AuditMeta:
+    """审计元数据"""
+    operator_id: int | None = None
+    comment: str | None = None
+
+
+class AuditConfig:
+    """审计配置"""
+    enabled: bool = False
+    # 需要审计的字段,为空表示全部
+    fields: set[str] = set()
+    # 需要忽略的字段
+    exclude_fields: set[str] = {'created_at', 'updated_at'}
+
+    def __init__(
+        self,
+        enabled: bool = False,
+        fields: set[str] = set(),
+        exclude_fields: set[str] = {'created_at', 'updated_at'}
+    ):
+        self.enabled = enabled
+        self.fields = fields
+        self.exclude_fields = exclude_fields
+
 
 class DatabaseModel(AsyncAttrs, DeclarativeBase):
     """
@@ -26,11 +65,50 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
     """
     __abstract__ = True
     _locks: dict[int, asyncio.Lock] = {}  # 用于存储每个实例的锁
+    audit_config: AuditConfig = AuditConfig()
 
     @classmethod
     def query_session(cls):
         """返回数据库会话上下文管理器(类方法)"""
         return async_session()
+
+    @classmethod
+    async def _do_audit(
+        cls,
+        session: AsyncSession,
+        action: AuditActionType,
+        instance: Optional['DatabaseModel'],
+        changes: dict[str, Any] | None = None,
+        meta: AuditMeta | None = None
+    ) -> None:
+        """执行审计"""
+        if not cls.audit_config.enabled:
+            return
+
+        # 获取审计字段
+        audit_fields = cls.audit_config.fields or set(cls.get_columns()) - cls.audit_config.exclude_fields
+
+        # 过滤审计数据
+        def filter_data(data: dict) -> dict:
+            return {k: v for k, v in data.items() if k in audit_fields}
+
+        # 构建审计记录
+        audit_log = {
+            'action': action.value,
+            'target_type': cls.__name__,
+            'target_id': instance.id if instance else None,
+            'changes': {
+                'before': filter_data(instance._dict) if instance else None,
+                'after': filter_data(changes) if changes else None
+            },
+            'operator_id': meta.operator_id if meta else None,
+            'comment': meta.comment if meta else None,
+            'created_at': TimeZone.now()
+        }
+
+        # 保存审计日志
+        await AuditLog.create(session, **audit_log)
+
 
     @property
     def lock(self) -> asyncio.Lock:
@@ -58,7 +136,9 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
     # 基础字段
     id: Mapped[int] = mapped_column(sa.Integer, primary_key=True, autoincrement=True, comment="主键ID")
     created_at: Mapped[datetime] = mapped_column(sa.DateTime, nullable=False, default=TimeZone.now(), comment="创建时间")
-    updated_at: Mapped[datetime] = mapped_column(sa.DateTime, nullable=False, default=TimeZone.now(), onupdate=TimeZone.now(), comment="更新时间")
+    updated_at: Mapped[datetime] = mapped_column(
+        sa.DateTime, nullable=False, default=TimeZone.now(), onupdate=TimeZone.now(), comment="更新时间"
+    )
 
     @property
     def _dict(self) -> dict[str, Any]:
@@ -86,15 +166,23 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
         return {rel.key: rel for rel in sa.inspect(cls).mapper.relationships}
 
     @classmethod
-    async def create(cls: type[T], session: AsyncSession, **kwargs) -> dict:
+    async def create(cls: type[T], session: AuditAsyncSession, **kwargs) -> dict:
         """创建记录"""
         instance = cls(**kwargs)
         session.add(instance)
         await session.flush()
+        # 记录审计
+        await cls._do_audit(
+            session,
+            AuditActionType.CREATE,
+            None,
+            kwargs,
+            AuditMeta(operator_id=session.user_id)
+        )
         return await instance.to_api_dict()
 
     @classmethod
-    async def update(cls: type[T], session: AsyncSession, pk: int, **kwargs) -> dict:
+    async def update(cls: type[T], session: AuditAsyncSession, pk: int, **kwargs) -> dict:
         """批量更新属性"""
         if not pk:
             raise ValueError("主键ID不能为空")
@@ -106,6 +194,15 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
 
         if instance is None:
             raise ValueError("记录不存在")
+
+        # 记录审计
+        await cls._do_audit(
+            session,
+            AuditActionType.UPDATE,
+            instance,
+            kwargs,
+            AuditMeta(operator_id=session.user_id)
+        )
 
         # 更新属性
         for key, value in kwargs.items():
@@ -119,7 +216,7 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
         return await instance.to_api_dict()
 
     @classmethod
-    async def delete(cls: type[T], session: AsyncSession, pk: int) -> None:
+    async def delete(cls: type[T], session: AuditAsyncSession, pk: int) -> None:
         """删除（带锁保护）"""
         if not pk:
             raise ValueError("主键ID不能为空")
@@ -132,6 +229,15 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
         if instance is None:
             raise ValueError("记录不存在")
 
+        # 记录审计
+        await cls._do_audit(
+            session,
+            AuditActionType.DELETE,
+            instance,
+            None,
+            AuditMeta(operator_id=session.user_id)
+        )
+
         if hasattr(instance, 'deleted_at'):
             if getattr(instance, 'deleted_at') is not None:
                 raise ValueError("记录已被逻辑删除，不能再次操作删除！")
@@ -142,7 +248,7 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
         await session.flush()
 
     @classmethod
-    async def restore(cls: type[T], pk: int, session: AsyncSession) -> None:
+    async def restore(cls: type[T], pk: int, session: AuditAsyncSession) -> None:
         """恢复"""
         if not pk:
             raise ValueError("主键ID不能为空")
@@ -153,8 +259,17 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
 
         if instance is None:
             raise ValueError("记录不存在")
-        setattr(instance, 'deleted_at', None)
 
+        # 记录审计
+        await cls._do_audit(
+            session,
+            AuditActionType.RESTORE,
+            instance,
+            {'deleted_at': None},
+            AuditMeta(operator_id=session.user_id)
+        )
+
+        setattr(instance, 'deleted_at', None)
         await session.flush()
 
     @property
@@ -632,6 +747,18 @@ class AuditLogMixin(DatabaseModel):
         if version["action"] in ["update", "restore"]:
             return version["changes"]["before"]
         return {}
+
+
+class AuditLog(DatabaseModel):
+    """审计日志表"""
+    __tablename__: Literal['sys_audit_logs'] = 'sys_audit_logs'
+    id: Mapped[int] = mapped_column(sa.Integer, primary_key=True, autoincrement=True, comment="ID")
+    target_type: Mapped[str] = mapped_column(sa.String(50), nullable=False, comment="目标类型")
+    target_id: Mapped[int] = mapped_column(sa.Integer, nullable=False, comment="目标ID")
+    action: Mapped[str] = mapped_column(sa.String(20), nullable=False, comment="操作类型")
+    changes: Mapped[dict] = mapped_column(sa.JSON, nullable=False, comment="变更内容")
+    operator_id: Mapped[int] = mapped_column(sa.Integer, nullable=True, comment="操作人ID")
+    comment: Mapped[str] = mapped_column(sa.String(500), nullable=True, comment="备注")
 
 
 async def create_table():
