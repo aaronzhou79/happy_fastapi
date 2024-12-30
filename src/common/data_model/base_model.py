@@ -1,6 +1,7 @@
 import asyncio
 
 from datetime import datetime
+from functools import wraps
 from typing import Any, Sequence, TypeVar, Tuple
 
 import sqlalchemy as sa
@@ -9,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncAttrs, AsyncSession
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
+from src.database.db_session import AsyncSessionScoped, AuditAsyncSession, CurrentSession, async_engine, get_db, async_session
 from src.utils.timezone import TimeZone
 from src.core.conf import settings
 
@@ -18,14 +20,17 @@ from .query_fields import QueryOptions, FilterGroup
 
 T = TypeVar('T', bound='DatabaseModel')
 
-
 class DatabaseModel(AsyncAttrs, DeclarativeBase):
     """
     数据库模型基类，提供基础能力支持
     """
     __abstract__ = True
-    query_session: AsyncSession
     _locks: dict[int, asyncio.Lock] = {}  # 用于存储每个实例的锁
+
+    @classmethod
+    def query_session(cls):
+        """返回数据库会话上下文管理器(类方法)"""
+        return async_session()
 
     @property
     def lock(self) -> asyncio.Lock:
@@ -80,44 +85,77 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
         """获取所有关系"""
         return {rel.key: rel for rel in sa.inspect(cls).mapper.relationships}
 
-    async def update(self, **kwargs) -> None:
-        """批量更新属性（带锁保护）"""
-        try:
-            async with self.lock:
-                for key, value in kwargs.items():
-                    if hasattr(self, key):
-                        setattr(self, key, value)
-                await self.query_session.flush()
-                await self.query_session.commit()
-        except Exception:
-            await self.query_session.rollback()
-            raise
+    @classmethod
+    async def create(cls: type[T], session: AsyncSession, **kwargs) -> dict:
+        """创建记录"""
+        instance = cls(**kwargs)
+        session.add(instance)
+        await session.flush()
+        return await instance.to_api_dict()
 
-    async def delete(self) -> None:
+    @classmethod
+    async def update(cls: type[T], session: AsyncSession, pk: int, **kwargs) -> dict:
+        """批量更新属性"""
+        if not pk:
+            raise ValueError("主键ID不能为空")
+
+        # 在同一会话中查询实例
+        stmt = select(cls).where(cls.id == pk)
+        result = await session.execute(stmt)
+        instance = result.scalar_one_or_none()
+
+        if instance is None:
+            raise ValueError("记录不存在")
+
+        # 更新属性
+        for key, value in kwargs.items():
+            if hasattr(instance, key):
+                setattr(instance, key, value)
+
+        # 显式标记更改
+        session.add(instance)
+        await session.flush()
+
+        return await instance.to_api_dict()
+
+    @classmethod
+    async def delete(cls: type[T], session: AsyncSession, pk: int) -> None:
         """删除（带锁保护）"""
-        try:
-            if hasattr(self, 'deleted_at'):
-                if self.deleted_at is not None:
-                    raise ValueError("记录已被删除，不能再次操作！")
-                self.deleted_at = TimeZone.now()
-            else:
-                async with self.lock:
-                    await self.query_session.delete(self)
+        if not pk:
+            raise ValueError("主键ID不能为空")
 
-            await self.query_session.flush()
-            await self.query_session.commit()  # 显式提交事务
-        finally:
-            self.release_lock(self.primary_key_value)
+        # 在同一会话中查询实例
+        stmt = select(cls).where(cls.id == pk)
+        result = await session.execute(stmt)
+        instance = result.scalar_one_or_none()
 
-    async def restore(self) -> None:
+        if instance is None:
+            raise ValueError("记录不存在")
+
+        if hasattr(instance, 'deleted_at'):
+            if getattr(instance, 'deleted_at') is not None:
+                raise ValueError("记录已被逻辑删除，不能再次操作删除！")
+            setattr(instance, 'deleted_at', TimeZone.now())
+        else:
+            await session.delete(instance)
+
+        await session.flush()
+
+    @classmethod
+    async def restore(cls: type[T], pk: int, session: AsyncSession) -> None:
         """恢复"""
-        try:
-            self.deleted_at = None
-            await self.query_session.flush()
-            await self.query_session.commit()
-        except Exception:
-            await self.query_session.rollback()
-            raise
+        if not pk:
+            raise ValueError("主键ID不能为空")
+
+        stmt = select(cls).where(cls.id == pk)
+        result = await session.execute(stmt)
+        instance = result.scalar_one_or_none()
+
+        if instance is None:
+            raise ValueError("记录不存在")
+        setattr(instance, 'deleted_at', None)
+
+        await session.flush()
 
     @property
     def primary_key_value(self) -> Any:
@@ -127,7 +165,7 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
     @property
     def is_deleted(self) -> bool:
         """是否已删除"""
-        return self.deleted_at is not None
+        return getattr(self, 'deleted_at', None) is not None
 
     def __repr__(self) -> str:
         """模型的字符串表示"""
@@ -137,7 +175,7 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
     async def get_by_id(cls: type[T], id: int) -> T | None:
         """通过ID获取记录"""
         stmt = sa.select(cls).where(cls.id == id)
-        result = await cls.query_session.execute(stmt)
+        result = await cls.query_session().execute(stmt)
         return result.scalar_one_or_none()
 
     @classmethod
@@ -152,60 +190,54 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
         stmt = sa.select(cls).offset(offset).limit(limit)
         if hasattr(cls, 'deleted_at') and not include_deleted:
             stmt = stmt.where(getattr(cls, 'deleted_at').is_(None))
-        result = await cls.query_session.execute(stmt)
+        result = await cls.query_session().execute(stmt)
         return list(result.scalars().all())
 
     @classmethod
     async def bulk_create(
         cls: type[T],
+        session: AsyncSession,
         items: list[dict[str, Any]],
         return_instances: bool = True
     ) -> list[T] | None:
         """批量创建记录"""
-        try:
-            instances = [cls(**item) for item in items]
-            cls.query_session.add_all(instances)
-            await cls.query_session.flush()
-            await cls.query_session.commit()
-            return instances if return_instances else None
-        except Exception:
-            await cls.query_session.rollback()
-            raise
+        instances = [cls(**item) for item in items]
+        session.add_all(instances)
+        await session.flush()
+        return instances if return_instances else None
 
     @classmethod
     async def bulk_update(
         cls: type[T],
+        session: AsyncSession,
         items: list[tuple[int, dict[str, Any]]],
         return_instances: bool = True
     ) -> list[T] | None:
         """批量更新记录"""
-        try:
-            # 获取所有ID
-            ids = [item[0] for item in items]
-            # 构建更新映射
-            update_map = {item[0]: item[1] for item in items}
+        # 获取所有ID
+        ids = [item[0] for item in items]
+        # 构建更新映射
+        update_map = {item[0]: item[1] for item in items}
 
-            # 获取所有实例
-            stmt = sa.select(cls).where(cls.id.in_(ids))
-            result = await cls.query_session.execute(stmt)
-            instances = list(result.scalars().all())
+        # 获取所有实例
+        stmt = sa.select(cls).where(cls.id.in_(ids))
+        result = await session.execute(stmt)
+        instances = list(result.scalars().all())
 
-            # 更新实例
-            for instance in instances:
-                if instance.id in update_map:
-                    for key, value in update_map[instance.id].items():
-                        setattr(instance, key, value)
+        # 更新实例
+        for instance in instances:
+            if instance.id in update_map:
+                for key, value in update_map[instance.id].items():
+                    setattr(instance, key, value)
 
-            await cls.query_session.flush()
-            await cls.query_session.commit()
-            return instances if return_instances else None
-        except Exception:
-            await cls.query_session.rollback()
-            raise
+        await session.flush()
+
+        return instances if return_instances else None
 
     @classmethod
     async def bulk_delete(
         cls: type[T],
+        session: AsyncSession,
         ids: list[int],
         soft_delete: bool = True
     ) -> None:
@@ -220,12 +252,8 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
             else:
                 stmt = sa.delete(cls).where(cls.id.in_(ids))
 
-            await cls.query_session.execute(stmt)
-            await cls.query_session.flush()
-            await cls.query_session.commit()
-        except Exception:
-            await cls.query_session.rollback()
-            raise
+            await session.execute(stmt)
+            await session.flush()
         finally:
             for id in ids:
                 cls.release_lock(id)
@@ -233,31 +261,27 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
     @classmethod
     async def bulk_restore(
         cls: type[T],
+        session: AsyncSession,
         ids: list[int],
         return_instances: bool = True
     ) -> list[T] | None:
         """批量恢复记录"""
-        try:
-            if not hasattr(cls, 'deleted_at'):
-                raise AttributeError(f"{cls.__name__} 不支持软删除")
+        if not hasattr(cls, 'deleted_at'):
+            raise AttributeError(f"{cls.__name__} 不支持软删除")
 
-            stmt = (
-                sa.update(cls)
-                .where(cls.id.in_(ids))
-                .values(deleted_at=None)
-            )
-            await cls.query_session.execute(stmt)
-            await cls.query_session.flush()
-            await cls.query_session.commit()
+        stmt = (
+            sa.update(cls)
+            .where(cls.id.in_(ids))
+            .values(deleted_at=None)
+        )
+        await session.execute(stmt)
+        await session.flush()
 
-            if return_instances:
-                stmt = sa.select(cls).where(cls.id.in_(ids))
-                result = await cls.query_session.execute(stmt)
-                return list(result.scalars().all())
-            return None
-        except Exception:
-            await cls.query_session.rollback()
-            raise
+        if return_instances:
+            stmt = sa.select(cls).where(cls.id.in_(ids))
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+        return None
 
     @classmethod
     async def query(
@@ -317,7 +341,7 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
         )).offset(options.offset).limit(options.limit)
 
         # 执行查询
-        result = await cls.query_session.execute(query)
+        result = await cls.query_session().execute(query)
         rows = result.all()
 
         if not rows:
@@ -361,9 +385,9 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
         if where_clause is not None:
             count_query = count_query.where(where_clause)
 
-        items = await cls.query_session.scalars(query)
+        items = await cls.query_session().scalars(query)
         items = items.all()
-        total = await cls.query_session.scalar(count_query) or 0
+        total = await cls.query_session().scalar(count_query) or 0
 
         if return_dict and items:
             items = [await item.to_dict() for item in items]
@@ -381,7 +405,7 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
         stmt = select(func.count()).select_from(cls)
         if filters:
             stmt = stmt.where(filters.build_query(cls))
-        return await cls.query_session.scalar(stmt) or 0
+        return await cls.query_session().scalar(stmt) or 0
 
     @classmethod
     async def exists(
@@ -455,13 +479,13 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
 
         return data
 
-    async def to_api_dict(self) -> dict[str, Any]:
+    async def to_api_dict(self, max_depth: int = 2) -> dict[str, Any]:
         """
         转换为API响应格式的字典
         默认排除一些敏感或内部字段
         """
         exclude_fields = ['password', 'deleted_at']
-        return await self.to_dict(exclude=exclude_fields)
+        return await self.to_dict(exclude=exclude_fields, max_depth=max_depth)
 
 class SoftDeleteMixin:
     """
@@ -608,3 +632,9 @@ class AuditLogMixin(DatabaseModel):
         if version["action"] in ["update", "restore"]:
             return version["changes"]["before"]
         return {}
+
+
+async def create_table():
+    """创建数据库表"""
+    async with async_engine.begin() as conn:
+        await conn.run_sync(DatabaseModel.metadata.create_all)

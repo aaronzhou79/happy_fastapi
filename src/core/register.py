@@ -15,7 +15,7 @@ from src.apps import router as apps_router
 from src.core.conf import settings
 from src.core.exceptions.exception_handlers import register_exception
 from src.core.responses.response_code import MsgSpecJSONResponse
-from src.database.db_session import create_table
+from src.common.data_model.base_model import create_table
 
 
 @asynccontextmanager

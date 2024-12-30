@@ -4,12 +4,12 @@ import asyncio
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 
 from src.common.data_model.query_fields import QueryOptions
 from src.core.middleware.jwt import JWTBearer
 from src.core.responses.response import response_base
-from src.database.db_session import CurrentSession
+from src.database.db_session import CurrentSession, async_audit_session, async_session
 
 from .model import Article, Comment, Department, User, article_schemas, comment_schemas, dept_schemas, user_schemas
 
@@ -22,6 +22,7 @@ def protected_route():
 
 @router.post("/lock_test")
 async def lock_test(
+    request: Request,
     dept_id: int,
     name: str
 ):
@@ -36,58 +37,52 @@ async def lock_test(
     await model.with_lock(lambda: do_something())
 
     # update 和 delete 方法已经内置了锁保护
-    data = await model.update(name=name)
+    async with async_audit_session(async_session(), request) as session:
+        data = await model.update(session=session, pk=model.id, name=name)
     return response_base.success(data=data)
 
 
 @router.post("/create_dept")
 async def create_dept(
-    session: CurrentSession,
+    request: Request,
     dept: dept_schemas["Create"]  # type: ignore
 ):
-    dept = Department(**dept.model_dump())
-    session.add(dept)
-    await session.flush()
-
-    data = await dept.to_dict()
+    async with async_audit_session(async_session(), request) as session:
+        data = await Department.create(session=session, **dept.model_dump())
 
     return response_base.success(data=data)
 
 
 @router.put("/update_dept")
 async def update_dept(
+    request: Request,
     dept_id: int,
     dept_update: dept_schemas["Update"]  # type: ignore
 ):
-    if not dept_id:
-        return response_base.fail(data="部门ID不能为空")
-    dept = await Department.get_by_id(dept_id)
-    if dept is None:
-        return response_base.fail(data="部门不存在")
-    await dept.update(**dept_update.model_dump())
+    async with async_audit_session(async_session(), request) as session:
+        data = await Department.update(session=session, pk=dept_id, **dept_update.model_dump())
 
-    data = await dept.to_dict()
     return response_base.success(data=data)
 
 @router.delete("/delete_dept")
 async def delete_dept(
+    request: Request,
     dept_id: int
 ):
-    dept = await Department.get_by_id(dept_id)
-    if not dept:
-        return response_base.fail(data="部门不存在")
-    await dept.delete()
+    async with async_audit_session(async_session(), request) as session:
+        await Department.delete(session=session, pk=dept_id)
     return response_base.success(data="部门删除成功")
 
 @router.get("/get_dept")
 async def get_dept(
+    request: Request,
     dept_id: int,
     max_depth: int = 2
 ):
     dept = await Department.get_by_id(dept_id)
     if not dept:
         return response_base.fail(data="部门不存在")
-    data = await dept.to_dict(max_depth=max_depth)
+    data = await dept.to_api_dict(max_depth=max_depth)
     return response_base.success(data=data)
 
 @router.post("/query_dept")

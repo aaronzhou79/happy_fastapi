@@ -15,7 +15,6 @@ from uuid import uuid4
 from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession, async_scoped_session, async_sessionmaker, create_async_engine
 
-from src.common.data_model.base_model import DatabaseModel
 from src.core.conf import settings
 
 if settings.DB_TYPE == 'sqlite':
@@ -93,7 +92,7 @@ async def async_audit_session(
 AsyncSessionScoped = async_scoped_session(async_session, scopefunc=asyncio.current_task)
 
 
-async def get_db(request: Request):
+async def get_db():
     async with AsyncSessionScoped() as session:
         try:
             yield session
@@ -106,15 +105,6 @@ async def get_db(request: Request):
 
 
 CurrentSession = Annotated[AuditAsyncSession, Depends(get_db)]
-
-
-DatabaseModel.query_session = AsyncSessionScoped()
-
-
-async def create_table():
-    """创建数据库表"""
-    async with async_engine.begin() as conn:
-        await conn.run_sync(DatabaseModel.metadata.create_all)
 
 
 def uuid4_str() -> str:
