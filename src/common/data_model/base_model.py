@@ -14,7 +14,7 @@ import asyncio
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
-from typing import Any, Literal, Optional, Sequence, Tuple, TypeVar
+from typing import Any, Literal, Optional, Sequence, Tuple, Type, TypeVar
 
 import sqlalchemy as sa
 
@@ -101,7 +101,53 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
 
         # 过滤审计数据
         def filter_data(data: dict) -> dict:
-            return {k: v for k, v in data.items() if k in audit_fields}
+            filtered = {}
+            # 处理普通字段
+            for k, v in data.items():
+                if k in audit_fields:
+                    filtered[k] = v
+            return filtered
+
+        # 处理关系数据的变更
+        def process_relationship_changes(data: dict) -> dict:
+            relationship_changes = {}
+            for rel_name, rel in cls.get_relationships().items():
+                if rel_name not in data:
+                    continue
+
+                rel_data = data[rel_name]
+                if not rel_data:
+                    continue
+
+                # 获取关联模型类
+                related_model = rel.mapper.class_
+
+                if rel.uselist:  # 一对多关系
+                    changes_list = []
+                    for item in rel_data:
+                        item_id = item.get('id')
+                        if item_id:
+                            # 更新或删除操作
+                            changes_list.append({
+                                'id': item_id,
+                                'action': 'update' if not item.get('deleted_at') else 'delete',
+                                'changes': filter_data(item)
+                            })
+                        else:
+                            # 新增操作
+                            changes_list.append({
+                                'action': 'create',
+                                'changes': filter_data(item)
+                            })
+                    relationship_changes[rel_name] = changes_list
+                else:  # 一对一关系
+                    if isinstance(rel_data, dict):
+                        relationship_changes[rel_name] = {
+                            'action': 'update' if rel_data.get('id') else 'create',
+                            'changes': filter_data(rel_data)
+                        }
+
+            return relationship_changes
 
         # 构建审计记录
         audit_log = {
@@ -110,7 +156,8 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
             'target_id': instance.id if instance else None,
             'changes': {
                 'before': filter_data(instance._dict) if instance else None,
-                'after': filter_data(changes) if changes else None
+                'after': filter_data(changes) if changes else None,
+                'relationships': process_relationship_changes(changes) if changes else None
             },
             'operator_id': meta.operator_id if meta else None,
             'comment': meta.comment if meta else None,
@@ -177,6 +224,46 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
         return {rel.key: rel for rel in sa.inspect(cls).mapper.relationships}
 
     @classmethod
+    async def _check_unique_constraints(
+        cls,
+        session: AsyncSession,
+        model: Type[Any],
+        data: dict[str, Any]
+    ) -> tuple[bool, Any]:
+        """检查唯一约束
+
+        Returns:
+            tuple[bool, Any]: (是否找到软删除的记录, 找到的记录)
+        """
+        # 获取模型的唯一约束
+        unique_constraints = []
+        for constraint in model.__table__.constraints:
+            if isinstance(constraint, sa.UniqueConstraint):
+                unique_constraints.extend(constraint.columns)
+
+        # 检查每个唯一约束字段
+        for column in unique_constraints:
+            field_name = column.name
+            if field_name in data:
+                value = data[field_name]
+                # 构建查询（包括软删除的记录）
+                stmt = select(model).where(
+                    getattr(model, field_name) == value
+                )
+                result = await session.execute(stmt)
+                existing_record = result.scalar_one_or_none()
+
+                if existing_record:
+                    # 如果记录存在但已软删除，返回该记录
+                    if hasattr(existing_record, 'deleted_at') and existing_record.deleted_at is not None:
+                        return True, existing_record
+                    # 如果记录存在且未软删除，抛出错误
+                    else:
+                        raise ValueError(f"字段 '{field_name}' 的值 '{value}' 已存在")
+
+        return False, None
+
+    @classmethod
     async def _handle_relationships(
         cls,
         session: AsyncSession,
@@ -211,17 +298,33 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
                 new_items = []
                 for item_data in rel_data:
                     item_id = item_data.get('id')
-                    if item_id and item_id in existing_map:
-                        # 更新现有数据
-                        item = existing_map[item_id]
-                        for key, value in item_data.items():
-                            if hasattr(item, key):
-                                setattr(item, key, value)
-                        # 确保外键值正确
-                        if foreign_key:
-                            setattr(item, foreign_key, instance.id)
-                        new_items.append(item)
-                        del existing_map[item_id]
+                    if item_id:
+                        # 检查记录是否存在
+                        stmt = select(related_model).where(related_model.id == item_id)
+                        result = await session.execute(stmt)
+                        item = result.scalar_one_or_none()
+
+                        if item:
+                            # 更新现有数据
+                            for key, value in item_data.items():
+                                if hasattr(item, key):
+                                    setattr(item, key, value)
+                            # 确保外键值正确
+                            if foreign_key:
+                                setattr(item, foreign_key, instance.id)
+                            new_items.append(item)
+                            if item.id in existing_map:
+                                del existing_map[item.id]
+                        else:
+                            # ID不存在，创建新数据
+                            new_item = related_model()
+                            for key, value in item_data.items():
+                                if hasattr(new_item, key):
+                                    setattr(new_item, key, value)
+                            # 设置外键值
+                            if foreign_key:
+                                setattr(new_item, foreign_key, instance.id)
+                            new_items.append(new_item)
                     else:
                         # 创建新数据
                         new_item = related_model()

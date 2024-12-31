@@ -13,9 +13,11 @@
     2. 生成创建 schema
     3. 生成更新 schema
 """
-from typing import Any, Type, TypeVar, Optional, Set
+from typing import Any, Type, TypeVar, Optional, Set, Tuple, Dict, Union
 
 import sqlalchemy as sa
+from sqlalchemy.dialects.mysql import JSON, LONGTEXT
+from sqlalchemy.types import TypeEngine
 
 from pydantic import BaseModel, ConfigDict, Field, create_model
 from sqlalchemy.sql.schema import ColumnDefault
@@ -29,27 +31,36 @@ class SchemaBase(BaseModel):
     model_config = ConfigDict(use_enum_values=True, from_attributes=True)
 
 
+def get_python_type(column: sa.Column) -> Type:
+    """获取列的 Python 类型"""
+    try:
+        # 尝试获取 python_type
+        return column.type.python_type
+    except NotImplementedError:
+        # 处理特殊类型
+        if isinstance(column.type, (JSON, sa.JSON)):
+            return Dict[str, Any]
+        elif isinstance(column.type, LONGTEXT):
+            return str
+        elif isinstance(column.type, sa.Enum):
+            return str
+        elif isinstance(column.type, sa.ARRAY):
+            return list
+        else:
+            # 默认返回 Any
+            return Any
+
+
 def create_schema_model(
     model_cls: Type[Any],
     schema_name: str | None = None,
     exclude: set[str] | None = None,
     include_relationships: bool = True,
-    include_many: bool = False,  # 是否包含一对多关系
+    include_many: bool = False,
     max_depth: int = 1,
-    _parent_type: Type[Any] | None = None  # 防止循环引用
+    _parent_type: Type[Any] | None = None
 ) -> Type[SchemaBase]:
-    """从 SQLAlchemy 模型创建 Pydantic 模型
-
-    Args:
-        model_cls: SQLAlchemy 模型类
-        schema_name: schema名称
-        exclude: 排除的字段
-        include_relationships: 是否包含关联字段
-        include_many: 是否包含一对多关系字段
-        max_depth: 关联数据的最大深度,默认为1
-        _parent_type: 父级模型类型,用于防止循环引用
-    """
-    # 获取模型信息
+    """从 SQLAlchemy 模型创建 Pydantic 模型"""
     mapper = sa.inspect(model_cls)
     fields = {}
     exclude = exclude or set()
@@ -58,9 +69,13 @@ def create_schema_model(
     for column in mapper.columns:
         if column.name in exclude:
             continue
-        python_type = column.type.python_type
+
+        # 获取 Python 类型
+        python_type = get_python_type(column)
+
         if column.nullable:
             python_type = Optional[python_type]
+
         # 获取默认值
         default = None
         if column.default is not None:
@@ -68,24 +83,23 @@ def create_schema_model(
                 default = column.default.arg
             else:
                 default = column.default
-        # 创建带有描述和默认值的字段
+
+        # 创建字段
         field = Field(
             default if default is not None else (None if column.nullable else ...),
             description=column.comment,
         )
         fields[column.name] = (python_type, field)
 
-    # 处理关联字段
+    # 处理关系字段
     if include_relationships and max_depth > 0:
         for name, rel in mapper.relationships.items():
             if name in exclude:
                 continue
 
-            # 跳过父级类型,防止循环引用
             if _parent_type and rel.mapper.class_ == _parent_type:
                 continue
 
-            # 获取关联模型的schema
             related_schema = create_schema_model(
                 rel.mapper.class_,
                 exclude=exclude,
@@ -95,20 +109,18 @@ def create_schema_model(
                 _parent_type=model_cls
             )
 
-            # 根据关系类型设置字段类型
-            if rel.uselist:  # 一对多关系
+            if rel.uselist:
                 if include_many:
                     field_type = list[related_schema]
                     default_value = []
                 else:
-                    continue  # 不包含一对多关系时跳过
-            else:  # 一对一/多对一关系
+                    continue
+            else:
                 field_type = Optional[related_schema]
                 default_value = None
 
             fields[name] = (field_type, Field(default=default_value))
 
-    # 创建新的 SchemaBase 子类
     return create_model(
         schema_name or f"{model_cls.__name__}Schema",
         __base__=SchemaBase,
@@ -120,16 +132,9 @@ def generate_schemas(
     model_cls: Type[Any],
     exclude_create: set[str] | None = None,
     exclude_update: set[str] | None = None,
-    include_relationships: set[str] | None = None,  # 需要包含的关系字段
-) -> tuple[Type[SchemaBase], Type[SchemaBase], Type[SchemaBase]]:
-    """生成完整的 CRUD schemas
-
-    Args:
-        model_cls: SQLAlchemy 模型类
-        exclude_create: 创建时排除的字段
-        exclude_update: 更新时排除的字段
-        include_relationships: 需要包含的关系字段名称集合
-    """
+    include_relationships: set[str] | None = None,
+) -> Tuple[Type[T], Type[T], Type[T]]:
+    """生成完整的 CRUD schemas"""
     # 基础 schema (包含所有字段)
     base_schema = create_schema_model(
         model_cls,

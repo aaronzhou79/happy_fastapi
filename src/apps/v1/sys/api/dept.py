@@ -15,7 +15,7 @@ from src.common.base_api import BaseAPI
 from src.core.responses.response import response_base
 from src.database.db_session import async_audit_session, async_session
 
-from ..model import Department, DepartmentCreate, DepartmentUpdate
+from ..model.depts import Department, DepartmentCreate, DepartmentUpdate
 
 dept_api = BaseAPI(
     model=Department,

@@ -10,7 +10,7 @@
 
 from src.common.base_api import BaseAPI
 
-from ..model import User, UserCreate, UserUpdate
+from ..model.users import User, UserCreate, UserUpdate
 
 user_api = BaseAPI(
     model=User,

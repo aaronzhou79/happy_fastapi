@@ -71,7 +71,7 @@ async_session = async_sessionmaker(
 @asynccontextmanager
 async def async_audit_session(
     session: AuditAsyncSession,
-    request: Request,
+    request: Request | None = None,
 ) -> AsyncGenerator[AuditAsyncSession, None]:
     """带审计功能的会话上下文管理器"""
     try:

@@ -20,12 +20,14 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     # 项目描述
     DESCRIPTION: str = "FastAPI"
+    # 项目API版本
+    API_V1_PATH: str = "/api/v1"
     # 项目文档地址
-    DOCS_URL: str = "/docs"
+    DOCS_URL: str = f"{API_V1_PATH}/docs"
     # 项目文档地址
-    OPENAPI_URL: str = "/openapi.json"
+    OPENAPI_URL: str = f"{API_V1_PATH}/openapi.json"
     # 项目文档地址
-    REDOC_URL: str = "/redoc"
+    REDOC_URL: str = f"{API_V1_PATH}/redoc"
 
     # 运行环境
     APP_ENV: Literal['dev', 'pro'] = "dev"
@@ -91,6 +93,45 @@ class Settings(BaseSettings):
             'supports_ilike': False
         }
     }
+
+    # Log
+    LOG_ROOT_LEVEL: str = 'NOTSET'
+    LOG_STD_FORMAT: str = (
+        '<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</> | <lvl>{level: <8}</> | '
+        '<cyan> {correlation_id} </> | <lvl>{message}</>'
+    )
+    LOG_LOGURU_FORMAT: str = (
+        '<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</> | <lvl>{level: <8}</> | '
+        '<cyan> {correlation_id} </> | <lvl>{message}</>'
+    )
+    LOG_CID_DEFAULT_VALUE: str = '-'
+    LOG_CID_UUID_LENGTH: int = 32  # must <= 32
+    LOG_STDOUT_LEVEL: str = 'INFO'
+    LOG_STDERR_LEVEL: str = 'ERROR'
+    LOG_STDOUT_FILENAME: str = 'fba_access.log'
+    LOG_STDERR_FILENAME: str = 'fba_error.log'
+
+    # Opera log
+    OPERA_LOG_PATH_EXCLUDE: list[str] = [
+        '/favicon.ico',
+        str(DOCS_URL),
+        str(REDOC_URL),
+        str(OPENAPI_URL),
+        f'{API_V1_PATH}/auth/login/swagger',
+        f'{API_V1_PATH}/oauth2/github/callback',
+        f'{API_V1_PATH}/oauth2/linux-do/callback',
+    ]
+    OPERA_LOG_ENCRYPT_TYPE: int = 1  # 0: AES (性能损耗); 1: md5; 2: ItsDangerous; 3: 不加密, others: 替换为 ******  # noqa: E501
+    OPERA_LOG_ENCRYPT_KEY_INCLUDE: list[str] = [  # 将加密接口入参参数对应的值
+        'password',
+        'old_password',
+        'new_password',
+        'confirm_password',
+    ]
+
+    # Trace ID
+    TRACE_ID_REQUEST_HEADER_KEY: str = 'X-Request-ID'
+
 
 @lru_cache
 def get_settings() -> Settings:
