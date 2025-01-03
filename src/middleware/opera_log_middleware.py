@@ -8,7 +8,7 @@ from starlette.datastructures import UploadFile
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 
-from src.apps.v1.sys.model.opera_log import OperaLog, OperaLogCreate
+from src.apps.v1.sys.model.opera_log import OperaLogCreate
 from src.apps.v1.sys.service.svr_opera_log import SvrOperaLog
 from src.common.dataclasses import RequestCallNext
 from src.common.enums import OperaLogCipherType, StatusType

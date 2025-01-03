@@ -10,12 +10,13 @@
 
 from src.common.base_api import BaseAPI
 
-from ..model.users import User, UserCreate, UserUpdate
+from ..models import User, UserSchemaBase, UserSchemaCreate, UserSchemaUpdate
 
 user_api = BaseAPI(
     model=User,
-    create_schema=UserCreate,
-    update_schema=UserUpdate,
+    create_schema=UserSchemaCreate,
+    update_schema=UserSchemaUpdate,
+    base_schema=UserSchemaBase,
     prefix="/user",
     gen_delete=True,
     tags=["用户管理"],

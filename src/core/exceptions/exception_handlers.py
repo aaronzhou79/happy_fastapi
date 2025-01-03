@@ -70,7 +70,7 @@ class GlobalExceptionHandler:
         )
 
 
-def register_exception(app: FastAPI):
+def register_exception(app: FastAPI) -> None:
     """注册异常处理器"""
 
     @app.exception_handler(RequestValidationError)

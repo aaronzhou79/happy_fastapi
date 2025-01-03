@@ -9,12 +9,12 @@
 
 from fastapi import APIRouter
 
-from .api.audit_log import audit_log_api
 from .api.dept import dept_api
+from .api.role import role_api
 from .api.user import user_api
 
 router = APIRouter(prefix="/sys")
 
 router.include_router(dept_api.router)
+router.include_router(role_api.router)
 router.include_router(user_api.router)
-router.include_router(audit_log_api.router)

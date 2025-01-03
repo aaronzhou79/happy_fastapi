@@ -6,16 +6,15 @@
 # @File    : __init__.py
 # @Software: Cursor
 # @Description: 数据初始化
-
-from src.apps.v1.demo_code.model import Article, Comment
-from src.apps.v1.sys.model import Department, User
-from src.database.db_session import async_session
+from src.apps.v1.sys.models import Dept, Role, User
+from src.database.db_session import async_session as async_session
 
 
-async def init_data():
+async def init_data() -> None:
+    """初始化数据"""
     async with async_session() as session:
         # 批量创建部门
-        depts = await Department.bulk_create(
+        depts = await Dept.bulk_create(
             session,
             [
                 {'name': '研发部'},
@@ -28,9 +27,11 @@ async def init_data():
                 {'name': '法务部'},
             ]
         )
+        if depts is None:
+            return
 
         # 批量创建用户
-        users = await User.bulk_create(
+        await User.bulk_create(
             session,
             [
                 {'name': '张三', 'email': 'zhangsan@example.com', 'password': '123456', 'dept_id': depts[0].id},
@@ -44,24 +45,13 @@ async def init_data():
             ]
         )
 
-        # 批量创建文章
-        articles = await Article.bulk_create(
+        await Role.bulk_create(
             session,
             [
-                {'title': '文章1', 'content': '文章内容1', 'author_id': users[0].id},
-                {'title': '文章2', 'content': '文章内容2', 'author_id': users[1].id},
-                {'title': '文章1_1', 'content': '文章内容1_1', 'author_id': users[0].id},
-                {'title': '文章2_1', 'content': '文章内容2_1', 'author_id': users[1].id}
-        ])
-
-        # 批量创建评论
-        await Comment.bulk_create(
-            session,
-            [
-                {'content': '评论内容1', 'article_id': articles[0].id},
-                {'content': '评论内容2', 'article_id': articles[1].id},
-                {'content': '评论内容1_1', 'article_id': articles[2].id},
-                {'content': '评论内容2_1', 'article_id': articles[3].id}
+                {'name': '总经理'},
+                {'name': '部门经理'},
+                {'name': '助理'},
+                {'name': '员工'},
             ]
         )
 

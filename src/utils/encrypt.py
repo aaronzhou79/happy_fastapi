@@ -13,7 +13,7 @@ from src.common.log import log
 
 
 class AESCipher:
-    def __init__(self, key: bytes | str):
+    def __init__(self, key: bytes | str) -> None:
         """
         :param key: 密钥，16/24/32 bytes 或 16 进制字符串
         """
@@ -73,7 +73,7 @@ class Md5Cipher:
 
 
 class ItsDCipher:
-    def __init__(self, key: bytes | str):
+    def __init__(self, key: bytes | str) -> None:
         """
         :param key: 密钥，16/24/32 bytes 或 16 进制字符串
         """

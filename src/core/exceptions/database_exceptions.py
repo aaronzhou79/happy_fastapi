@@ -67,7 +67,7 @@ class DBErrorHandler:
 
         # 处理IntegrityError
         if isinstance(exc, IntegrityError):
-            for error_type, (pattern, error_info) in cls.ERROR_PATTERNS.items():
+            for _error_type, (pattern, error_info) in cls.ERROR_PATTERNS.items():
                 if pattern in error_msg:
                     return error_info
             return DBErrorInfo(

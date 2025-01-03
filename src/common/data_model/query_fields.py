@@ -7,14 +7,14 @@
 # @Software: Cursor
 # @Description: 用于生成查询条件
 """
-    用于生成查询条件
+用于生成查询条件
 """
 from enum import Enum
 from typing import Any, Literal, Union
 
 import sqlalchemy as sa
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, ValidationInfo, field_validator
 from sqlalchemy.sql.elements import ColumnElement
 
 
@@ -48,8 +48,13 @@ class FilterCondition(BaseModel):
     value: Any | None = None
 
     @field_validator('value')
-    def validate_value(cls, v, info):
-        # 对于 IS_NULL 和 NOT_NULL 操作符,value 应该为 None
+    @classmethod
+    def validate_value(cls, v: Any, info: ValidationInfo) -> Any:
+        """
+        验证 value 的值
+
+        对于 IS_NULL 和 NOT_NULL 操作符,value 应该为 None
+        """
         if info.data.get('op') in [FilterOperator.IS_NULL, FilterOperator.NOT_NULL]:
             return None
         return v
@@ -63,12 +68,45 @@ class FilterGroup(BaseModel):
     )
 
     @field_validator('conditions')
-    def validate_conditions(cls, v):
+    @classmethod
+    def validate_conditions(
+        cls,
+        v: list[Union[FilterCondition, 'FilterGroup']],
+    ) -> list[Union[FilterCondition, 'FilterGroup']]:
+        """
+        验证 conditions 的值
+
+        如果 conditions 为空,则抛出 ValueError
+        """
         if not v:
             raise ValueError("conditions 不能为空")
         return v
 
-    def build_query(self, model_class) -> ColumnElement[bool]:
+    def _build_condition(self, field: Any, op: FilterOperator | str, value: Any) -> ColumnElement[bool]:
+        """构建单个查询条件"""
+        operators = {
+            FilterOperator.EQ: lambda: field == value,
+            "=": lambda: field == value,
+            FilterOperator.NE: lambda: field != value,
+            "!=": lambda: field != value,
+            FilterOperator.GT: lambda: field > value,
+            ">": lambda: field > value,
+            FilterOperator.GE: lambda: field >= value,
+            ">=": lambda: field >= value,
+            FilterOperator.LT: lambda: field < value,
+            "<": lambda: field < value,
+            FilterOperator.LE: lambda: field <= value,
+            "<=": lambda: field <= value,
+            FilterOperator.IN: lambda: field.in_(value),
+            FilterOperator.NIN: lambda: ~field.in_(value),
+            FilterOperator.LIKE: lambda: field.like(f"%{value}%"),
+            FilterOperator.ILIKE: lambda: field.ilike(f"%{value}%"),
+            FilterOperator.IS_NULL: lambda: field.is_(None),
+            FilterOperator.NOT_NULL: lambda: ~field.is_(None),
+        }
+        return operators[op]()
+
+    def build_query(self, model_class: type) -> ColumnElement[bool]:
         """构建SQLAlchemy查询条件"""
         clauses = []
         for condition in self.conditions:
@@ -76,34 +114,7 @@ class FilterGroup(BaseModel):
                 clauses.append(condition.build_query(model_class))
             else:
                 field = getattr(model_class, condition.field)
-                value = condition.value
-
-                match condition.op:
-                    case FilterOperator.EQ | "=":
-                        clause = field == value
-                    case FilterOperator.NE | "!=":
-                        clause = field != value
-                    case FilterOperator.GT | ">":
-                        clause = field > value
-                    case FilterOperator.GE | ">=":
-                        clause = field >= value
-                    case FilterOperator.LT | "<":
-                        clause = field < value
-                    case FilterOperator.LE | "<=":
-                        clause = field <= value
-                    case FilterOperator.IN:
-                        clause = field.in_(value)
-                    case FilterOperator.NIN:
-                        clause = ~field.in_(value)
-                    case FilterOperator.LIKE:
-                        clause = field.like(f"%{value}%")
-                    case FilterOperator.ILIKE:
-                        clause = field.ilike(f"%{value}%")
-                    case FilterOperator.IS_NULL:
-                        clause = field.is_(None)
-                    case FilterOperator.NOT_NULL:
-                        clause = ~field.is_(None)
-                clauses.append(clause)
+                clauses.append(self._build_condition(field, condition.op, condition.value))
 
         match self.couple:
             case LogicalOperator.AND:

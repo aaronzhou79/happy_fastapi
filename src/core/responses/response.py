@@ -1,13 +1,20 @@
-
+# src/core/responses/response.py
+# !/usr/bin/env python
+# -*- coding: utf-8 -*-
+# @Date    : 2024/12/29
+# @Author  : Aaron Zhou
+# @File    : response.py
+# @Software: Cursor
+# @Description: 统一数据返回模型
 from typing import Any
 
 from fastapi import Response
 
 from src.core.responses.response_code import MsgSpecJSONResponse, ResponseCode, ResponseCodeBase
 
-from .response_schema import ResponseSchema
+from .response_schema import ResponseModel
 
-__all__ = ['ResponseSchema', 'response_base']
+__all__ = ['ResponseModel', 'response_base']
 
 
 class ResponseBase:
@@ -26,7 +33,7 @@ class ResponseBase:
     """
 
     @staticmethod
-    def __response(*, res: ResponseCodeBase = ResponseCode.SUCCESS, data: Any | None = None) -> ResponseSchema:
+    def __response(*, res: ResponseCodeBase = ResponseCode.SUCCESS, data: Any | None = None) -> ResponseModel:
         """
         请求成功返回通用方法
 
@@ -34,14 +41,14 @@ class ResponseBase:
         :param data: 返回数据
         :return:
         """
-        return ResponseSchema(code=res.code, msg=res.msg, data=data)
+        return ResponseModel(code=res.code, msg=res.msg, data=data)
 
     def success(
         self,
         *,
         res: ResponseCodeBase = ResponseCode.SUCCESS,
         data: Any | None = None,
-    ) -> ResponseSchema:
+    ) -> ResponseModel:
         return self.__response(res=res, data=data)
 
     def fail(
@@ -49,7 +56,7 @@ class ResponseBase:
         *,
         res: ResponseCodeBase = ResponseCode.PARAMS_ERROR,
         data: Any = None,
-    ) -> ResponseSchema:
+    ) -> ResponseModel:
         return self.__response(res=res, data=data)
 
     @staticmethod

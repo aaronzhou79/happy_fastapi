@@ -7,21 +7,19 @@
 # @Software: Cursor
 # @Description: 数据库模型基类，提供基础能力支持
 """
-    数据库模型基类，提供基础能力支持
+数据库模型基类，提供基础能力支持
 """
 import asyncio
 
-from dataclasses import dataclass
 from datetime import datetime
-from enum import StrEnum
-from typing import Any, Literal, Optional, Sequence, Tuple, Type, TypeVar
+from typing import Any, Awaitable, Callable, Sequence, Tuple, Type, TypeVar
 
 import sqlalchemy as sa
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncAttrs, AsyncSession
 from sqlalchemy.ext.declarative import declared_attr
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, RelationshipProperty, mapped_column, registry
 
 from src.core.conf import settings
 from src.database.db_session import (
@@ -35,138 +33,55 @@ from .query_fields import FilterGroup, QueryOptions
 
 T = TypeVar('T', bound='DatabaseModel')
 
-
-# 审计操作类型
-class AuditActionType(StrEnum):
-    CREATE = "create"
-    UPDATE = "update"
-    DELETE = "delete"
-    RESTORE = "restore"
+mapper_registry = registry()
 
 
-@dataclass
-class AuditMeta:
-    """审计元数据"""
-    operator_id: int | None = None
-    comment: str | None = None
+class Base(AsyncAttrs, DeclarativeBase):
+    """
+    基础模型类
+    """
+    registry = mapper_registry
 
 
-class AuditConfig:
-    """审计配置"""
-    enabled: bool = False
-    # 需要审计的字段,为空表示全部
-    fields: set[str] = set()
-    # 需要忽略的字段
-    exclude_fields: set[str] = {'created_at', 'updated_at'}
+class SoftDeleteMixin(Base):
+    """
+    软删除混入类
+    """
+    __abstract__ = True
 
-    def __init__(
-        self,
-        enabled: bool = False,
-        fields: set[str] = set(),
-        exclude_fields: set[str] = {'created_at', 'updated_at'}
-    ):
-        self.enabled = enabled
-        self.fields = fields
-        self.exclude_fields = exclude_fields
+    deleted_at: Mapped[datetime | None] = mapped_column(sa.DateTime, nullable=True, comment="删除时间")
 
 
-class DatabaseModel(AsyncAttrs, DeclarativeBase):
+class TimestampMixin(Base):
+    """
+    时间戳混入类
+    """
+    __abstract__ = True
+
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime, nullable=False, default=TimeZone.now(), comment="创建时间"
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        sa.DateTime, nullable=False, default=TimeZone.now(), onupdate=TimeZone.now(), comment="更新时间"
+    )
+
+    def touch(self) -> None:
+        """更新更新时间"""
+        self.updated_at = TimeZone.now()
+
+
+class DatabaseModel(Base):
     """
     数据库模型基类，提供基础能力支持
     """
     __abstract__ = True
     _locks: dict[int, asyncio.Lock] = {}  # 用于存储每个实例的锁
-    audit_config: AuditConfig = AuditConfig()
+    # audit_config: AuditConfig = AuditConfig()
 
     @classmethod
-    def query_session(cls):
+    def query_session(cls) -> AuditAsyncSession:
         """返回数据库会话上下文管理器(类方法)"""
         return async_session()
-
-    @classmethod
-    async def _do_audit(
-        cls,
-        session: AuditAsyncSession,
-        action: AuditActionType,
-        instance: Optional['DatabaseModel'],
-        changes: dict[str, Any] | None = None,
-        meta: AuditMeta | None = None
-    ) -> None:
-        """执行审计"""
-        if not cls.audit_config.enabled:
-            return
-
-        # 获取审计字段
-        audit_fields = cls.audit_config.fields or set(cls.get_columns()) - cls.audit_config.exclude_fields
-
-        # 过滤审计数据
-        def filter_data(data: dict) -> dict:
-            filtered = {}
-            # 处理普通字段
-            for k, v in data.items():
-                if k in audit_fields:
-                    filtered[k] = v
-            return filtered
-
-        # 处理关系数据的变更
-        def process_relationship_changes(data: dict) -> dict:
-            relationship_changes = {}
-            for rel_name, rel in cls.get_relationships().items():
-                if rel_name not in data:
-                    continue
-
-                rel_data = data[rel_name]
-                if not rel_data:
-                    continue
-
-                # 获取关联模型类
-                related_model = rel.mapper.class_
-
-                if rel.uselist:  # 一对多关系
-                    changes_list = []
-                    for item in rel_data:
-                        item_id = item.get('id')
-                        if item_id:
-                            # 更新或删除操作
-                            changes_list.append({
-                                'id': item_id,
-                                'action': 'update' if not item.get('deleted_at') else 'delete',
-                                'changes': filter_data(item)
-                            })
-                        else:
-                            # 新增操作
-                            changes_list.append({
-                                'action': 'create',
-                                'changes': filter_data(item)
-                            })
-                    relationship_changes[rel_name] = changes_list
-                else:  # 一对一关系
-                    if isinstance(rel_data, dict):
-                        relationship_changes[rel_name] = {
-                            'action': 'update' if rel_data.get('id') else 'create',
-                            'changes': filter_data(rel_data)
-                        }
-
-            return relationship_changes
-
-        # 构建审计记录
-        audit_log = {
-            'action': action.value,
-            'target_type': cls.__name__,
-            'target_id': instance.id if instance else None,
-            'changes': {
-                'before': filter_data(instance._dict) if instance else None,
-                'after': filter_data(changes) if changes else None,
-                'relationships': process_relationship_changes(changes) if changes else None
-            },
-            'operator_id': meta.operator_id if meta else None,
-            'comment': meta.comment if meta else None,
-            'created_at': TimeZone.now()
-        }
-
-        # 保存审计日志
-        await AuditLog.create(session, **audit_log)
-
 
     @property
     def lock(self) -> asyncio.Lock:
@@ -175,7 +90,7 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
             self._locks[self.primary_key_value] = asyncio.Lock()
         return self._locks[self.primary_key_value]
 
-    async def with_lock(self, callback) -> Any:
+    async def with_lock(self, callback: Callable[[], Awaitable[Any]]) -> Any:
         """使用同步锁执行操作"""
         async with self.lock:
             return await callback()
@@ -188,12 +103,15 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
 
     # 使用类名小写作为表名
     @declared_attr.directive
-    def __tablename__(cls) -> str:
-        return cls.__name__.lower()
+    def __tablename__(self) -> str:
+        """设置/获取表名"""
+        return self.__name__.lower()
 
     # 基础字段
     id: Mapped[int] = mapped_column(sa.Integer, primary_key=True, autoincrement=True, comment="主键ID")
-    created_at: Mapped[datetime] = mapped_column(sa.DateTime, nullable=False, default=TimeZone.now(), comment="创建时间")
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime, nullable=False, default=TimeZone.now(), comment="创建时间"
+    )
     updated_at: Mapped[datetime] = mapped_column(
         sa.DateTime, nullable=False, default=TimeZone.now(), onupdate=TimeZone.now(), comment="更新时间"
     )
@@ -258,8 +176,7 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
                     if hasattr(existing_record, 'deleted_at') and existing_record.deleted_at is not None:
                         return True, existing_record
                     # 如果记录存在且未软删除，抛出错误
-                    else:
-                        raise ValueError(f"字段 '{field_name}' 的值 '{value}' 已存在")
+                    raise ValueError(f"字段 '{field_name}' 的值 '{value}' 已存在")
 
         return False, None
 
@@ -276,99 +193,116 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
                 continue
 
             rel_data = data[rel_name]
-            if rel_data is None:
+            related_model = rel.mapper.class_
+            foreign_key = cls._get_foreign_key(rel)
+            if foreign_key is None:
                 continue
 
-            # 获取关联模型类
-            related_model = rel.mapper.class_
-
-            # 获取外键字段名
-            foreign_key = None
-            for pair in rel.local_remote_pairs:
-                if pair[0].name in cls.get_columns():
-                    foreign_key = pair[1].name
-                    break
-
             if rel.uselist:  # 一对多关系
-                # 获取现有关系数据
-                existing_items = await getattr(instance.awaitable_attrs, rel_name)
-                existing_map = {item.id: item for item in existing_items}
-
-                # 处理新的关系数据
-                new_items = []
-                for item_data in rel_data:
-                    item_id = item_data.get('id')
-                    if item_id:
-                        # 检查记录是否存在
-                        stmt = select(related_model).where(related_model.id == item_id)
-                        result = await session.execute(stmt)
-                        item = result.scalar_one_or_none()
-
-                        if item:
-                            # 更新现有数据
-                            for key, value in item_data.items():
-                                if hasattr(item, key):
-                                    setattr(item, key, value)
-                            # 确保外键值正确
-                            if foreign_key:
-                                setattr(item, foreign_key, instance.id)
-                            new_items.append(item)
-                            if item.id in existing_map:
-                                del existing_map[item.id]
-                        else:
-                            # ID不存在，创建新数据
-                            new_item = related_model()
-                            for key, value in item_data.items():
-                                if hasattr(new_item, key):
-                                    setattr(new_item, key, value)
-                            # 设置外键值
-                            if foreign_key:
-                                setattr(new_item, foreign_key, instance.id)
-                            new_items.append(new_item)
-                    else:
-                        # 创建新数据
-                        new_item = related_model()
-                        for key, value in item_data.items():
-                            if hasattr(new_item, key):
-                                setattr(new_item, key, value)
-                        # 设置外键值
-                        if foreign_key:
-                            setattr(new_item, foreign_key, instance.id)
-                        new_items.append(new_item)
-
-                # 处理不再存在的数据
-                for item in existing_map.values():
-                    if hasattr(item, 'deleted_at'):
-                        # 软删除时只设置deleted_at，保持其他字段不变
-                        setattr(item, 'deleted_at', TimeZone.now())
-                        new_items.append(item)  # 保留在关系中
-                    else:
-                        # 硬删除
-                        await session.delete(item)
-
-                # 更新关系
-                setattr(instance, rel_name, new_items)
-            else:  # 一对一/多对一关系
-                if isinstance(rel_data, dict):
-                    related_instance = await getattr(instance.awaitable_attrs, rel_name)
-                    if related_instance:
-                        # 更新现有数据
-                        for key, value in rel_data.items():
-                            if hasattr(related_instance, key):
-                                setattr(related_instance, key, value)
-                        # 确保外键值正确
-                        if foreign_key:
-                            setattr(related_instance, foreign_key, instance.id)
-                    else:
-                        # 创建新数据
-                        related_instance = related_model(**rel_data)
-                        # 设置外键值
-                        if foreign_key:
-                            setattr(related_instance, foreign_key, instance.id)
-                        setattr(instance, rel_name, related_instance)
+                await cls._handle_one_to_many_relationship(
+                    session, instance, rel_name, rel_data, related_model, foreign_key
+                )
 
     @classmethod
-    async def create(cls: type[T], session: AuditAsyncSession, **kwargs) -> dict:
+    async def _handle_one_to_many_relationship(
+        cls,
+        session: AsyncSession,
+        instance: 'DatabaseModel',
+        rel_name: str,
+        rel_data: list[dict[str, Any]] | None,
+        related_model: Type['DatabaseModel'],
+        foreign_key: str
+    ) -> None:
+        """处理一对多关系"""
+        existing_items = await getattr(instance.awaitable_attrs, rel_name)
+        existing_map = {item.id: item for item in existing_items}
+        new_items = []
+
+        if rel_data is not None:
+            for item_data in rel_data:
+                item_id = item_data.get('id')
+                if item_id:
+                    item = await cls._get_or_create_related_instance(
+                        session, related_model, item_id, item_data
+                    )
+                    if item:
+                        cls._update_instance(item, item_data)
+                        if foreign_key:
+                            setattr(item, foreign_key, instance.id)
+                        new_items.append(item)
+                        if item.id in existing_map:
+                            del existing_map[item.id]
+                else:
+                    item = cls._create_related_instance(related_model, item_data)
+                    if foreign_key:
+                        setattr(item, foreign_key, instance.id)
+                    new_items.append(item)
+
+        await cls._handle_removed_items(session, list(existing_map.values()))
+        setattr(instance, rel_name, new_items)
+
+    @classmethod
+    def _get_foreign_key(cls, rel: RelationshipProperty) -> str | None:
+        """获取外键字段名"""
+        if rel.local_remote_pairs is None:
+            return None
+        for pair in rel.local_remote_pairs:
+            if pair[0].name in cls.get_columns():
+                return pair[1].name
+        return None
+
+    @classmethod
+    async def _get_or_create_related_instance(
+        cls,
+        session: AsyncSession,
+        related_model: Type['DatabaseModel'],
+        item_id: Any,
+        item_data: dict[str, Any]
+    ) -> 'DatabaseModel':
+        """获取或创建关联实例"""
+        stmt = select(related_model).where(related_model.id == item_id)
+        result = await session.execute(stmt)
+        item = result.scalar_one_or_none()
+        if not item:
+            item = cls._create_related_instance(related_model, item_data)
+        return item
+
+    @classmethod
+    def _create_related_instance(
+        cls,
+        related_model: Type['DatabaseModel'],
+        item_data: dict[str, Any]
+    ) -> 'DatabaseModel':
+        """创建关联实例"""
+        return related_model(**item_data)
+
+    @classmethod
+    def _update_instance(
+        cls,
+        instance: 'DatabaseModel',
+        data: dict[str, Any]
+    ) -> None:
+        """更新实例字段"""
+        for key, value in data.items():
+            if hasattr(instance, key) and value is not None:  # 只更新非 None 值
+                setattr(instance, key, value)
+
+    @classmethod
+    async def _handle_removed_items(
+        cls,
+        session: AsyncSession,
+        items: list['DatabaseModel']
+    ) -> None:
+        """处理不再存在的数据（软删除或硬删除）"""
+        for item in items:
+            if hasattr(item, 'deleted_at'):
+                setattr(item, 'deleted_at', TimeZone.now())
+                await session.merge(item)  # 保留在关系中
+            else:
+                await session.delete(item)  # 硬删除
+
+    @classmethod
+    async def create(cls: type[T], session: AuditAsyncSession, **kwargs: Any) -> dict:
         """创建记录(支持关系数据)"""
         # 分离关系数据
         relationship_data = {}
@@ -388,25 +322,20 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
         await cls._handle_relationships(session, instance, relationship_data)
         await session.flush()
 
-        # 记录审计
-        await cls._do_audit(
-            session,
-            AuditActionType.CREATE,
-            instance,
-            kwargs,
-            AuditMeta(operator_id=session.user_id)
-        )
-
         return await instance.to_api_dict()
 
     @classmethod
-    async def update(cls: type[T], session: AuditAsyncSession, pk: int, **kwargs) -> dict:
+    async def update(cls: type[T], session: AuditAsyncSession, **kwargs: Any) -> dict:
         """更新记录(支持关系数据)"""
+        primary_key_name = cls.get_primary_key()
+        if primary_key_name not in kwargs:
+            raise ValueError(f"没有配置主键{primary_key_name}！")
+        pk = kwargs.pop(primary_key_name)
         if not pk:
-            raise ValueError("主键ID不能为空")
+            raise ValueError(f"主键{primary_key_name}不能为空！")
 
         # 查询实例
-        stmt = select(cls).where(cls.id == pk)
+        stmt = select(cls).where(getattr(cls, primary_key_name) == pk)
         result = await session.execute(stmt)
         instance = result.scalar_one_or_none()
 
@@ -429,40 +358,26 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
         # 处理关系数据
         await cls._handle_relationships(session, instance, relationship_data)
 
-        # 记录审计
-        await cls._do_audit(
-            session,
-            AuditActionType.UPDATE,
-            instance,
-            kwargs,
-            AuditMeta(operator_id=session.user_id)
-        )
-
         await session.flush()
         return await instance.to_api_dict()
 
     @classmethod
-    async def delete(cls: type[T], session: AuditAsyncSession, pk: int) -> None:
+    async def delete(cls: type[T], session: AuditAsyncSession, **kwargs: Any) -> None:
         """删除（带锁保护）"""
+        primary_key_name = cls.get_primary_key()
+        if primary_key_name not in kwargs:
+            raise ValueError(f"没有配置主键{primary_key_name}！")
+        pk = kwargs.pop(primary_key_name)
         if not pk:
-            raise ValueError("主键ID不能为空")
+            raise ValueError(f"主键{primary_key_name}不能为空！")
 
         # 在同一会话中查询实例
-        stmt = select(cls).where(cls.id == pk)
+        stmt = select(cls).where(getattr(cls, primary_key_name) == pk)
         result = await session.execute(stmt)
         instance = result.scalar_one_or_none()
 
         if instance is None:
             raise ValueError("记录不存在")
-
-        # 记录审计
-        await cls._do_audit(
-            session,
-            AuditActionType.DELETE,
-            instance,
-            None,
-            AuditMeta(operator_id=session.user_id)
-        )
 
         if hasattr(instance, 'deleted_at'):
             if getattr(instance, 'deleted_at') is not None:
@@ -474,29 +389,33 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
         await session.flush()
 
     @classmethod
-    async def restore(cls: type[T], pk: int, session: AuditAsyncSession) -> None:
+    async def restore(cls: type[T], session: AuditAsyncSession, **kwargs: Any) -> None:
         """恢复"""
+        primary_key_name = cls.get_primary_key()
+        if primary_key_name not in kwargs:
+            raise ValueError(f"没有配置主键{primary_key_name}！")
+        pk = kwargs.pop(primary_key_name)
         if not pk:
-            raise ValueError("主键ID不能为空")
+            raise ValueError(f"主键{primary_key_name}不能为空！")
 
-        stmt = select(cls).where(cls.id == pk)
+        stmt = select(cls).where(getattr(cls, primary_key_name) == pk)
         result = await session.execute(stmt)
         instance = result.scalar_one_or_none()
 
         if instance is None:
             raise ValueError("记录不存在")
 
-        # 记录审计
-        await cls._do_audit(
-            session,
-            AuditActionType.RESTORE,
-            instance,
-            {'deleted_at': None},
-            AuditMeta(operator_id=session.user_id)
-        )
+        if hasattr(instance, 'deleted_at'):
+            setattr(instance, 'deleted_at', None)
+        else:
+            raise ValueError("记录未被软删除")
 
-        setattr(instance, 'deleted_at', None)
         await session.flush()
+
+    @classmethod
+    def get_primary_key(cls) -> str:
+        """获取主键字段名"""
+        return cls.__mapper__.primary_key[0].name
 
     @property
     def primary_key_value(self) -> Any:
@@ -513,16 +432,24 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
         return f"<{self.__class__.__name__}(id={self.primary_key_value})>"
 
     @classmethod
-    async def get_by_id(cls: type[T], id: int) -> T | None:
+    async def get_by_id(cls: type[T], session: AuditAsyncSession, **kwargs: Any) -> T | None:
         """通过ID获取记录"""
-        stmt = sa.select(cls).where(cls.id == id)
-        result = await cls.query_session().execute(stmt)
+        primary_key_name = cls.get_primary_key()
+        if primary_key_name not in kwargs:
+            raise ValueError(f"没有配置主键{primary_key_name}！")
+        pk = kwargs.pop(primary_key_name)
+        if not pk:
+            raise ValueError(f"主键{primary_key_name}不能为空！")
+
+        stmt = select(cls).where(getattr(cls, primary_key_name) == pk)
+        result = await session.execute(stmt)
         return result.scalar_one_or_none()
 
     @classmethod
     async def get_all(
         cls: type[T],
         *,
+        session: AuditAsyncSession,
         include_deleted: bool = False,
         offset: int = 0,
         limit: int = 100
@@ -531,13 +458,13 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
         stmt = sa.select(cls).offset(offset).limit(limit)
         if hasattr(cls, 'deleted_at') and not include_deleted:
             stmt = stmt.where(getattr(cls, 'deleted_at').is_(None))
-        result = await cls.query_session().execute(stmt)
+        result = await session.execute(stmt)
         return list(result.scalars().all())
 
     @classmethod
     async def bulk_create(
         cls: type[T],
-        session: AsyncSession,
+        session: AuditAsyncSession,
         items: list[dict[str, Any]],
         return_instances: bool = True
     ) -> list[T] | None:
@@ -627,18 +554,20 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
     @classmethod
     async def query(
         cls: type[T],
+        session: AuditAsyncSession,
         options: QueryOptions | None = None,
         return_dict: bool = True
     ) -> Sequence[T] | Sequence[dict]:
         """
         通用查询方法
         """
-        items, _ = await cls.query_with_count(options=options, return_dict=return_dict)
+        items, _ = await cls.query_with_count(session=session, options=options, return_dict=return_dict)
         return items
 
     @classmethod
     async def query_with_count(
         cls: type[T],
+        session: AuditAsyncSession,
         options: QueryOptions | None = None,
         return_dict: bool = True
     ) -> Tuple[Sequence[T] | Sequence[dict], int]:
@@ -651,13 +580,13 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
 
         # 根据数据库特性选择查询策略
         if features.get('supports_window_functions'):
-            return await cls._query_with_count_window(options, return_dict)
-        else:
-            return await cls._query_with_count_basic(options, return_dict)
+            return await cls._query_with_count_window(session, options, return_dict)
+        return await cls._query_with_count_basic(session, options, return_dict)
 
     @classmethod
     async def _query_with_count_window(
         cls: type[T],
+        session: AuditAsyncSession,
         options: QueryOptions,
         return_dict: bool
     ) -> Tuple[Sequence[T] | Sequence[dict], int]:
@@ -682,7 +611,7 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
         )).offset(options.offset).limit(options.limit)
 
         # 执行查询
-        result = await cls.query_session().execute(query)
+        result = await session.execute(query)
         rows = result.all()
 
         if not rows:
@@ -703,6 +632,7 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
     @classmethod
     async def _query_with_count_basic(
         cls: type[T],
+        session: AuditAsyncSession,
         options: QueryOptions,
         return_dict: bool
     ) -> Tuple[Sequence[T] | Sequence[dict], int]:
@@ -726,9 +656,9 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
         if where_clause is not None:
             count_query = count_query.where(where_clause)
 
-        items = await cls.query_session().scalars(query)
+        items = await session.scalars(query)
         items = items.all()
-        total = await cls.query_session().scalar(count_query) or 0
+        total = await session.scalar(count_query) or 0
 
         if return_dict and items:
             items = [await item.to_dict() for item in items]
@@ -738,6 +668,7 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
     @classmethod
     async def count(
         cls: type[T],
+        session: AuditAsyncSession,
         filters: FilterGroup | None = None
     ) -> int:
         """
@@ -746,32 +677,68 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
         stmt = select(func.count()).select_from(cls)
         if filters:
             stmt = stmt.where(filters.build_query(cls))
-        return await cls.query_session().scalar(stmt) or 0
+        return await session.scalar(stmt) or 0
 
     @classmethod
     async def exists(
         cls: type[T],
+        session: AuditAsyncSession,
         filters: FilterGroup | None = None
     ) -> bool:
         """
         检查记录是否存在
         """
-        return await cls.count(filters) > 0
+        return await cls.count(session, filters) > 0
 
     @classmethod
     def filter_attrs(cls, data: dict[str, Any]) -> dict[str, Any]:
         """过滤掉不存在的属性"""
         return {k: v for k, v in data.items() if hasattr(cls, k)}
 
+    async def _process_relationship(
+        self,
+        rel_name: str,
+        exclude: list[str] | None,
+        include: list[str] | None,
+        max_depth: int,
+        _depth: int,
+    ) -> dict[str, Any] | list[dict[str, Any]] | None:
+        """处理关系对象的转换"""
+        value = await getattr(self.awaitable_attrs, rel_name)
+        if value is None:
+            return None
+
+        if hasattr(value, 'to_dict'):
+            return await value.to_dict(
+                exclude=exclude,
+                include=include,
+                _parent_type=self.__class__,
+                max_depth=max_depth,
+                _depth=_depth + 1
+            )
+        if isinstance(value, list):
+            return [
+                await item.to_dict(
+                    exclude=exclude,
+                    include=include,
+                    _parent_type=self.__class__,
+                    max_depth=max_depth,
+                    _depth=_depth + 1
+                ) if hasattr(item, 'to_dict') else item
+                for item in value
+            ]
+        return value
+
     async def to_dict(
         self,
+        *,
         exclude: list[str] | None = None,
         include: list[str] | None = None,
         _parent_type: type | None = None,
         max_depth: int = 2,
         _depth: int = 1
     ) -> dict[str, Any]:
-        # 如果超过最大深度,直接返回 ID
+        """转换为字典"""
         if _depth > max_depth:
             return {"id": self.id}
 
@@ -781,94 +748,36 @@ class DatabaseModel(AsyncAttrs, DeclarativeBase):
         if exclude:
             data = {k: v for k, v in data.items() if k not in exclude}
 
-        # 如果已达到最大深度,跳过关系对象处理
         if _depth == max_depth:
             return data
 
-        # 处理关系对象
         for rel_name, rel in self.get_relationships().items():
             if include and rel_name not in include:
                 continue
             if exclude and rel_name in exclude:
                 continue
-
-            # 跳过父级类型的关系
             if _parent_type and rel.mapper.class_ == _parent_type:
                 continue
 
-            value = await getattr(self.awaitable_attrs, rel_name)
-            if value is not None:
-                if hasattr(value, 'to_dict'):
-                    data[rel_name] = await value.to_dict(
-                        exclude=exclude,
-                        include=include,
-                        _parent_type=self.__class__,
-                        max_depth=max_depth,
-                        _depth=_depth + 1
-                    )
-                elif isinstance(value, list):
-                    data[rel_name] = [
-                        await item.to_dict(
-                            exclude=exclude,
-                            include=include,
-                            _parent_type=self.__class__,
-                            max_depth=max_depth,
-                            _depth=_depth + 1
-                        ) if hasattr(item, 'to_dict') else item
-                        for item in value
-                    ]
+            result = await self._process_relationship(
+                rel_name, exclude, include, max_depth, _depth
+            )
+            if result is not None:
+                data[rel_name] = result
 
         return data
 
     async def to_api_dict(self, max_depth: int = 2) -> dict[str, Any]:
         """
         转换为API响应格式的字典
+
         默认排除一些敏感或内部字段
         """
         exclude_fields = ['password']
         return await self.to_dict(exclude=exclude_fields, max_depth=max_depth)
 
 
-class SoftDeleteMixin:
-    """
-    软删除混入类
-    """
-    __abstract__ = True
-
-    deleted_at: Mapped[datetime | None] = mapped_column(sa.DateTime, nullable=True, comment="删除时间")
-
-
-class TimestampMixin:
-    """
-    时间戳混入类
-    """
-    __abstract__ = True
-
-    created_at: Mapped[datetime] = mapped_column(
-        sa.DateTime, nullable=False, default=TimeZone.now(), comment="创建时间"
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        sa.DateTime, nullable=False, default=TimeZone.now(), onupdate=TimeZone.now(), comment="更新时间"
-    )
-
-    def touch(self) -> None:
-        """更新更新时间"""
-        self.updated_at = TimeZone.now()
-
-
-class AuditLog(DatabaseModel):
-    """审计日志表"""
-    __tablename__: Literal['sys_audit_logs'] = 'sys_audit_logs'
-    id: Mapped[int] = mapped_column(sa.Integer, primary_key=True, autoincrement=True, comment="ID")
-    target_type: Mapped[str] = mapped_column(sa.String(50), nullable=False, comment="目标类型")
-    target_id: Mapped[int] = mapped_column(sa.Integer, nullable=False, comment="目标ID")
-    action: Mapped[str] = mapped_column(sa.String(20), nullable=False, comment="操作类型")
-    changes: Mapped[dict] = mapped_column(sa.JSON, nullable=False, comment="变更内容")
-    operator_id: Mapped[int] = mapped_column(sa.Integer, nullable=True, comment="操作人ID")
-    comment: Mapped[str] = mapped_column(sa.String(500), nullable=True, comment="备注")
-
-
-async def create_table():
+async def create_table() -> None:
     """创建数据库表"""
     async with async_engine.begin() as conn:
-        await conn.run_sync(DatabaseModel.metadata.create_all)
+        await conn.run_sync(Base.metadata.create_all)

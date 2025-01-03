@@ -44,7 +44,7 @@ class AuditAsyncSession(AsyncSession):
         return self._user_id
 
     @user_id.setter
-    def user_id(self, value: int | None):
+    def user_id(self, value: int | None) -> None:
         self._user_id = value
 
 
@@ -76,15 +76,15 @@ async def async_audit_session(
     """带审计功能的会话上下文管理器"""
     try:
         if request and hasattr(request, 'user_id'):
-            session.user_id = getattr(request, 'user_id')
+            session.user_id = request.user_id
 
         yield session
 
         await session.commit()
 
-    except Exception as e:
+    except Exception:
         await session.rollback()
-        raise e
+        raise
     finally:
         await session.close()
 
@@ -97,9 +97,9 @@ async def get_db():
         try:
             yield session
             await session.commit()
-        except Exception as se:
+        except Exception:
             await session.rollback()
-            raise se
+            raise
         finally:
             await session.close()
 

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from typing import Any
 
 from jose import jwt
@@ -22,18 +22,19 @@ def create_access_token(subject: str | Any, expires_delta: timedelta | None = No
         )
 
     to_encode = {"exp": expire, "sub": str(subject)}
-    encoded_jwt = jwt.encode(
+    return jwt.encode(
         to_encode,
         settings.JWT_SECRET_KEY,
         algorithm=settings.JWT_ALGORITHM
     )
-    return encoded_jwt
+
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     验证密码
     """
     return pwd_context.verify(plain_password, hashed_password)
+
 
 def get_password_hash(password: str) -> str:
     """

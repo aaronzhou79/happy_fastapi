@@ -19,7 +19,7 @@ class InterceptHandler(logging.Handler):
     See https://loguru.readthedocs.io/en/stable/overview.html#entirely-compatible-with-standard-logging
     """
 
-    def emit(self, record: logging.LogRecord):
+    def emit(self, record: logging.LogRecord) -> None:
         # Get corresponding Loguru level if it exists
         try:
             level = logger.level(record.levelname).name
@@ -35,7 +35,7 @@ class InterceptHandler(logging.Handler):
         logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
 
 
-def setup_logging():
+def setup_logging() -> None:
     """
     From https://pawamoy.github.io/posts/unify-logging-for-a-gunicorn-uvicorn-app/
     https://github.com/pawamoy/pawamoy.github.io/issues/17
@@ -86,7 +86,7 @@ def setup_logging():
     )
 
 
-def set_customize_logfile():
+def set_customize_logfile() -> None:
     log_path = path_conf.LOG_DIR
     if not os.path.exists(log_path):
         os.mkdir(log_path)

@@ -1,14 +1,16 @@
-from fastapi import Request, HTTPException
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import jwt, JWTError
+
+from fastapi import HTTPException, Request
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError, jwt
+
 from src.core.conf import settings
-from typing import Optional
+
 
 class JWTBearer(HTTPBearer):
-    def __init__(self, auto_error: bool = True):
+    def __init__(self, auto_error: bool = True) -> None:
         super(JWTBearer, self).__init__(auto_error=auto_error)
 
-    async def __call__(self, request: Request) -> Optional[str]:
+    async def __call__(self, request: Request) -> str | None:
         credentials: HTTPAuthorizationCredentials | None = await super(JWTBearer, self).__call__(request)
         
         if credentials:
@@ -23,11 +25,10 @@ class JWTBearer(HTTPBearer):
                     detail="无效的token或token已过期"
                 )
             return credentials.credentials
-        else:
-            raise HTTPException(
-                status_code=403,
-                detail="无效的授权代码"
-            )
+        raise HTTPException(
+            status_code=403,
+            detail="无效的授权代码"
+        )
 
     def verify_jwt(self, jwt_token: str) -> bool:
         try:

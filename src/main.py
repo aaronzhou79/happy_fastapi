@@ -24,5 +24,5 @@ if __name__ == '__main__':
         config.setup_event_loop()
         server = uvicorn.Server(config)
         server.run()
-    except Exception as e:
-        raise e
+    except Exception:
+        raise
