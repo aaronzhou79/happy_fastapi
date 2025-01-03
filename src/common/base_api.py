@@ -1,7 +1,8 @@
+import asyncio
 from enum import Enum
 from typing import Any, Callable, Generic, Type, TypeVar
 
-from aiocache import RedisCache, cached, caches
+from aiocache import RedisCache, cached
 from aiocache.serializers import PickleSerializer
 from fastapi import APIRouter, Body, Path, Query, Request
 from fastapi.params import Depends
@@ -12,10 +13,12 @@ from src.common.data_model.base_schema import BaseSchema
 from src.common.data_model.query_fields import QueryOptions
 from src.core.responses.response import response_base
 from src.core.responses.response_schema import ResponseModel
-from src.database.cache.cache_conf import generate_cache_key, get_redis_settings, redis_cache
+from src.database.cache.cache_conf import generate_cache_key, get_redis_settings
 from src.database.cache.cache_plugins import CacheLogPlugin
 from src.database.cache.cache_utils import CacheManager
+from src.database.db_redis import redis_client
 from src.database.db_session import CurrentSession, async_audit_session, async_session
+from src.database.redis_utils import RedisManager
 
 # 泛型类型变量
 ModelType = TypeVar("ModelType", bound=DatabaseModel)
@@ -64,6 +67,7 @@ class BaseAPI(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         self.cache_ttl = cache_ttl
         self.cache_prefix = f"{self.model.__name__}"
         self.cache_manager = CacheManager(prefix=self.cache_prefix, default_ttl=self.cache_ttl)
+        self.redis_manager = RedisManager(prefix=self.cache_prefix)
         self.router = APIRouter(
             prefix=self.prefix,
             tags=self.tags or [],
@@ -130,11 +134,15 @@ class BaseAPI(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             data: Annotated[self.update_schema, Body(..., description="更新模型")]  # type: ignore
         ) -> ResponseModel[self.base_schema]:  # type: ignore
             key = generate_cache_key(self.cache_prefix, f"id_{data.id}")
-            data = await self.cache_manager.get(key)
-            await self.cache_manager.delete(key)
+            await redis_client.delete_prefix(key)
 
             async with async_audit_session(async_session(), request) as session:
                 result = await self.model.update(session=session, **data.model_dump(exclude_unset=True))
+
+            # 延迟50ms后再次删除缓存，防止并发删除缓存时出现缓存不一致
+            await redis_client.delete_prefix(key)
+            await asyncio.sleep(0.05)
+
             return response_base.success(data=result)
 
     def _register_delete(self) -> None:
@@ -148,8 +156,16 @@ class BaseAPI(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             *,
             id: Annotated[int, Path(..., description="要删除的id")]
         ) -> ResponseModel[str]:
+            key = generate_cache_key(self.cache_prefix, f"id_{id}")
+            await redis_client.delete_prefix(key)
+
             async with async_audit_session(async_session(), request) as session:
                 await self.model.delete(session=session, id=id)
+
+            # 延迟50ms后再次删除缓存，防止并发删除缓存时出现缓存不一致
+            await asyncio.sleep(0.05)
+            await redis_client.delete_prefix(key)
+
             return response_base.success(data=f"{self.model.__name__}删除成功")
 
     def _register_bulk_delete(self) -> None:
@@ -163,8 +179,18 @@ class BaseAPI(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             *,
             ids: Annotated[list[int], Query(..., description="要删除的id列表")]
         ) -> ResponseModel[str]:
+            for id in ids:
+                key = generate_cache_key(self.cache_prefix, f"id_{id}")
+                await redis_client.delete_prefix(key)
+
             async with async_audit_session(async_session(), request) as session:
                 await self.model.bulk_delete(session=session, ids=ids)
+
+            # 延迟50ms后再次删除缓存
+            await asyncio.sleep(0.05)
+            for id in ids:
+                key = generate_cache_key(self.cache_prefix, f"id_{id}")
+                await redis_client.delete_prefix(key)
             return response_base.success(data="批量删除数据成功")
 
     def _register_get(self) -> None:

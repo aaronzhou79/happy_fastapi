@@ -29,7 +29,6 @@ dept_api = BaseAPI(
     tags=["部门管理"],
 )
 
-
 @dept_api.router.post("/lock_test")
 async def lock_test(
     session: CurrentSession,
@@ -59,12 +58,12 @@ async def lock_test(
 @dept_api.router.get("/cache_get")
 async def cache_get(
 ) -> ResponseModel:
-    data = await dept_api.cache_manager.get("test")
+    data = await dept_api.redis_manager.hget("id_1", "depth_2")
     return response_base.success(data=data)
 
 
 @dept_api.router.get("/cache_set")
 async def cache_set(
 ) -> ResponseModel:
-    data = await dept_api.cache_manager.set("test", "test")
+    data = await dept_api.redis_manager.set_str("test", "test")
     return response_base.success(data=data)
