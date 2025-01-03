@@ -10,19 +10,35 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi_limiter import FastAPILimiter
 
 from src.apps import router as apps_router
 from src.common.data_model.base_model import create_table
 from src.core.conf import settings
 from src.core.exceptions.exception_handlers import register_exception
 from src.core.responses.response_code import MsgSpecJSONResponse
+from src.database.cache.cache_conf import redis_cache, setup_redis_cache
+from src.utils.health_check import http_limit_callback
 
 
 @asynccontextmanager
 async def register_init(app: FastAPI):
-    await create_table()
+    try:
+        # # 初始化 Redis
+        # await redis_client.open()
+        await create_table()
+        # # 初始化限流器
+        # await FastAPILimiter.init(
+        #     redis=redis_cache,
+        #     prefix=settings.REQUEST_LIMITER_REDIS_PREFIX or 'fastapi_limiter',
+        #     http_callback=http_limit_callback,
+        # )
 
-    yield
+        yield
+    finally:
+        pass
+        # await FastAPILimiter.close()
+        # await redis_client.close()
 
 
 def register_app():

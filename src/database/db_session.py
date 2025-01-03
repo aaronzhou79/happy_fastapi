@@ -76,7 +76,7 @@ async def async_audit_session(
     """带审计功能的会话上下文管理器"""
     try:
         if request and hasattr(request, 'user_id'):
-            session.user_id = request.user_id
+            session.user_id = getattr(request, "user_id", None)
 
         yield session
 

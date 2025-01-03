@@ -1,6 +1,8 @@
 from enum import Enum
 from typing import Any, Callable, Generic, Type, TypeVar
 
+from aiocache import RedisCache, cached, caches
+from aiocache.serializers import PickleSerializer
 from fastapi import APIRouter, Body, Path, Query, Request
 from fastapi.params import Depends
 from typing_extensions import Annotated
@@ -10,6 +12,9 @@ from src.common.data_model.base_schema import BaseSchema
 from src.common.data_model.query_fields import QueryOptions
 from src.core.responses.response import response_base
 from src.core.responses.response_schema import ResponseModel
+from src.database.cache.cache_conf import generate_cache_key, get_redis_settings, redis_cache
+from src.database.cache.cache_plugins import CacheLogPlugin
+from src.database.cache.cache_utils import CacheManager
 from src.database.db_session import CurrentSession, async_audit_session, async_session
 
 # 泛型类型变量
@@ -39,7 +44,7 @@ class BaseAPI(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         gen_delete: bool = True,
         gen_bulk_delete: bool = False,
         gen_query: bool = True,
-        cache_ttl: int | None = None,
+        cache_ttl: int = 3600,
         **kwargs: Any
     ) -> None:
         self.model = model
@@ -57,7 +62,8 @@ class BaseAPI(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         self.gen_bulk_delete = gen_bulk_delete
         self.gen_query = gen_query
         self.cache_ttl = cache_ttl
-
+        self.cache_prefix = f"{self.model.__name__}"
+        self.cache_manager = CacheManager(prefix=self.cache_prefix, default_ttl=self.cache_ttl)
         self.router = APIRouter(
             prefix=self.prefix,
             tags=self.tags or [],
@@ -123,6 +129,10 @@ class BaseAPI(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             request: Request,
             data: Annotated[self.update_schema, Body(..., description="更新模型")]  # type: ignore
         ) -> ResponseModel[self.base_schema]:  # type: ignore
+            key = generate_cache_key(self.cache_prefix, f"id_{data.id}")
+            data = await self.cache_manager.get(key)
+            await self.cache_manager.delete(key)
+
             async with async_audit_session(async_session(), request) as session:
                 result = await self.model.update(session=session, **data.model_dump(exclude_unset=True))
             return response_base.success(data=result)
@@ -162,6 +172,18 @@ class BaseAPI(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         @self.router.get(
             "/get",
             summary=f"获取{self.model.__name__}"
+        )
+        @cached(
+            ttl=self.cache_ttl,
+            cache=RedisCache,
+            serializer=PickleSerializer(),
+            plugins=[CacheLogPlugin()],
+            key_builder=lambda *args, **kwargs: generate_cache_key(
+                f"{self.model.__name__}",
+                f"id_{kwargs.get('id')}",
+                f"depth_{kwargs.get('max_depth')}"
+            ),
+            **get_redis_settings()
         )
         async def get(
             session: CurrentSession,

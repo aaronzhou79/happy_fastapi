@@ -9,14 +9,14 @@ class ResponseCodeBase(Enum):
     """自定义状态码基类"""
 
     @property
-    def code(self):
+    def code(self) -> Any:
         """
         获取状态码
         """
         return self.value[0]
 
     @property
-    def msg(self):
+    def msg(self) -> Any:
         """
         获取状态码信息
         """
@@ -24,6 +24,7 @@ class ResponseCodeBase(Enum):
 
 
 class ResponseCode(ResponseCodeBase):
+    """返回代码集"""
     SUCCESS = (200, "请求成功")
     SUCCESS_CREATE = (201, '新建请求成功')
     SUCCESS_ACCEPTED = (202, '请求已接受，但处理尚未完成')
@@ -34,9 +35,9 @@ class ResponseCode(ResponseCodeBase):
     NOT_FOUND = (404, "资源不存在")
     RESOURCE_DELETED = (410, '请求的资源已永久删除')
     REQUEST_PARAMS_INVALID = (422, '请求参数非法')
-    SERVER_ERROR = (500, "服务器内部错误")
     REQUEST_NOT_ALLOWED = (425, '无法执行请求，由于服务器无法满足要求')
     REQUEST_TOO_MANY = (429, '请求过多，服务器限制')
+    SERVER_ERROR = (500, "服务器内部错误")
     GATEWAY_ERROR = (502, '网关错误')
     SERVICE_UNAVAILABLE = (503, '服务器暂时无法处理请求')
     GATEWAY_TIMEOUT = (504, '网关超时')
@@ -44,7 +45,8 @@ class ResponseCode(ResponseCodeBase):
 
 
 class ResponseMessage:
-    zh_CN = {
+    """返回消息"""
+    zh_CN = {  # noqa: N815
         ResponseCode.SUCCESS: "请求成功",
         ResponseCode.SUCCESS_CREATE: "新建请求成功",
         ResponseCode.SUCCESS_ACCEPTED: "请求已接受，但处理尚未完成",
@@ -69,7 +71,8 @@ class MsgSpecJSONResponse(JSONResponse):
     JSON response using the high-performance msgspec library to serialize data to JSON.
     """
     def render(self, content: Any) -> bytes:
-        def convert_enum(obj):
+        """将响应内容序列化为JSON字节串"""
+        def convert_enum(obj: Any) -> dict[str, Any] | Any:
             if isinstance(obj, ResponseCode):
                 return {"code": obj.code, "msg": obj.msg}
             return obj

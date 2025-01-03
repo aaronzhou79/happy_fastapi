@@ -43,6 +43,10 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
+    # 日期时间格式
+    DATETIME_TIMEZONE: str = 'Asia/Shanghai'
+    DATETIME_FORMAT: str = "%Y-%m-%d %H:%M:%S"
+
     # 数据库配置
     DB_TYPE: Literal['sqlite', 'mysql', 'postgresql', 'dm', 'kingbase', 'oscar', 'gbase'] = "sqlite"
     DB_NAME: str = "test.db"
@@ -50,10 +54,6 @@ class Settings(BaseSettings):
     DB_PASSWORD: str = "root"
     DB_HOST: str = "localhost"
     DB_PORT: int = 3306
-
-    # 日期时间格式
-    DATETIME_TIMEZONE: str = 'Asia/Shanghai'
-    DATETIME_FORMAT: str = "%Y-%m-%d %H:%M:%S"
 
     # 数据库特性配置
     DB_FEATURES: dict[str, dict[str, bool]] = {
@@ -94,6 +94,15 @@ class Settings(BaseSettings):
         }
     }
 
+    # Redis 配置
+    REDIS_HOST: str = ""
+    REDIS_PORT: int = 6379
+    REDIS_PASSWORD: str = ""
+    REDIS_DATABASE: int = 0
+    REDIS_TIMEOUT: int = 5
+    REDIS_PREFIX: str = "HC"
+    REDIS_CACHE_KEY_PREFIX: str = f'{REDIS_PREFIX}:cache'
+
     # Log
     LOG_ROOT_LEVEL: str = 'NOTSET'
     LOG_STD_FORMAT: str = (
@@ -128,6 +137,9 @@ class Settings(BaseSettings):
         'new_password',
         'confirm_password',
     ]
+
+    # Request limiter
+    REQUEST_LIMITER_REDIS_PREFIX: str | None = f'{REDIS_PREFIX}:limiter'
 
     # Trace ID
     TRACE_ID_REQUEST_HEADER_KEY: str = 'X-Request-ID'

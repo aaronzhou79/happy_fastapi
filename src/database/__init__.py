@@ -5,5 +5,5 @@
 # @Author  : Aaron Zhou
 # @File    : __init__.py
 # @Software: Cursor
-# @Description: 数据库会话管理、配置、连接、公用函数等
+# @Description: 数据库/缓存等会话管理、配置、连接、公用函数等
 

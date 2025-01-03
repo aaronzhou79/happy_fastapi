@@ -54,3 +54,17 @@ async def lock_test(
     async with async_audit_session(async_session(), request) as session:
         data = await model.update(session=session, id=model.id, name=name)
     return response_base.success(data=data)
+
+
+@dept_api.router.get("/cache_get")
+async def cache_get(
+) -> ResponseModel:
+    data = await dept_api.cache_manager.get("test")
+    return response_base.success(data=data)
+
+
+@dept_api.router.get("/cache_set")
+async def cache_set(
+) -> ResponseModel:
+    data = await dept_api.cache_manager.set("test", "test")
+    return response_base.success(data=data)
