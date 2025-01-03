@@ -52,5 +52,5 @@ async def lock_test(
 
     # update 和 delete 方法已经内置了锁保护
     async with async_audit_session(async_session(), request) as session:
-        data = await model.update(session=session, pk=model.id, name=name)
+        data = await model.update(session=session, id=model.id, name=name)
     return response_base.success(data=data)

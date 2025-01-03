@@ -167,7 +167,7 @@ class BaseAPI(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             session: CurrentSession,
             *,
             id: int,
-            max_depth: Annotated[int, Query(description="关联数据的最大深度")] = 2
+            max_depth: Annotated[int, Query(le=3, description="关联数据的最大深度")] = 2
         ) -> ResponseModel[self.with_schema]:  # type: ignore
             item = await self.model.get_by_id(session=session, id=id)
             if not item:
