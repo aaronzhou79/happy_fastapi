@@ -15,11 +15,15 @@ from src.core.conf import settings
 
 class InterceptHandler(logging.Handler):
     """
-    Default handler from examples in loguru documentation.
-    See https://loguru.readthedocs.io/en/stable/overview.html#entirely-compatible-with-standard-logging
+    默认处理程序，来自loguru文档中的示例。
+
+    参见https://loguru.readthedocs.io/en/stable/overview.html#entirely-compatible-with-standard-logging
     """
 
     def emit(self, record: logging.LogRecord) -> None:
+        """
+        发出日志记录
+        """
         # Get corresponding Loguru level if it exists
         try:
             level = logger.level(record.levelname).name
@@ -37,6 +41,8 @@ class InterceptHandler(logging.Handler):
 
 def setup_logging() -> None:
     """
+    设置日志
+
     From https://pawamoy.github.io/posts/unify-logging-for-a-gunicorn-uvicorn-app/
     https://github.com/pawamoy/pawamoy.github.io/issues/17
     """
@@ -59,15 +65,16 @@ def setup_logging() -> None:
     # Remove every other logger's handlers
     logger.remove()
 
-    # Define the correlation_id filter function
+    # 定义correlation_id过滤函数
     # https://github.com/snok/asgi-correlation-id?tab=readme-ov-file#configure-logging
     # https://github.com/snok/asgi-correlation-id/issues/7
     def correlation_id_filter(record) -> bool:
+        """设置correlation_id"""
         cid = correlation_id.get(settings.LOG_CID_DEFAULT_VALUE)
         record['correlation_id'] = cid[: settings.LOG_CID_UUID_LENGTH] if cid else settings.LOG_CID_DEFAULT_VALUE
         return True
 
-    # Configure loguru logger before starts logging
+    # 配置loguru日志记录器，在开始记录日志之前
     logger.configure(
         handlers=[
             {
@@ -87,6 +94,7 @@ def setup_logging() -> None:
 
 
 def set_customize_logfile() -> None:
+    """设置自定义日志文件"""
     log_path = path_conf.LOG_DIR
     if not os.path.exists(log_path):
         os.mkdir(log_path)

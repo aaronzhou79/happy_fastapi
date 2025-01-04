@@ -41,10 +41,16 @@ class AuditAsyncSession(AsyncSession):
 
     @property
     def user_id(self) -> int | None:
+        """
+        获取用户ID
+        """
         return self._user_id
 
     @user_id.setter
     def user_id(self, value: int | None) -> None:
+        """
+        设置用户ID
+        """
         self._user_id = value
 
 
@@ -92,11 +98,13 @@ async def async_audit_session(
 AsyncSessionScoped = async_scoped_session(async_session, scopefunc=asyncio.current_task)
 
 
-async def get_db():
+async def get_db() -> AsyncGenerator[AuditAsyncSession, None]:
+    """
+    获取数据库会话
+    """
     async with AsyncSessionScoped() as session:
         try:
             yield session
-            await session.commit()
         except Exception:
             await session.rollback()
             raise

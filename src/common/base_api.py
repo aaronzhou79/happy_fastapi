@@ -12,11 +12,9 @@ from typing_extensions import Annotated
 from src.common.data_model.base_model import DatabaseModel
 from src.common.data_model.base_schema import BaseSchema
 from src.common.data_model.query_fields import QueryOptions
-from src.core.responses.response import response_base
-from src.core.responses.response_schema import ResponseModel
+from src.core.responses.response_schema import ResponseModel, response_base
 from src.database.cache.cache_conf import generate_cache_key, get_redis_settings
 from src.database.cache.cache_plugins import CacheLogPlugin
-from src.database.cache.cache_utils import CacheManager
 from src.database.db_redis import redis_client
 from src.database.db_session import CurrentSession, async_audit_session, async_session
 from src.database.redis_utils import RedisManager
@@ -67,7 +65,6 @@ class BaseAPI(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         self.gen_query = gen_query
         self.cache_ttl = cache_ttl
         self.cache_prefix = f"{self.model.__name__}"
-        self.cache_manager = CacheManager(prefix=self.cache_prefix, default_ttl=self.cache_ttl)
         self.redis_manager = RedisManager(prefix=self.cache_prefix)
         self.router = APIRouter(
             prefix=self.prefix,

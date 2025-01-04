@@ -9,8 +9,10 @@
 
 from fastapi import APIRouter
 
+from src.core.conf import settings
+
 from .v1 import router as v1_router
 
-router = APIRouter()
+router = APIRouter(prefix=settings.API_PATH)
 
 router.include_router(v1_router)

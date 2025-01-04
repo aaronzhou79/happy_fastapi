@@ -15,11 +15,12 @@ from fastapi_limiter import FastAPILimiter
 
 from src.apps import router as apps_router
 from src.common.data_model.base_model import create_table
-from src.common.logger import log
+from src.common.logger import log, set_customize_logfile, setup_logging
 from src.core.conf import settings
-from src.core.exceptions.exception_handlers import register_exception
-from src.core.responses.response_code import MsgSpecJSONResponse
+from src.core.exceptions.exception_handler import register_exception
+from src.core.responses.response_schema import MsgSpecJSONResponse
 from src.database.db_redis import redis_client
+from src.middleware.opera_log_middleware import OperaLogMiddleware
 from src.utils.health_check import http_limit_callback
 
 
@@ -78,9 +79,44 @@ def register_app() -> FastAPI:
         lifespan=register_init,
     )
 
+    register_logger()
+
+    register_middleware(app)
+
     app.include_router(apps_router)
 
     register_exception(app)
 
     return app
 
+
+def register_middleware(app: FastAPI) -> None:
+    """
+    中间件，执行顺序从下往上
+
+    :param app:
+    :return:
+    """
+    # Opera log (required)
+    app.add_middleware(OperaLogMiddleware)
+
+    # CORS: Always at the end
+    if settings.MIDDLEWARE_CORS:
+        from fastapi.middleware.cors import CORSMiddleware
+
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=settings.CORS_ALLOWED_ORIGINS,
+            allow_credentials=True,
+            allow_methods=['*'],
+            allow_headers=['*'],
+            expose_headers=settings.CORS_EXPOSE_HEADERS,
+        )
+
+
+def register_logger() -> None:
+    """
+    注册系统日志管理模块
+    """
+    setup_logging()
+    set_customize_logfile()

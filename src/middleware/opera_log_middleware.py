@@ -8,7 +8,7 @@ from starlette.datastructures import UploadFile
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 
-from src.apps.v1.sys.models import OperaLog, OperaLogSchemaCreate
+from src.apps.v1.sys.models import OperaLogSchemaCreate
 from src.apps.v1.sys.service.svr_opera_log import SvrOperaLog
 from src.common.dataclasses import RequestCallNext
 from src.common.enums import OperaLogCipherType, StatusType
@@ -22,7 +22,7 @@ from src.utils.trace_id import get_request_trace_id
 class OperaLogMiddleware(BaseHTTPMiddleware):
     """操作日志中间件"""
 
-    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+    async def dispatch(self, request: Request, call_next) -> Response:
         """
         操作日志中间件
 
@@ -32,15 +32,14 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
         """
         # 排除记录白名单
         path = request.url.path
-        if path in settings.OPERA_LOG_PATH_EXCLUDE or not path.startswith(f'{settings.API_V1_PATH}'):
+        if path in settings.OPERA_LOG_PATH_EXCLUDE or not path.startswith(f'{settings.API_PATH}'):
             return await call_next(request)
 
-        # 请求解析
-        try:
-            # 此信息依赖于 jwt 中间件
-            username = request.user.username
-        except AttributeError:
-            username = None
+        # 此信息依赖于 jwt 中间件
+        if hasattr(request.state, 'user') and hasattr(request.state.user, 'username'):
+            username = getattr(request.state.user, 'username', '-')
+        else:
+            username = '-'
         method = request.method
         args = await self.get_request_args(request)
         args = await self.desensitization(args)
@@ -56,26 +55,26 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
         summary = getattr(_route, 'summary', None) or ''
 
         # 日志创建
-        opera_log_in = OperaLog(
-            trace_id=get_request_trace_id(request),
-            username=username,
-            method=method,
-            title=summary,
-            path=path,
-            ip=request.state.ip,
-            country=request.state.country,
-            region=request.state.region,
-            city=request.state.city,
-            user_agent=request.state.user_agent,
-            os=request.state.os,
-            browser=request.state.browser,
-            device=request.state.device,
-            args=args,
-            status=request_next.status,
-            code=str(request_next.code),
-            msg=request_next.msg,
-            cost_time=cost_time,
-            opera_time=start_time,
+        opera_log_in = OperaLogSchemaCreate(
+            trace_id=get_request_trace_id(request),                 # type: ignore
+            username=username,                                      # type: ignore
+            method=method,                                          # type: ignore
+            title=summary,                                          # type: ignore
+            path=path,                                              # type: ignore
+            ip=getattr(request.state, 'ip', '-'),                   # type: ignore
+            country=getattr(request.state, 'country', '-'),         # type: ignore
+            region=getattr(request.state, 'region', '-'),           # type: ignore
+            city=getattr(request.state, 'city', '-'),               # type: ignore
+            user_agent=getattr(request.state, 'user_agent', '-'),   # type: ignore
+            os=getattr(request.state, 'os', '-'),                   # type: ignore
+            browser=getattr(request.state, 'browser', '-'),         # type: ignore
+            device=getattr(request.state, 'device', '-'),           # type: ignore
+            args=args,                                              # type: ignore
+            status=request_next.status,                             # type: ignore
+            code=str(request_next.code),                            # type: ignore
+            msg=request_next.msg,                                   # type: ignore
+            cost_time=cost_time,                                    # type: ignore
+            opera_time=start_time,                                  # type: ignore
         )
 
         create_task(SvrOperaLog.create_opera_log(opera_log_in))
@@ -157,35 +156,24 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
                 args.update(json_data)
         return args
 
+
     @staticmethod
     @sync_to_async
     def desensitization(args: dict) -> dict | None:
-        """
-        脱敏处理
-
-        :param args:
-        :return:
-        """
+        """脱敏处理"""
         if not args:
-            args = {}
-        else:
-            match settings.OPERA_LOG_ENCRYPT_TYPE:
-                case OperaLogCipherType.aes:
-                    for key in args.keys():
-                        if key in settings.OPERA_LOG_ENCRYPT_KEY_INCLUDE:
-                            args[key] = (AESCipher(settings.OPERA_LOG_ENCRYPT_SECRET_KEY).encrypt(args[key])).hex()  # type: ignore
-                case OperaLogCipherType.md5:
-                    for key in args.keys():
-                        if key in settings.OPERA_LOG_ENCRYPT_KEY_INCLUDE:
-                            args[key] = Md5Cipher.encrypt(args[key])
-                case OperaLogCipherType.itsdangerous:
-                    for key in args.keys():
-                        if key in settings.OPERA_LOG_ENCRYPT_KEY_INCLUDE:
-                            args[key] = ItsDCipher(settings.OPERA_LOG_ENCRYPT_SECRET_KEY).encrypt(args[key])  # type: ignore
-                case OperaLogCipherType.plan:
-                    pass
-                case _:
-                    for key in args.keys():
-                        if key in settings.OPERA_LOG_ENCRYPT_KEY_INCLUDE:
-                            args[key] = '******'
+            return {}
+
+        def _encrypt_value(value: str, cipher_type: OperaLogCipherType) -> str:
+            """加密单个值"""
+            encrypt_map = {
+                OperaLogCipherType.aes: lambda x: (AESCipher(settings.OPERA_LOG_ENCRYPT_SECRET_KEY).encrypt(x)).hex(),
+                OperaLogCipherType.md5: Md5Cipher.encrypt,
+                OperaLogCipherType.itsdangerous: lambda x: ItsDCipher(settings.OPERA_LOG_ENCRYPT_SECRET_KEY).encrypt(x),
+                OperaLogCipherType.plan: lambda x: x,
+            }
+            return encrypt_map.get(cipher_type, lambda x: '******')(value)
+        for key in args.keys():
+            if key in settings.OPERA_LOG_ENCRYPT_KEY_INCLUDE:
+                args[key] = _encrypt_value(args[key], OperaLogCipherType(settings.OPERA_LOG_ENCRYPT_TYPE))
         return args

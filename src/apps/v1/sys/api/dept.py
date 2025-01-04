@@ -13,8 +13,7 @@ from fastapi import Request
 
 from src.apps.v1.sys.models import Dept, DeptSchemaBase, DeptSchemaCreate, DeptSchemaUpdate, DeptSchemaWithUsers
 from src.common.base_api import BaseAPI
-from src.core.responses.response import response_base
-from src.core.responses.response_schema import ResponseModel
+from src.core.responses.response_schema import ResponseModel, response_base
 from src.database.db_session import CurrentSession, async_audit_session, async_session
 
 dept_api = BaseAPI(
@@ -52,18 +51,4 @@ async def lock_test(
     # update 和 delete 方法已经内置了锁保护
     async with async_audit_session(async_session(), request) as session:
         data = await model.update(session=session, id=model.id, name=name)
-    return response_base.success(data=data)
-
-
-@dept_api.router.get("/cache_get")
-async def cache_get(
-) -> ResponseModel:
-    data = await dept_api.redis_manager.hget("id_1", "depth_2")
-    return response_base.success(data=data)
-
-
-@dept_api.router.get("/cache_set")
-async def cache_set(
-) -> ResponseModel:
-    data = await dept_api.redis_manager.set_str("test", "test")
     return response_base.success(data=data)

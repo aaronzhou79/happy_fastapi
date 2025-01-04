@@ -6,18 +6,22 @@
 # @File    : svr_opera_log.py
 # @Software: Cursor
 # @Description: 操作日志服务
-
-from typing import TYPE_CHECKING
-
-from src.apps.v1.sys.model.opera_log import OperaLog
+from src.apps.v1.sys.models import OperaLog, OperaLogSchemaCreate
+from src.common.logger import log
 from src.database.db_session import async_audit_session, async_session
-
-if TYPE_CHECKING:
-    from src.apps.v1.sys.model.opera_log import OperaLogCreate
 
 
 class SvrOperaLog:
+    """
+    操作日志服务
+    """
     @staticmethod
-    async def create_opera_log(opera_log_in: "OperaLogCreate") -> dict:
+    async def create_opera_log(opera_log_in: OperaLogSchemaCreate) -> dict:  # type: ignore
+        """
+        创建操作日志
+        """
+        log.info("================================================")
+        log.info("opera_log_in: {}", opera_log_in.model_dump())
+        log.info("================================================")
         async with async_audit_session(async_session()) as session:
             return await OperaLog.create(session, **opera_log_in.model_dump())

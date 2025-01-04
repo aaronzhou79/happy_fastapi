@@ -9,7 +9,7 @@
 from fastapi import APIRouter, Response
 
 from src.apps.v1.init_data import init_data
-from src.core.responses.response import response_base
+from src.core.responses.response_schema import response_base
 
 router = APIRouter()
 

@@ -21,20 +21,20 @@ class Settings(BaseSettings):
     # 项目描述
     DESCRIPTION: str = "FastAPI"
     # 项目API版本
-    API_V1_PATH: str = "/api/v1"
+    API_PATH: str = "/api"
     # 项目文档地址
-    DOCS_URL: str = f"{API_V1_PATH}/docs"
+    DOCS_URL: str = f"{API_PATH}/docs"
     # 项目文档地址
-    OPENAPI_URL: str = f"{API_V1_PATH}/openapi.json"
+    OPENAPI_URL: str = f"{API_PATH}/openapi.json"
     # 项目文档地址
-    REDOC_URL: str = f"{API_V1_PATH}/redoc"
+    REDOC_URL: str = f"{API_PATH}/redoc"
 
     # 运行环境
     APP_ENV: Literal['dev', 'pro'] = "dev"
     # 运行端口
     APP_PORT: int = 8081
     # 运行地址
-    APP_HOST: str = "0.0.0.0"
+    APP_HOST: str = "0.0.0.0"  # noqa: S104
     # 调试模式
     APP_DEBUG: bool = False
 
@@ -126,9 +126,9 @@ class Settings(BaseSettings):
         str(DOCS_URL),
         str(REDOC_URL),
         str(OPENAPI_URL),
-        f'{API_V1_PATH}/auth/login/swagger',
-        f'{API_V1_PATH}/oauth2/github/callback',
-        f'{API_V1_PATH}/oauth2/linux-do/callback',
+        f'{API_PATH}/auth/login/swagger',
+        f'{API_PATH}/oauth2/github/callback',
+        f'{API_PATH}/oauth2/linux-do/callback',
     ]
     OPERA_LOG_ENCRYPT_TYPE: int = 1  # 0: AES (性能损耗); 1: md5; 2: ItsDangerous; 3: 不加密, others: 替换为 ******  # noqa: E501
     OPERA_LOG_ENCRYPT_KEY_INCLUDE: list[str] = [  # 将加密接口入参参数对应的值
@@ -138,12 +138,28 @@ class Settings(BaseSettings):
         'confirm_password',
     ]
 
+    # 加密密钥
+    # Env Opera Log # 密钥 os.urandom(32), 需使用 bytes.hex(os.urandom(32)) 方法转换为 str
+    OPERA_LOG_ENCRYPT_SECRET_KEY: str = 'your-secret-key'
+
     # Request limiter
     REQUEST_LIMITER_REDIS_PREFIX: str | None = f'{REDIS_PREFIX}:limiter'
 
     # Trace ID
     TRACE_ID_REQUEST_HEADER_KEY: str = 'X-Request-ID'
 
+    # Middleware
+    MIDDLEWARE_CORS: bool = True
+    MIDDLEWARE_ACCESS: bool = True
+
+    # CORS
+    CORS_ALLOWED_ORIGINS: list[str] = [
+        'http://localhost:5173',  # 前端地址，末尾不要带 '/'
+        '*',
+    ]
+    CORS_EXPOSE_HEADERS: list[str] = [
+        TRACE_ID_REQUEST_HEADER_KEY,
+    ]
 
 @lru_cache
 def get_settings() -> Settings:
