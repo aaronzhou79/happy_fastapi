@@ -5,14 +5,14 @@ from asyncio import create_task
 from asgiref.sync import sync_to_async
 from fastapi import Response
 from starlette.datastructures import UploadFile
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 
-from src.apps.v1.sys.model.opera_log import OperaLogCreate
+from src.apps.v1.sys.models import OperaLog, OperaLogSchemaCreate
 from src.apps.v1.sys.service.svr_opera_log import SvrOperaLog
 from src.common.dataclasses import RequestCallNext
 from src.common.enums import OperaLogCipherType, StatusType
-from src.common.log import log
+from src.common.logger import log
 from src.core.conf import settings
 from src.utils.encrypt import AESCipher, ItsDCipher, Md5Cipher
 from src.utils.timezone import TimeZone
@@ -22,7 +22,14 @@ from src.utils.trace_id import get_request_trace_id
 class OperaLogMiddleware(BaseHTTPMiddleware):
     """操作日志中间件"""
 
-    async def dispatch(self, request: Request, call_next) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        """
+        操作日志中间件
+
+        :param request:
+        :param call_next:
+        :return:
+        """
         # 排除记录白名单
         path = request.url.path
         if path in settings.OPERA_LOG_PATH_EXCLUDE or not path.startswith(f'{settings.API_V1_PATH}'):
@@ -49,7 +56,7 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
         summary = getattr(_route, 'summary', None) or ''
 
         # 日志创建
-        opera_log_in = OperaLogCreate(
+        opera_log_in = OperaLog(
             trace_id=get_request_trace_id(request),
             username=username,
             method=method,
@@ -70,6 +77,7 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
             cost_time=cost_time,
             opera_time=start_time,
         )
+
         create_task(SvrOperaLog.create_opera_log(opera_log_in))
 
         # 错误抛出
@@ -79,7 +87,7 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
 
         return request_next.response
 
-    async def execute_request(self, request: Request, call_next) -> RequestCallNext:
+    async def execute_request(self, request: Request, call_next: RequestResponseEndpoint) -> RequestCallNext:
         """执行请求"""
         code = 200
         msg = 'Success'

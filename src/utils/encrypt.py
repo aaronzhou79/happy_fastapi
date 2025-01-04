@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import hashlib
 import os
 
 from typing import Any
@@ -9,10 +10,11 @@ from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from itsdangerous import URLSafeSerializer
 
-from src.common.log import log
+from src.common.logger import log
 
 
 class AESCipher:
+    """AES 加密解密类"""
     def __init__(self, key: bytes | str) -> None:
         """
         :param key: 密钥，16/24/32 bytes 或 16 进制字符串
@@ -55,6 +57,7 @@ class AESCipher:
 
 
 class Md5Cipher:
+    """MD5 加密类"""
     @staticmethod
     def encrypt(plaintext: bytes | str) -> str:
         """
@@ -63,16 +66,15 @@ class Md5Cipher:
         :param plaintext: 加密前的明文
         :return:
         """
-        import hashlib
-
-        md5 = hashlib.md5()
+        sha256 = hashlib.sha256()
         if not isinstance(plaintext, bytes):
             plaintext = str(plaintext).encode('utf-8')
-        md5.update(plaintext)
-        return md5.hexdigest()
+        sha256.update(plaintext)
+        return sha256.hexdigest()
 
 
 class ItsDCipher:
+    """ItsDangerous 加密解密类"""
     def __init__(self, key: bytes | str) -> None:
         """
         :param key: 密钥，16/24/32 bytes 或 16 进制字符串

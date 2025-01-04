@@ -1,6 +1,6 @@
 from aiocache.plugins import BasePlugin
 
-from src.common.log import log
+from src.common.logger import log
 
 
 class CacheLogPlugin(BasePlugin):

@@ -7,7 +7,7 @@
 # @Software: Cursor
 # @Description: 系统管理模块数据模型
 from datetime import datetime
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 import sqlalchemy as sa
 
@@ -123,6 +123,7 @@ class UserRole(SoftDeleteMixin, DatabaseModel):
 
 mapper_registry.configure()
 
+OperaLogSchemaCreate = generate_schema(OperaLog, SchemaType.CREATE)
 
 DeptSchemaWithUsers = generate_schema(
     Dept, SchemaType.BASE, include_relationships=["users"]
