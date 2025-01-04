@@ -1,4 +1,5 @@
 fastapi
+asgi-correlation-id
 python-jose[cryptography]
 passlib[bcrypt]
 python-multipart

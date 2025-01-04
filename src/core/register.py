@@ -10,7 +10,9 @@
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
+from asgi_correlation_id import CorrelationIdMiddleware
 from fastapi import FastAPI
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi_limiter import FastAPILimiter
 
 from src.apps import router as apps_router
@@ -21,6 +23,7 @@ from src.core.exceptions.exception_handler import register_exception
 from src.core.responses.response_schema import MsgSpecJSONResponse
 from src.database.db_redis import redis_client
 from src.middleware.opera_log_middleware import OperaLogMiddleware
+from src.middleware.profiling_middleware import ProfilingMiddleware
 from src.utils.health_check import http_limit_callback
 
 
@@ -68,6 +71,8 @@ async def register_init(app: FastAPI) -> AsyncIterator[None]:
 
 def register_app() -> FastAPI:
     """注册应用"""
+    register_logger()
+
     app = FastAPI(
         title=settings.PROJECT_NAME,
         version=settings.VERSION,
@@ -78,8 +83,6 @@ def register_app() -> FastAPI:
         default_response_class=MsgSpecJSONResponse,
         lifespan=register_init,
     )
-
-    register_logger()
 
     register_middleware(app)
 
@@ -97,8 +100,14 @@ def register_middleware(app: FastAPI) -> None:
     :param app:
     :return:
     """
+    # GZip
+    app.add_middleware(GZipMiddleware, minimum_size=1000)
+    # Trace ID (required)
+    app.add_middleware(CorrelationIdMiddleware, validator=None)
     # Opera log (required)
     app.add_middleware(OperaLogMiddleware)
+    # Profiling (optional)
+    app.add_middleware(ProfilingMiddleware) if settings.APP_DEBUG else None
 
     # CORS: Always at the end
     if settings.MIDDLEWARE_CORS:

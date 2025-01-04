@@ -9,7 +9,7 @@
 from src.apps.v1.sys.models import OperaLog, OperaLogSchemaCreate
 from src.common.logger import log
 from src.database.db_session import async_audit_session, async_session
-
+from src.core.conf import settings
 
 class SvrOperaLog:
     """
@@ -20,8 +20,8 @@ class SvrOperaLog:
         """
         创建操作日志
         """
-        log.info("================================================")
-        log.info("opera_log_in: {}", opera_log_in.model_dump())
-        log.info("================================================")
+        if settings.APP_DEBUG:
+            log.info("================================================")
+            log.info(opera_log_in.model_dump())
         async with async_audit_session(async_session()) as session:
             return await OperaLog.create(session, **opera_log_in.model_dump())
