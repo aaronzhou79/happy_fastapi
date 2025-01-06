@@ -101,8 +101,9 @@ class User(SoftDeleteMixin, DatabaseModel, DateTimeMixin):
     phone: Mapped[str | None] = mapped_column(sa.String(20), nullable=True, comment="手机号")
 
     username: Mapped[str | None] = mapped_column(sa.String(50), nullable=True, comment="用户名")
-    password: Mapped[str] = mapped_column(sa.String(128), nullable=False, comment="密码")
-    salt: Mapped[str] = mapped_column(sa.String(128), nullable=False, comment="盐")
+    password: Mapped[str | None] = mapped_column(sa.String(128), nullable=True, comment="密码")
+    salt: Mapped[str | None] = mapped_column(sa.String(128), nullable=True, comment="盐")
+    is_user: Mapped[bool] = mapped_column(sa.Boolean, default=False, nullable=False, comment="是否为系统用户")
     is_multi_login: Mapped[bool] = mapped_column(sa.Boolean, default=False, nullable=False, comment="是否允许多点登录")
     status: Mapped[UserStatus] = mapped_column(
         sa.Enum(UserStatus), default=UserStatus.ACTIVE, nullable=False, comment="用户状态"
@@ -168,9 +169,23 @@ DeptSchemaBase = generate_schema(Dept, SchemaType.BASE)
 DeptSchemaUpdate = generate_schema(Dept, SchemaType.UPDATE)
 DeptSchemaCreate = generate_schema(Dept, SchemaType.CREATE)
 
-UserSchemaBase = generate_schema(User, SchemaType.BASE, include_relationships=["roles", "dept"])
-UserSchemaUpdate = generate_schema(User, SchemaType.UPDATE)
-UserSchemaCreate = generate_schema(User, SchemaType.CREATE, include_relationships=["roles"])
+UserSchemaBase = generate_schema(
+    User,
+    SchemaType.BASE,
+    exclude_fields=["username", "password", "salt"],
+    include_relationships=["roles", "dept"]
+)
+UserSchemaUpdate = generate_schema(
+    User,
+    SchemaType.UPDATE,
+    exclude_fields=["username", "password", "salt"],
+)
+UserSchemaCreate = generate_schema(
+    User,
+    SchemaType.CREATE,
+    exclude_fields=["username", "password", "salt"],
+    include_relationships=["roles"]
+)
 
 
 class AuthSchemaBase(BaseSchema):

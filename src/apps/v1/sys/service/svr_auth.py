@@ -6,9 +6,11 @@ from fastapi import Request, Response
 from fastapi.security import HTTPBasicCredentials
 from starlette.background import BackgroundTask, BackgroundTasks
 
+from src.apps.v1.sys.crud.user import crud_user
 from src.apps.v1.sys.models import AuthLoginParam, LoginLogSchemaCreate, User
 from src.apps.v1.sys.service.svr_login_log import SvrLoginLog
 from src.apps.v1.sys.token_schema import GetLoginToken, GetNewToken
+from src.common.base_service import BaseService
 from src.common.enums import LoginLogStatusType, UserStatus
 from src.core.conf import settings
 from src.core.exceptions import errors
@@ -25,7 +27,7 @@ from src.database.db_session import AuditAsyncSession, async_audit_session, asyn
 from src.utils.timezone import TimeZone
 
 
-class AuthService:
+class AuthService(BaseService[User]):
     """用户认证服务"""
     @staticmethod
     async def swagger_login(*, obj: HTTPBasicCredentials) -> tuple[str, User]:
@@ -60,23 +62,23 @@ class AuthService:
                     SvrLoginLog.create_login_log,
                     session=session,
                     login_log_in=LoginLogSchemaCreate(
-                        user_uuid=user_uuid,
-                        username=username,
-                        status=status,
-                        ip=request.state.ip,
-                        country=request.state.country,
-                        region=request.state.region,
-                        city=request.state.city,
-                        user_agent=request.state.user_agent,
-                        browser=request.state.browser,
-                        os=request.state.os,
-                        device=request.state.device,
-                        login_time=TimeZone.now(),
-                        msg=msg,
+                        user_uuid=user_uuid,                  # type: ignore
+                        username=username,                    # type: ignore
+                        status=status,                        # type: ignore
+                        ip=request.state.ip,                  # type: ignore
+                        country=request.state.country,        # type: ignore
+                        region=request.state.region,          # type: ignore
+                        city=request.state.city,              # type: ignore
+                        user_agent=request.state.user_agent,  # type: ignore
+                        browser=request.state.browser,        # type: ignore
+                        os=request.state.os,                  # type: ignore
+                        device=request.state.device,          # type: ignore
+                        login_time=TimeZone.now(),            # type: ignore
+                        msg=msg,                              # type: ignore
                     ),
                 )
 
-        async with async_audit_session(async_session(), None) as session:
+        async with async_audit_session(async_session(), request=request) as session:
             if settings.CAPTCHA_NEED:
                 captcha_code = await redis_client.get(
                     f'{settings.CAPTCHA_LOGIN_REDIS_PREFIX}:{request.state.ip}')
@@ -181,3 +183,11 @@ class AuthService:
             await redis_client.delete_prefix(key_prefix)
             key_prefix = f'{settings.TOKEN_REFRESH_REDIS_PREFIX}:{request.user.id}:'
             await redis_client.delete_prefix(key_prefix)
+
+    @staticmethod
+    async def set_as_user(*, request: Request, id: int, username: str, password: str, roles: list[int] | None = None) -> None:
+        """设置为用户"""
+        async with async_audit_session(async_session(), request=request) as session:
+            await crud_user.set_as_user(session=session, id=id, username=username, password=password, roles=roles)
+
+

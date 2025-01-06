@@ -437,16 +437,9 @@ class DatabaseModel(Base):
         return f"<{self.__class__.__name__}(id={self.primary_key_value})>"
 
     @classmethod
-    async def get_by_id(cls: type[T], session: AuditAsyncSession, **kwargs: Any) -> T | None:
+    async def get_by_id(cls: type[T], *, session: AuditAsyncSession, id: int) -> T | None:
         """通过ID获取记录"""
-        primary_key_name = cls.get_primary_key()
-        if primary_key_name not in kwargs:
-            raise ValueError(f"没有配置主键{primary_key_name}！")
-        pk = kwargs.pop(primary_key_name)
-        if not pk:
-            raise ValueError(f"主键{primary_key_name}不能为空！")
-
-        stmt = select(cls).where(getattr(cls, primary_key_name) == pk)
+        stmt = select(cls).where(getattr(cls, cls.get_primary_key()) == id)
         result = await session.execute(stmt)
         return result.scalar_one_or_none()
 
