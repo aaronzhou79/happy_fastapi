@@ -161,6 +161,44 @@ class Settings(BaseSettings):
         TRACE_ID_REQUEST_HEADER_KEY,
     ]
 
+    # Token
+    TOKEN_SECRET_KEY: str = 'FqmttF4sQzTT9_gNJuzStpnMPRYw01vorr0grhhpR7I'
+    TOKEN_ALGORITHM: str = 'HS256'  # 算法
+    TOKEN_EXPIRE_SECONDS: int = 60 * 60 * 24 * 1  # 过期时间，单位：秒
+    TOKEN_REFRESH_EXPIRE_SECONDS: int = 60 * 60 * 24 * 7  # refresh token 过期时间，单位：秒
+    TOKEN_REDIS_PREFIX: str = f'{REDIS_PREFIX}:token'
+    TOKEN_REFRESH_REDIS_PREFIX: str = f'{REDIS_PREFIX}:refresh_token'
+    TOKEN_REQUEST_PATH_EXCLUDE: list[str] = [  # JWT / RBAC 白名单
+        f'{API_PATH}/auth/login',
+        f'{API_PATH}/auth/refresh',
+        f'{API_PATH}/auth/logout',
+    ]
+
+    # JWT
+    JWT_USER_REDIS_PREFIX: str = f'{REDIS_PREFIX}:user'
+    JWT_USER_REDIS_EXPIRE_SECONDS: int = 60 * 60 * 24 * 7
+
+    # 验证码
+    CAPTCHA_NEED: bool = False
+
+    # Captcha
+    CAPTCHA_LOGIN: bool = True
+    CAPTCHA_LOGIN_REDIS_PREFIX: str = f'{REDIS_PREFIX}:captcha'
+    CAPTCHA_LOGIN_EXPIRE_SECONDS: int = 60 * 5  # 过期时间，单位：秒
+
+    # Cookies
+    COOKIE_REFRESH_TOKEN_KEY: str = f'{REDIS_PREFIX}:refresh_token'
+    COOKIE_REFRESH_TOKEN_EXPIRE_SECONDS: int = TOKEN_REFRESH_EXPIRE_SECONDS
+
+    # Profiling
+    SLOW_REQUEST_THRESHOLD: float = 0.1  # 慢请求阈值(秒)
+    MEMORY_WARNING_THRESHOLD: int = 100 * 1024 * 1024  # 内存警告阈值(字节)
+
+    # Ip location
+    IP_LOCATION_PARSE: Literal['online', 'offline', 'false'] = 'offline'
+    IP_LOCATION_REDIS_PREFIX: str | None = f'{REDIS_PREFIX}:ip:location'
+    IP_LOCATION_EXPIRE_SECONDS: int | None = 60 * 60 * 24 * 1  # 过期时间，单位：秒
+
 @lru_cache
 def get_settings() -> Settings:
     """获取全局配置"""

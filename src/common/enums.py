@@ -39,6 +39,24 @@ class StatusType(IntEnum):
     enable = 1
 
 
+class LoginLogStatusType(IntEnum):
+    """登陆日志状态"""
+
+    fail = 0
+    success = 1
+
+
+class UserEmpType(StrEnum):
+    """用户员工类型"""
+
+    admin = "管理员"
+    staff = "员工"
+    sales = "销售"
+    finance = "财务"
+    hr = "人事"
+    it = "IT"
+
+
 class UserStatus(StrEnum):
     """用户状态"""
 

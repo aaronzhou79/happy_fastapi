@@ -1,7 +1,7 @@
 import asyncio
 
 from enum import Enum
-from typing import Any, Callable, Generic, Type, TypeVar
+from typing import Any, Callable, Generic, Type
 
 from aiocache import RedisCache, cached
 from aiocache.serializers import PickleSerializer
@@ -9,8 +9,7 @@ from fastapi import APIRouter, Body, Path, Query, Request
 from fastapi.params import Depends
 from typing_extensions import Annotated
 
-from src.common.data_model.base_model import DatabaseModel
-from src.common.data_model.base_schema import BaseSchema
+from src.common.data_model.base_schema import BaseSchemaType, CreateSchemaType, ModelType, UpdateSchemaType, WithSchemaType
 from src.common.data_model.query_fields import QueryOptions
 from src.core.responses.response_schema import ResponseModel, response_base
 from src.database.cache.cache_conf import generate_cache_key, get_redis_settings
@@ -18,13 +17,6 @@ from src.database.cache.cache_plugins import CacheLogPlugin
 from src.database.db_redis import redis_client
 from src.database.db_session import CurrentSession, async_audit_session, async_session
 from src.database.redis_utils import RedisManager
-
-# 泛型类型变量
-ModelType = TypeVar("ModelType", bound=DatabaseModel)
-CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseSchema)
-UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseSchema)
-BaseSchemaType = TypeVar("BaseSchemaType", bound=BaseSchema)
-WithSchemaType = TypeVar("WithSchemaType", bound=BaseSchema)
 
 
 class BaseAPI(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):

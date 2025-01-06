@@ -1,11 +1,14 @@
-from typing import Any, Optional, Type
+from typing import Any, Optional, Type, TypeVar
 
 from pydantic import BaseModel, ConfigDict, create_model
 from sqlalchemy import inspect
 from sqlalchemy.orm import RelationshipProperty
 
-from src.common.data_model.base_model import Base
+from src.common.data_model.base_model import Base, DatabaseModel
 from src.common.enums import StrEnum
+
+# 泛型类型变量
+ModelType = TypeVar("ModelType", bound=DatabaseModel)
 
 
 class BaseSchema(BaseModel):
@@ -18,6 +21,11 @@ class BaseSchema(BaseModel):
         populate_by_name=True
     )
 
+
+CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseSchema)
+UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseSchema)
+BaseSchemaType = TypeVar("BaseSchemaType", bound=BaseSchema)
+WithSchemaType = TypeVar("WithSchemaType", bound=BaseSchema)
 
 class UpdateSchema(BaseSchema):
     """

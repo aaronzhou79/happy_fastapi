@@ -8,8 +8,9 @@
 # @Description: 操作日志服务
 from src.apps.v1.sys.models import OperaLog, OperaLogSchemaCreate
 from src.common.logger import log
-from src.database.db_session import async_audit_session, async_session
 from src.core.conf import settings
+from src.database.db_session import async_audit_session, async_session
+
 
 class SvrOperaLog:
     """

@@ -19,7 +19,7 @@ import sqlalchemy as sa
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncAttrs, AsyncSession
 from sqlalchemy.ext.declarative import declared_attr
-from sqlalchemy.orm import DeclarativeBase, Mapped, RelationshipProperty, mapped_column, registry
+from sqlalchemy.orm import DeclarativeBase, Mapped, MappedAsDataclass, RelationshipProperty, mapped_column, registry
 
 from src.core.conf import settings
 from src.database.db_session import (
@@ -52,7 +52,7 @@ class SoftDeleteMixin(Base):
     deleted_at: Mapped[datetime | None] = mapped_column(sa.DateTime, nullable=True, comment="删除时间")
 
 
-class TimestampMixin(Base):
+class DateTimeMixin(Base):
     """
     时间戳混入类
     """
@@ -61,13 +61,9 @@ class TimestampMixin(Base):
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime, nullable=False, default=TimeZone.now(), comment="创建时间"
     )
-    updated_at: Mapped[datetime] = mapped_column(
-        sa.DateTime, nullable=False, default=TimeZone.now(), onupdate=TimeZone.now(), comment="更新时间"
+    updated_at: Mapped[datetime | None] = mapped_column(
+        sa.DateTime, nullable=True, onupdate=TimeZone.now(), comment="更新时间"
     )
-
-    def touch(self) -> None:
-        """更新更新时间"""
-        self.updated_at = TimeZone.now()
 
 
 class DatabaseModel(Base):
@@ -75,8 +71,12 @@ class DatabaseModel(Base):
     数据库模型基类，提供基础能力支持
     """
     __abstract__ = True
-    _locks: dict[int, asyncio.Lock] = {}  # 用于存储每个实例的锁
-    # audit_config: AuditConfig = AuditConfig()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # 将_locks移到实例初始化中
+        if not hasattr(self, '_locks'):
+            self._locks = {}
 
     @classmethod
     def query_session(cls) -> AuditAsyncSession:
@@ -95,11 +95,10 @@ class DatabaseModel(Base):
         async with self.lock:
             return await callback()
 
-    @classmethod
-    def release_lock(cls, id: int) -> None:
+    def release_lock(self) -> None:
         """释放指定ID的锁"""
-        if id in cls._locks:
-            del cls._locks[id]
+        if self.primary_key_value in self._locks:
+            del self._locks[self.primary_key_value]
 
     # 使用类名小写作为表名
     @declared_attr.directive
@@ -108,12 +107,12 @@ class DatabaseModel(Base):
         return self.__name__.lower()
 
     # 基础字段
-    id: Mapped[int] = mapped_column(sa.Integer, primary_key=True, autoincrement=True, comment="主键ID")
-    created_at: Mapped[datetime] = mapped_column(
-        sa.DateTime, nullable=False, default=TimeZone.now(), comment="创建时间"
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        sa.DateTime, nullable=False, default=TimeZone.now(), onupdate=TimeZone.now(), comment="更新时间"
+    id: Mapped[int] = mapped_column(
+        sa.Integer,
+        primary_key=True,
+        autoincrement=True,
+        sort_order=1,
+        comment="主键ID",
     )
 
     @property
@@ -361,6 +360,12 @@ class DatabaseModel(Base):
         await session.flush()
         return await instance.to_api_dict()
 
+    async def update_fields(self, session: AuditAsyncSession, **kwargs: Any) -> None:
+        """更新字段"""
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+        await session.flush()
+
     @classmethod
     async def delete(cls: type[T], session: AuditAsyncSession, **kwargs: Any) -> None:
         """删除（带锁保护）"""
@@ -446,6 +451,13 @@ class DatabaseModel(Base):
         return result.scalar_one_or_none()
 
     @classmethod
+    async def get_by_fields(cls: type[T], session: AuditAsyncSession, **kwargs: Any) -> T | None:
+        """通过字段获取记录"""
+        stmt = select(cls).where(*[getattr(cls, k) == v for k, v in kwargs.items()])
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    @classmethod
     async def get_all(
         cls: type[T],
         *,
@@ -510,21 +522,17 @@ class DatabaseModel(Base):
         soft_delete: bool = True
     ) -> None:
         """批量删除记录"""
-        try:
-            if soft_delete and hasattr(cls, 'deleted_at'):
-                stmt = (
-                    sa.update(cls)
-                    .where(cls.id.in_(ids))
-                    .values(deleted_at=TimeZone.now())
-                )
-            else:
-                stmt = sa.delete(cls).where(cls.id.in_(ids))
+        if soft_delete and hasattr(cls, 'deleted_at'):
+            stmt = (
+                sa.update(cls)
+                .where(cls.id.in_(ids))
+                .values(deleted_at=TimeZone.now())
+            )
+        else:
+            stmt = sa.delete(cls).where(cls.id.in_(ids))
 
-            await session.execute(stmt)
-            await session.flush()
-        finally:
-            for id in ids:
-                cls.release_lock(id)
+        await session.execute(stmt)
+        await session.flush()
 
     @classmethod
     async def bulk_restore(

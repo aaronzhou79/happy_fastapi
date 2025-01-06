@@ -7,7 +7,9 @@
 # @Software: Cursor
 # @Description: 数据初始化
 from src.apps.v1.sys.models import Dept, Role, User
+from src.common.enums import UserEmpType
 from src.database.db_session import async_session as async_session
+from src.database.db_session import uuid4_str
 
 
 async def init_data() -> None:
@@ -34,14 +36,96 @@ async def init_data() -> None:
         await User.bulk_create(
             session,
             [
-                {'name': '张三', 'email': 'zhangsan@example.com', 'password': '123456', 'dept_id': depts[0].id},
-                {'name': '李四', 'email': 'lisi@example.com', 'password': '123456', 'dept_id': depts[0].id},
-                {'name': '王五', 'email': 'wangwu@example.com', 'password': '123456', 'dept_id': depts[1].id},
-                {'name': '赵六', 'email': 'zhaoliu@example.com', 'password': '123456', 'dept_id': depts[1].id},
-                {'name': '孙七', 'email': 'sunqi@example.com', 'password': '123456', 'dept_id': depts[2].id},
-                {'name': '周八', 'email': 'zhouba@example.com', 'password': '123456', 'dept_id': depts[2].id},
-                {'name': '吴九', 'email': 'wujiu@example.com', 'password': '123456', 'dept_id': depts[3].id},
-                {'name': '郑十', 'email': 'zhengshi@example.com', 'password': '123456', 'dept_id': depts[3].id},
+                {
+                    'username': 'admin',
+                    'name': '超级管理员',
+                    'email': 'admin@example.com',
+                    'password': '$2b$12$RJXAtJodRw37ZQGxTPlu0OH.aN5lNXG6yvC4Tp9GIQEBmMY/YCc.m',
+                    'salt': 'bcNjV',
+                    'dept_id': depts[0].id,
+                    'uuid': uuid4_str(),
+                    'emp_type': UserEmpType.admin,
+                },
+                {
+                    'username': 'zhangs',
+                    'name': '张三',
+                    'email': 'zhangsan@example.com',
+                    'password': '$2b$12$RJXAtJodRw37ZQGxTPlu0OH.aN5lNXG6yvC4Tp9GIQEBmMY/YCc.m',
+                    'salt': 'bcNjV',
+                    'dept_id': depts[0].id,
+                    'uuid': uuid4_str(),
+                    'emp_type': UserEmpType.staff,
+                },
+                {
+                    'username': 'lis',
+                    'name': '李四',
+                    'email': 'lis@example.com',
+                    'password': '$2b$12$RJXAtJodRw37ZQGxTPlu0OH.aN5lNXG6yvC4Tp9GIQEBmMY/YCc.m',
+                    'salt': 'bcNjV',
+                    'dept_id': depts[0].id,
+                    'uuid': uuid4_str(),
+                    'emp_type': UserEmpType.staff,
+                },
+                {
+                    'username': 'wangw',
+                    'name': '王五',
+                    'email': 'wangwu@example.com',
+                    'password': '$2b$12$RJXAtJodRw37ZQGxTPlu0OH.aN5lNXG6yvC4Tp9GIQEBmMY/YCc.m',
+                    'salt': 'bcNjV',
+                    'dept_id': depts[1].id,
+                    'uuid': uuid4_str(),
+                    'emp_type': UserEmpType.staff,
+                },
+                {
+                    'username': 'zhaol',
+                    'name': '赵六',
+                    'email': 'zhaoliu@example.com',
+                    'password': '$2b$12$RJXAtJodRw37ZQGxTPlu0OH.aN5lNXG6yvC4Tp9GIQEBmMY/YCc.m',
+                    'salt': 'bcNjV',
+                    'dept_id': depts[1].id,
+                    'uuid': uuid4_str(),
+                    'emp_type': UserEmpType.staff,
+                },
+                {
+                    'username': 'sunq',
+                    'name': '孙七',
+                    'email': 'sunqi@example.com',
+                    'password': '$2b$12$RJXAtJodRw37ZQGxTPlu0OH.aN5lNXG6yvC4Tp9GIQEBmMY/YCc.m',
+                    'salt': 'bcNjV',
+                    'dept_id': depts[2].id,
+                    'uuid': uuid4_str(),
+                    'emp_type': UserEmpType.staff,
+                },
+                {
+                    'username': 'zhoub',
+                    'name': '周八',
+                    'email': 'zhouba@example.com',
+                    'password': '$2b$12$RJXAtJodRw37ZQGxTPlu0OH.aN5lNXG6yvC4Tp9GIQEBmMY/YCc.m',
+                    'salt': 'bcNjV',
+                    'dept_id': depts[2].id,
+                    'uuid': uuid4_str(),
+                    'emp_type': UserEmpType.staff,
+                },
+                {
+                    'username': 'wujiu',
+                    'name': '吴九',
+                    'email': 'wujiu@example.com',
+                    'password': '$2b$12$RJXAtJodRw37ZQGxTPlu0OH.aN5lNXG6yvC4Tp9GIQEBmMY/YCc.m',
+                    'salt': 'bcNjV',
+                    'dept_id': depts[3].id,
+                    'uuid': uuid4_str(),
+                    'emp_type': UserEmpType.staff,
+                },
+                {
+                    'username': 'zhengshi',
+                    'name': '郑十',
+                    'email': 'zhengshi@example.com',
+                    'password': '$2b$12$RJXAtJodRw37ZQGxTPlu0OH.aN5lNXG6yvC4Tp9GIQEBmMY/YCc.m',
+                    'salt': 'bcNjV',
+                    'dept_id': depts[3].id,
+                    'uuid': uuid4_str(),
+                    'emp_type': UserEmpType.staff,
+                },
             ]
         )
 

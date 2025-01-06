@@ -7,16 +7,19 @@
 # @Software: Cursor
 # @Description: 系统管理模块数据模型
 from datetime import datetime
-from typing import Annotated, Any, Literal
+from typing import Literal
 
+from pydantic import field_validator
 import sqlalchemy as sa
 
 from sqlalchemy import JSON, TEXT, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.common.data_model.base_model import DatabaseModel, SoftDeleteMixin, mapper_registry
-from src.common.data_model.base_schema import SchemaType, generate_schema
-from src.common.enums import UserStatus
+from src.common.data_model.base_model import DatabaseModel, DateTimeMixin, SoftDeleteMixin, mapper_registry
+from src.common.data_model.base_schema import BaseSchema, SchemaType, generate_schema
+from src.common.enums import UserEmpType, UserStatus
+from src.core.conf import settings
+from src.database.db_session import uuid4_str
 
 
 class OperaLog(DatabaseModel):
@@ -45,7 +48,27 @@ class OperaLog(DatabaseModel):
     opera_time: Mapped[datetime] = mapped_column(comment='操作时间')
 
 
-class Dept(SoftDeleteMixin, DatabaseModel):
+class LoginLog(DatabaseModel, DateTimeMixin):
+    """登录日志表"""
+
+    __tablename__ = 'sys_login_log'  # type: ignore
+
+    user_uuid: Mapped[str] = mapped_column(String(50), comment='用户UUID')
+    username: Mapped[str | None] = mapped_column(String(20), comment='用户名')
+    status: Mapped[int] = mapped_column(insert_default=0, comment='登录状态(0失败 1成功)')
+    ip: Mapped[str | None] = mapped_column(String(50), comment='登录IP地址')
+    country: Mapped[str | None] = mapped_column(String(50), comment='国家')
+    region: Mapped[str | None] = mapped_column(String(50), comment='地区')
+    city: Mapped[str | None] = mapped_column(String(50), comment='城市')
+    user_agent: Mapped[str | None] = mapped_column(String(255), comment='请求头')
+    os: Mapped[str | None] = mapped_column(String(50), comment='操作系统')
+    browser: Mapped[str | None] = mapped_column(String(50), comment='浏览器')
+    device: Mapped[str | None] = mapped_column(String(50), comment='设备')
+    msg: Mapped[str] = mapped_column(TEXT, comment='提示消息')
+    login_time: Mapped[datetime] = mapped_column(comment='登录时间')
+
+
+class Dept(DatabaseModel, SoftDeleteMixin, DateTimeMixin):
     """部门模型"""
     __tablename__: Literal["sys_depts"] = "sys_depts"
     __table_args__ = (
@@ -64,22 +87,33 @@ class Dept(SoftDeleteMixin, DatabaseModel):
     )
 
 
-class User(SoftDeleteMixin, DatabaseModel):
+class User(SoftDeleteMixin, DatabaseModel, DateTimeMixin):
     """用户模型"""
     __tablename__: Literal["sys_users"] = "sys_users"
     __table_args__ = (
-        sa.UniqueConstraint('name', name='ix_sys_users_unique_name'),
+        sa.UniqueConstraint('username', name='ix_sys_users_unique_username'),
         sa.UniqueConstraint('email', name='ix_sys_users_unique_email'),
     )
 
-    name: Mapped[str] = mapped_column(sa.String(50), nullable=False, comment="用户名")
+    dept_id: Mapped[int | None] = mapped_column(sa.ForeignKey("sys_depts.id"), nullable=True, comment="部门ID")
+    name: Mapped[str] = mapped_column(sa.String(50), nullable=False, comment="姓名")
     email: Mapped[str] = mapped_column(sa.String(120), nullable=False, comment="邮箱")
-    password: Mapped[str] = mapped_column(sa.String(128), nullable=False, comment="密码")
     phone: Mapped[str | None] = mapped_column(sa.String(20), nullable=True, comment="手机号")
-    user_status: Mapped[UserStatus] = mapped_column(
+
+    username: Mapped[str | None] = mapped_column(sa.String(50), nullable=True, comment="用户名")
+    password: Mapped[str] = mapped_column(sa.String(128), nullable=False, comment="密码")
+    salt: Mapped[str] = mapped_column(sa.String(128), nullable=False, comment="盐")
+    is_multi_login: Mapped[bool] = mapped_column(sa.Boolean, default=False, nullable=False, comment="是否允许多点登录")
+    status: Mapped[UserStatus] = mapped_column(
         sa.Enum(UserStatus), default=UserStatus.ACTIVE, nullable=False, comment="用户状态"
     )
-    dept_id: Mapped[int] = mapped_column(sa.ForeignKey("sys_depts.id"), nullable=False, comment="部门ID")
+    uuid: Mapped[str] = mapped_column(
+        sa.String(50), nullable=False, unique=True, comment="用户UUID"
+    )
+    emp_type: Mapped[UserEmpType] = mapped_column(
+        sa.Enum(UserEmpType), default=UserEmpType.staff, nullable=False, comment="员工类型"
+    )
+
     dept = relationship(
         "Dept",
         back_populates="users",
@@ -125,6 +159,8 @@ mapper_registry.configure()
 
 OperaLogSchemaCreate = generate_schema(OperaLog, SchemaType.CREATE)
 
+LoginLogSchemaCreate = generate_schema(LoginLog, SchemaType.CREATE)
+
 DeptSchemaWithUsers = generate_schema(
     Dept, SchemaType.BASE, include_relationships=["users"]
 )
@@ -135,6 +171,19 @@ DeptSchemaCreate = generate_schema(Dept, SchemaType.CREATE)
 UserSchemaBase = generate_schema(User, SchemaType.BASE, include_relationships=["roles", "dept"])
 UserSchemaUpdate = generate_schema(User, SchemaType.UPDATE)
 UserSchemaCreate = generate_schema(User, SchemaType.CREATE, include_relationships=["roles"])
+
+
+class AuthSchemaBase(BaseSchema):
+    """认证模型"""
+    username: str
+    password: str | None
+
+
+class AuthLoginParam(AuthSchemaBase):
+    """登录参数"""
+    if settings.CAPTCHA_NEED:
+        captcha: str
+
 
 RoleSchemaBase = generate_schema(Role, SchemaType.BASE)
 RoleSchemaUpdate = generate_schema(Role, SchemaType.UPDATE)

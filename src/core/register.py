@@ -24,6 +24,7 @@ from src.core.responses.response_schema import MsgSpecJSONResponse
 from src.database.db_redis import redis_client
 from src.middleware.opera_log_middleware import OperaLogMiddleware
 from src.middleware.profiling_middleware import ProfilingMiddleware
+from src.middleware.state_middleware import StateMiddleware
 from src.utils.health_check import http_limit_callback
 
 
@@ -102,12 +103,15 @@ def register_middleware(app: FastAPI) -> None:
     """
     # GZip
     app.add_middleware(GZipMiddleware, minimum_size=1000)
+    # State (required)
+    app.add_middleware(StateMiddleware)
     # Trace ID (required)
     app.add_middleware(CorrelationIdMiddleware, validator=None)
     # Opera log (required)
     app.add_middleware(OperaLogMiddleware)
     # Profiling (optional)
-    app.add_middleware(ProfilingMiddleware) if settings.APP_DEBUG else None
+    if settings.APP_DEBUG:
+        app.add_middleware(ProfilingMiddleware)
 
     # CORS: Always at the end
     if settings.MIDDLEWARE_CORS:
