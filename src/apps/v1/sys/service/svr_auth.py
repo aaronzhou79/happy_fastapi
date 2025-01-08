@@ -160,16 +160,16 @@ class AuthService(BaseService[User, AuthLoginParam, AuthLoginParam]):
         token = await get_token(request)
         refresh_token = request.cookies.get(settings.COOKIE_REFRESH_TOKEN_KEY)
         response.delete_cookie(settings.COOKIE_REFRESH_TOKEN_KEY)
-        if hasattr(request, 'user') and request.user.is_multi_login:
-            key = f'{settings.TOKEN_REDIS_PREFIX}:{request.user.id}:{token}'
+        if hasattr(request, 'user') and request.user.user_data.is_multi_login:
+            key = f'{settings.TOKEN_REDIS_PREFIX}:{request.user.user_data.id}:{token}'
             await redis_client.delete(key)
             if refresh_token:
-                key = f'{settings.TOKEN_REFRESH_REDIS_PREFIX}:{request.user.id}:{refresh_token}'
+                key = f'{settings.TOKEN_REFRESH_REDIS_PREFIX}:{request.user.user_data.id}:{refresh_token}'
                 await redis_client.delete(key)
         else:
-            key_prefix = f'{settings.TOKEN_REDIS_PREFIX}:{request.user.id}:'
+            key_prefix = f'{settings.TOKEN_REDIS_PREFIX}:{request.user.user_data.id}:'
             await redis_client.delete_prefix(key_prefix)
-            key_prefix = f'{settings.TOKEN_REFRESH_REDIS_PREFIX}:{request.user.id}:'
+            key_prefix = f'{settings.TOKEN_REFRESH_REDIS_PREFIX}:{request.user.user_data.id}:'
             await redis_client.delete_prefix(key_prefix)
 
     @staticmethod

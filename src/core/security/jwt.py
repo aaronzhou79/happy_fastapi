@@ -8,13 +8,9 @@ from fastapi.security.utils import get_authorization_scheme_param
 from jose import ExpiredSignatureError, JWTError, jwt
 from passlib.context import CryptContext
 
-from src.apps.v1.sys.crud.user import crud_user
-from src.apps.v1.sys.models import User
 from src.common.dataclasses import AccessToken, NewToken, RefreshToken
-from src.common.enums import UserStatus
 from src.core.conf import settings
 from src.database.db_redis import redis_client
-from src.database.db_session import AuditAsyncSession
 from src.utils.timezone import TimeZone
 
 from ..exceptions.errors import AuthorizationError, TokenError
@@ -172,26 +168,6 @@ async def jwt_authentication(token: str) -> int:
     if not token_verify:
         raise TokenError(msg='Token 已过期')
     return user_id
-
-
-async def get_current_user(db: AuditAsyncSession, pk: int) -> User:
-    """
-    通过令牌获取当前用户
-
-    :param db:
-    :param pk:
-    :return:
-    """
-    user = await crud_user.get_by_id(db, id=pk)
-    if not user:
-        raise TokenError(msg='Token 无效')
-    if not user.status and user.status != UserStatus.ACTIVE:
-        raise AuthorizationError(msg='用户已被锁定，请联系系统管理员')
-    if user.roles:
-        role_status = [role.status for role in user.roles]
-        if all(status == 0 for status in role_status):
-            raise AuthorizationError(msg='用户所属角色已锁定')
-    return user
 
 
 async def superuser_verify(request: Request) -> bool:

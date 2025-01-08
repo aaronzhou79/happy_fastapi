@@ -7,6 +7,7 @@ from fastapi.security.utils import get_authorization_scheme_param
 from starlette.authentication import AuthCredentials, AuthenticationBackend, AuthenticationError, BaseUser
 from starlette.requests import HTTPConnection
 
+from src.apps.v1.sys.crud.user import crud_user
 from src.apps.v1.sys.models import UserSchemaBase
 from src.common.logger import log
 from src.core.conf import settings
@@ -36,7 +37,7 @@ class AuthenticatedUser(BaseUser):
     """认证用户"""
 
     def __init__(self, user_data: UserSchemaBase):
-        self.user_data = user_data
+        self.user_data: UserSchemaBase = user_data
 
     @property
     def is_authenticated(self) -> bool:
@@ -83,13 +84,14 @@ class JwtAuthMiddleware(AuthenticationBackend):
             cache_user = await redis_client.get(f'{settings.JWT_USER_REDIS_PREFIX}:{sub}')
             if not cache_user:
                 async with async_audit_session(async_session(), request=request) as db:
-                    current_user = await jwt.get_current_user(db, sub)
-                    user = UserSchemaBase.model_validate(current_user.to_api_dict())
-                    await redis_client.setex(
-                        f'{settings.JWT_USER_REDIS_PREFIX}:{sub}',
-                        settings.JWT_USER_REDIS_EXPIRE_SECONDS or 60 * 60 * 24 * 30,
-                        user.model_dump_json(),
-                    )
+                    current_user = await crud_user.get_by_id(db, id=sub)
+                    if current_user:
+                        user = UserSchemaBase.model_validate(await current_user.to_api_dict())
+                        await redis_client.setex(
+                            f'{settings.JWT_USER_REDIS_PREFIX}:{sub}',
+                            settings.JWT_USER_REDIS_EXPIRE_SECONDS or 60 * 60 * 24 * 30,
+                            user.model_dump_json(),
+                        )
             else:
                 user = UserSchemaBase.model_validate_json(cache_user)
         except TokenError as exc:
