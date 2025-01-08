@@ -172,7 +172,7 @@ DeptSchemaCreate = generate_schema(Dept, SchemaType.CREATE)
 UserSchemaBase = generate_schema(
     User,
     SchemaType.BASE,
-    exclude_fields=["username", "password", "salt"],
+    exclude_fields=["password", "salt"],
     include_relationships=["roles", "dept"]
 )
 UserSchemaUpdate = generate_schema(

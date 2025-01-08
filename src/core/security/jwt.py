@@ -7,8 +7,8 @@ from fastapi.security import HTTPBearer
 from fastapi.security.utils import get_authorization_scheme_param
 from jose import ExpiredSignatureError, JWTError, jwt
 from passlib.context import CryptContext
-from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.apps.v1.sys.crud.user import crud_user
 from src.apps.v1.sys.models import User
 from src.common.dataclasses import AccessToken, NewToken, RefreshToken
 from src.common.enums import UserStatus
@@ -182,7 +182,7 @@ async def get_current_user(db: AuditAsyncSession, pk: int) -> User:
     :param pk:
     :return:
     """
-    user = await User.get_by_id(db, pk=pk)
+    user = await crud_user.get_by_id(db, id=pk)
     if not user:
         raise TokenError(msg='Token 无效')
     if not user.status and user.status != UserStatus.ACTIVE:

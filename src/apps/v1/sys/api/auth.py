@@ -7,12 +7,13 @@
 # @Software: Cursor
 # @Description: 用户认证API
 from typing import Annotated
-from fastapi import APIRouter, BackgroundTasks, Body, Query, Request, Response
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, Query, Request, Response
 from pydantic import Field
 
 from src.apps.v1.sys.models import AuthLoginParam
 from src.apps.v1.sys.service.svr_auth import AuthService
 from src.core.responses.response_schema import ResponseModel, response_base
+from src.core.security.jwt import DependsJwtAuth
 
 """
 用户认证API
@@ -37,7 +38,12 @@ async def login(
     return response_base.success(data=data)
 
 
-@router.post("/logout")
+@router.post(
+    "/logout",
+    dependencies=[
+        DependsJwtAuth,
+    ]
+)
 async def logout(
     request: Request,
     response: Response,

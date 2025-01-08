@@ -27,24 +27,8 @@ from src.database.db_session import AuditAsyncSession, async_audit_session, asyn
 from src.utils.timezone import TimeZone
 
 
-class AuthService(BaseService[User]):
+class AuthService(BaseService[User, AuthLoginParam, AuthLoginParam]):
     """用户认证服务"""
-    @staticmethod
-    async def swagger_login(*, obj: HTTPBasicCredentials) -> tuple[str, User]:
-        """swagger登录"""
-        async with async_audit_session(async_session(), None) as db:
-            current_user = await User.get_by_fields(db, username=obj.username)
-            if not current_user:
-                raise errors.RequestError(msg='用户名或密码有误')
-
-            if not password_verify(f'{obj.password}{current_user.salt}', f'{current_user.password}'):
-                raise errors.AuthorizationError(msg='用户名或密码有误')
-            if not current_user.status and current_user.status != UserStatus.ACTIVE:
-                raise errors.AuthorizationError(msg='用户已被锁定, 请联系统管理员')
-            access_token = await create_access_token(str(current_user.id), current_user.is_multi_login)
-            await current_user.update_fields(db, last_login_time=TimeZone.now())
-            return access_token.access_token, current_user
-
     @staticmethod
     async def login(
         *, request: Request, response: Response, obj: AuthLoginParam, background_tasks: BackgroundTasks
@@ -86,7 +70,7 @@ class AuthService(BaseService[User]):
                     raise errors.RequestError(msg='验证码失效，请重新获取')
                 if captcha_code.lower() != obj.captcha.lower():
                     raise errors.RequestError(msg='验证码有误')
-            current_user = await User.get_by_fields(session, username=obj.username)
+            current_user = await crud_user.get_by_fields(session=session, username=obj.username)
             if current_user is None:
                 raise errors.RequestError(msg="用户名有误!")
             user_uuid = current_user.uuid
@@ -110,7 +94,11 @@ class AuthService(BaseService[User]):
 
             if settings.CAPTCHA_NEED:
                 await redis_client.delete(f'{settings.CAPTCHA_LOGIN_REDIS_PREFIX}:{request.state.ip}')
-            await current_user.update_fields(session=session, id=current_user_id, last_login_time=TimeZone.now())
+            await crud_user.update(
+                session=session,
+                db_obj=current_user,
+                obj_in={"last_login_time": TimeZone.now()},
+            )
             try:
                 response.set_cookie(
                     key=settings.COOKIE_REFRESH_TOKEN_KEY,
@@ -142,7 +130,7 @@ class AuthService(BaseService[User]):
         if request.user.id != user_id:
             raise errors.TokenError(msg='Refresh Token 无效')
         async with async_audit_session(async_session(), None) as db:
-            current_user = await User.get_by_fields(db, id=user_id)
+            current_user = await crud_user.get_by_fields(session=db, id=user_id)
             if not current_user:
                 raise errors.RequestError(msg='用户名或密码有误')
             if not current_user.status:
@@ -172,7 +160,7 @@ class AuthService(BaseService[User]):
         token = await get_token(request)
         refresh_token = request.cookies.get(settings.COOKIE_REFRESH_TOKEN_KEY)
         response.delete_cookie(settings.COOKIE_REFRESH_TOKEN_KEY)
-        if request.user.is_multi_login:
+        if hasattr(request, 'user') and request.user.is_multi_login:
             key = f'{settings.TOKEN_REDIS_PREFIX}:{request.user.id}:{token}'
             await redis_client.delete(key)
             if refresh_token:

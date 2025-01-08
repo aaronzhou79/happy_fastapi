@@ -6,7 +6,10 @@
 # @File    : __init__.py
 # @Software: Cursor
 # @Description: 数据初始化
-from src.apps.v1.sys.models import Dept, Role, User
+from src.apps.v1.sys.crud.dept import crud_dept
+from src.apps.v1.sys.crud.role import crud_role
+from src.apps.v1.sys.crud.user import crud_user
+from src.apps.v1.sys.models import Role, User
 from src.common.enums import UserEmpType
 from src.database.db_session import async_session as async_session
 from src.database.db_session import uuid4_str
@@ -16,7 +19,7 @@ async def init_data() -> None:
     """初始化数据"""
     async with async_session() as session:
         # 批量创建部门
-        depts = await Dept.bulk_create(
+        depts = await crud_dept.bulk_create(
             session,
             [
                 {'name': '研发部'},
@@ -33,7 +36,7 @@ async def init_data() -> None:
             return
 
         # 批量创建用户
-        await User.bulk_create(
+        await crud_user.bulk_create(
             session,
             [
                 {
@@ -113,7 +116,7 @@ async def init_data() -> None:
             ]
         )
 
-        await Role.bulk_create(
+        await crud_role.bulk_create(
             session,
             [
                 {'name': '总经理'},

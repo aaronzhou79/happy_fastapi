@@ -11,6 +11,7 @@ import asyncio
 
 from fastapi import Request
 
+from src.apps.v1.sys.crud.dept import crud_dept
 from src.apps.v1.sys.models import Dept, DeptSchemaBase, DeptSchemaCreate, DeptSchemaUpdate, DeptSchemaWithUsers
 from src.common.base_api import BaseAPI
 from src.core.responses.response_schema import ResponseModel, response_base
@@ -38,7 +39,7 @@ async def lock_test(
     """
     测试锁。
     """
-    model = await Dept.get_by_id(session, id=dept_id)
+    model = await crud_dept.get_by_id(session, id=dept_id)
     if not model:
         return response_base.fail(data="部门不存在")
 

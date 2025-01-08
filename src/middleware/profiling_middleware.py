@@ -23,6 +23,7 @@ class ProfilingMiddleware(BaseHTTPMiddleware):
         初始化
         """
         super().__init__(app)
+        self._profiler = None
         # 从配置或参数中读取阈值
         self.slow_threshold = options.get('slow_threshold', settings.SLOW_REQUEST_THRESHOLD)
         self.memory_warning_threshold = options.get(
@@ -37,10 +38,12 @@ class ProfilingMiddleware(BaseHTTPMiddleware):
         """
         # 获取请求ID用于关联日志
         request_id = request.headers.get('X-Request-ID', '')
-
+        if self._profiler is not None:
+            # 如果已经有profiler在运行，直接执行下一个中间件
+            return await call_next(request)
         # 启动性能分析
-        profiler = cProfile.Profile()
-        profiler.enable()
+        self._profiler = cProfile.Profile()
+        self._profiler.enable()
 
         # 记录开始时间和内存
         start_time = time.time()
@@ -54,10 +57,10 @@ class ProfilingMiddleware(BaseHTTPMiddleware):
         memory_increase = current_memory - start_memory
 
         # 停止性能分析
-        profiler.disable()
+        self._profiler.disable()
 
         # 使用 Stats 对象直接获取性能数据,避免字符串解析
-        stats = pstats.Stats(profiler)
+        stats = pstats.Stats(self._profiler)
         profile_data = self._get_profile_stats(stats)
 
         # 记录结构化的性能日志

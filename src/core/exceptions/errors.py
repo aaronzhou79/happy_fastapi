@@ -115,3 +115,13 @@ class TokenError(HTTPError):
 
     def __init__(self, *, msg: str = 'Not Authenticated', headers: dict[str, Any] | None = None):
         super().__init__(code=self.code, msg=msg, headers=headers or {'WWW-Authenticate': 'Bearer'})
+
+
+class DBError(BaseError):
+    """
+    数据库错误异常类
+    """
+    code = StandardResponseCode.HTTP_500
+
+    def __init__(self, *, msg: str = 'Database Error', data: Any = None, background: BackgroundTask | None = None):
+        super().__init__(msg=msg, data=data, background=background)

@@ -14,6 +14,8 @@ from asgi_correlation_id import CorrelationIdMiddleware
 from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi_limiter import FastAPILimiter
+from starlette.middleware.authentication import AuthenticationMiddleware
+from src.middleware.jwt_auth_middleware import JwtAuthMiddleware
 
 from src.apps import router as apps_router
 from src.common.data_model.base_model import create_table
@@ -105,6 +107,12 @@ def register_middleware(app: FastAPI) -> None:
     app.add_middleware(GZipMiddleware, minimum_size=1000)
     # State (required)
     app.add_middleware(StateMiddleware)
+    # JWT auth (required)
+    app.add_middleware(
+        AuthenticationMiddleware,
+        backend=JwtAuthMiddleware(),
+        on_error=JwtAuthMiddleware.auth_exception_handler,  # type: ignore
+    )
     # Trace ID (required)
     app.add_middleware(CorrelationIdMiddleware, validator=None)
     # Opera log (required)
