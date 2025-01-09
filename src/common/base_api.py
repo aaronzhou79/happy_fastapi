@@ -229,7 +229,7 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
             session: CurrentSession,
             options: QueryOptions
         ) -> ResponseModel:  # type: ignore
-            items, total = await self.service.crud.query_with_count(session=session, options=options)
+            items, total = await self.service.get_by_options(session=session, options=options)
             return response_base.success(data={"total": total, "items": items})
 
     def include_router(self, router: APIRouter) -> None:

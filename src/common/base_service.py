@@ -3,6 +3,7 @@ from typing import Annotated, Dict, Generic, Sequence
 from sqlmodel import Field
 
 from src.common.base_crud import CreateModelType, CRUDBase, ModelType, UpdateModelType
+from src.common.query_fields import QueryOptions
 from src.database.db_session import AuditAsyncSession
 
 
@@ -51,3 +52,7 @@ class BaseService(Generic[ModelType, CreateModelType, UpdateModelType]):
     async def bulk_delete(self, session: AuditAsyncSession, ids: Sequence[int]) -> list[int]:
         """批量删除对象"""
         return await self.crud.bulk_delete(session=session, ids=ids)
+
+    async def get_by_options(self, session: AuditAsyncSession, options: QueryOptions) -> tuple[int, Sequence[ModelType]]:
+        """根据查询选项获取对象列表和总数"""
+        return await self.crud.get_by_options(session=session, options=options)

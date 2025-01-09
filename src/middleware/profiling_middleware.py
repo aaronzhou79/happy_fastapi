@@ -81,7 +81,7 @@ class ProfilingMiddleware(BaseHTTPMiddleware):
         for func, (cc, nc, tt, ct, callers) in stats.stats.items():   # type: ignore
             if any(kw in str(func).lower() for kw in self.DB_OP_KEYWORDS):
                 results.append({
-                    'func_name': func[2],
+                    'func_name': str(func[2]) if isinstance(func, tuple) else str(func),
                     'total_time': ct,
                     'calls': cc
                 })
@@ -119,7 +119,7 @@ class ProfilingMiddleware(BaseHTTPMiddleware):
             sorted_data = sorted(profile_data, key=lambda x: x['total_time'], reverse=True)[:10]
             for op in sorted_data:
                 perf_data['db_operations'].append({
-                    'name': op['func_name'].split('/')[-1],
+                    'name': op['func_name'].split('/')[-1],  # type: ignore
                     'time': round(op['total_time'], 3),
                     'calls': op['calls'],
                     'percentage': round((op['total_time'] / duration) * 100, 1)

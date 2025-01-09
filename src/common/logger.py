@@ -69,11 +69,11 @@ def setup_logging() -> None:
     # 定义correlation_id过滤函数
     # https://github.com/snok/asgi-correlation-id?tab=readme-ov-file#configure-logging
     # https://github.com/snok/asgi-correlation-id/issues/7
-    def correlation_id_filter(record) -> bool:
+    def correlation_id_filter(record: dict) -> bool:
         """设置correlation_id和trace_id"""
-        # 设置correlation_id
-        cid = correlation_id.get(settings.LOG_CID_DEFAULT_VALUE)
-        record['correlation_id'] = cid[: settings.LOG_CID_UUID_LENGTH] if cid else settings.LOG_CID_DEFAULT_VALUE
+        current_id = correlation_id.get()
+        cid = str(current_id) if current_id is not None else settings.LOG_CID_DEFAULT_VALUE
+        record['correlation_id'] = cid[: settings.LOG_CID_UUID_LENGTH]   # type: ignore
 
         return True
 
@@ -83,13 +83,13 @@ def setup_logging() -> None:
             {
                 'sink': stdout,
                 'level': settings.LOG_STDOUT_LEVEL,
-                'filter': lambda record: correlation_id_filter(record) and record['level'].no <= 25,
+                'filter': lambda record: correlation_id_filter(record) and record['level'].no <= 25,  # type: ignore
                 'format': settings.LOG_STD_FORMAT,
             },
             {
                 'sink': stderr,
                 'level': settings.LOG_STDERR_LEVEL,
-                'filter': lambda record: correlation_id_filter(record) and record['level'].no >= 30,
+                'filter': lambda record: correlation_id_filter(record) and record['level'].no >= 30,  # type: ignore
                 'format': settings.LOG_STD_FORMAT,
             },
         ]
