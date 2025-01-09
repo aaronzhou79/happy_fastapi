@@ -11,7 +11,6 @@ from loguru import logger
 
 from src.core import path_conf
 from src.core.conf import settings
-from src.utils.trace_id import get_request_trace_id
 
 
 class InterceptHandler(logging.Handler):

@@ -69,6 +69,18 @@ class UserUpdate(UserBase):
     id: int
 
 
+class UserCreateWithRoles(UserCreate):
+    """带角色的用户创建模型"""
+    roles: list[int] | None = None
+
+    def model_dump(self, **kwargs) -> dict[str, Any]:
+        """自定义序列化方法，排除roles字段"""
+        exclude = kwargs.get('exclude', set())
+        exclude.add('roles')
+        kwargs['exclude'] = exclude
+        return super().model_dump(**kwargs)
+
+
 class UserGetWithRoles(UserBase):
     """用户获取模型"""
     id: int

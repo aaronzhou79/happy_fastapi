@@ -98,7 +98,8 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
         ) -> ResponseModel[self.base_schema]:  # type: ignore
             async with async_audit_session(async_session(), request) as session:
                 result = await self.service.create(session=session, obj_in=obj_in)
-            return response_base.success(data=result)
+                data = await result.to_api_dict()
+            return response_base.success(data=data)
 
     def _register_bulk_create(self) -> None:
         """注册批量创建接口"""
@@ -230,7 +231,7 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
             options: QueryOptions,
         ) -> ResponseModel:  # type: ignore
             total, items = await self.service.get_by_options(session=session, options=options)
-            data = [await item.to_api_dict(max_depth=1) for item in items]
+            data = [await item.to_api_dict() for item in items]
             return response_base.success(data={"total": total, "items": data})
 
     def include_router(self, router: APIRouter) -> None:
