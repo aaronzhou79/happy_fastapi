@@ -8,7 +8,7 @@ from starlette.authentication import AuthCredentials, AuthenticationBackend, Aut
 from starlette.requests import HTTPConnection
 
 from src.apps.v1.sys.crud.user import crud_user
-from src.apps.v1.sys.models import UserSchemaBase
+from src.apps.v1.sys.models.user import UserBase
 from src.common.logger import log
 from src.core.conf import settings
 from src.core.exceptions.errors import TokenError
@@ -36,8 +36,8 @@ class _AuthenticationError(AuthenticationError):
 class AuthenticatedUser(BaseUser):
     """认证用户"""
 
-    def __init__(self, user_data: UserSchemaBase):
-        self.user_data: UserSchemaBase = user_data
+    def __init__(self, user_data: UserBase):
+        self.user_data: UserBase = user_data
 
     @property
     def is_authenticated(self) -> bool:
@@ -47,12 +47,12 @@ class AuthenticatedUser(BaseUser):
     @property
     def display_name(self) -> str:
         """显示名称"""
-        return str(self.user_data.username)
+        return str(getattr(self.user_data, 'username', ''))
 
     @property
     def identity(self) -> str:
         """标识"""
-        return str(self.user_data.id)
+        return str(getattr(self.user_data, 'id', ''))
 
 
 class JwtAuthMiddleware(AuthenticationBackend):
@@ -66,7 +66,7 @@ class JwtAuthMiddleware(AuthenticationBackend):
             status_code=exc.code or 401,
         )
 
-    async def authenticate(self, request: Request) -> tuple[AuthCredentials, UserSchemaBase] | None:  # type: ignore
+    async def authenticate(self, request: Request) -> tuple[AuthCredentials, AuthenticatedUser] | None:
         """认证"""
         token = request.headers.get('Authorization')
         if not token:
@@ -86,14 +86,14 @@ class JwtAuthMiddleware(AuthenticationBackend):
                 async with async_audit_session(async_session(), request=request) as db:
                     current_user = await crud_user.get_by_id(db, id=sub)
                     if current_user:
-                        user = UserSchemaBase.model_validate(await current_user.to_api_dict())
+                        user = UserBase.model_validate(await current_user.to_api_dict())
                         await redis_client.setex(
                             f'{settings.JWT_USER_REDIS_PREFIX}:{sub}',
                             settings.JWT_USER_REDIS_EXPIRE_SECONDS or 60 * 60 * 24 * 30,
                             user.model_dump_json(),
                         )
             else:
-                user = UserSchemaBase.model_validate_json(cache_user)
+                user = UserBase.model_validate_json(cache_user)
         except TokenError as exc:
             raise _AuthenticationError(code=exc.code, msg=exc.detail, headers=exc.headers) from exc
         except Exception as e:

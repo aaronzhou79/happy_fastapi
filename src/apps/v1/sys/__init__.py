@@ -11,6 +11,8 @@ from fastapi import APIRouter
 
 from .api.auth import router as auth_api
 from .api.dept import dept_api
+from .api.login_log import login_log_api
+from .api.opera_log import opera_log_api
 from .api.role import role_api
 from .api.user import user_api
 
@@ -20,4 +22,5 @@ router.include_router(auth_api)
 router.include_router(dept_api.router)
 router.include_router(role_api.router)
 router.include_router(user_api.router)
-
+router.include_router(opera_log_api.router)
+router.include_router(login_log_api.router)

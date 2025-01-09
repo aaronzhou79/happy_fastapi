@@ -8,10 +8,10 @@ from starlette.datastructures import UploadFile
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 
-from src.apps.v1.sys.models import OperaLogSchemaCreate
+from src.apps.v1.sys.models.opera_log import OperaLogCreate
 from src.apps.v1.sys.service.svr_opera_log import SvrOperaLog
 from src.common.dataclasses import RequestCallNext
-from src.common.enums import OperaLogCipherType, StatusType
+from src.common.enums import OperaLogCipherType, OperaLogStatusType
 from src.common.logger import log
 from src.core.conf import settings
 from src.utils.encrypt import AESCipher, ItsDCipher, Md5Cipher
@@ -55,7 +55,7 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
         summary = getattr(_route, 'summary', None) or ''
 
         # 日志创建
-        opera_log_in = OperaLogSchemaCreate(
+        opera_log_in = OperaLogCreate(
             trace_id=get_request_trace_id(request),                 # type: ignore
             username=username,                                      # type: ignore
             method=method,                                          # type: ignore
@@ -90,7 +90,7 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
         """执行请求"""
         code = 200
         msg = 'Success'
-        status = StatusType.enable
+        status = OperaLogStatusType.success
         err = None
         response = None
         try:
@@ -101,7 +101,7 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
             # code 处理包含 SQLAlchemy 和 Pydantic
             code = getattr(e, 'code', None) or code
             msg = getattr(e, 'msg', None) or msg
-            status = StatusType.disable
+            status = OperaLogStatusType.fail
             err = e
 
         # 确保 response 不为 None
@@ -172,7 +172,7 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
                 OperaLogCipherType.itsdangerous: lambda x: ItsDCipher(settings.OPERA_LOG_ENCRYPT_SECRET_KEY).encrypt(x),
                 OperaLogCipherType.plan: lambda x: x,
             }
-            return encrypt_map.get(cipher_type, lambda x: '******')(value)
+            return encrypt_map.get(cipher_type, lambda _: '******')(value)
         for key in args.keys():
             if key in settings.OPERA_LOG_ENCRYPT_KEY_INCLUDE:
                 args[key] = _encrypt_value(args[key], OperaLogCipherType(settings.OPERA_LOG_ENCRYPT_TYPE))

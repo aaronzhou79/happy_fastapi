@@ -1,23 +1,31 @@
-import sqlalchemy as sa
-
+# src/apps/v1/sys/crud/user.py
+# !/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# @Date    : 2024/12/31
+# @Author  : Aaron Zhou
+# @File    : user.py
+# @Software: Cursor
+# @Description: 用户相关CRUD类
 from fast_captcha import text_captcha
 
 from src.apps.v1.sys.crud.role import crud_role
 from src.apps.v1.sys.crud.user_role import crud_user_role
-from src.apps.v1.sys.models import User, UserSchemaCreate, UserSchemaUpdate
-from src.common.base_crud import BaseCRUD
+from src.apps.v1.sys.models.user import User, UserCreate, UserUpdate
+from src.common.base_crud import CRUDBase
 from src.core.exceptions import errors
 from src.core.security.jwt import get_hash_password
 from src.database.db_session import AuditAsyncSession
 
 
-class CrudUser(BaseCRUD[User, UserSchemaCreate, UserSchemaUpdate]):
+class CrudUser(CRUDBase[User, UserCreate, UserUpdate]):
     """
     用户CRUD类
     """
     def __init__(self) -> None:
         super().__init__(
             model=User,
+            create_model=UserCreate,
+            update_model=UserUpdate,
         )
 
     async def set_as_user(
@@ -41,9 +49,9 @@ class CrudUser(BaseCRUD[User, UserSchemaCreate, UserSchemaUpdate]):
         """
         current_user = await self.get_by_id(session=session, id=id)
         if current_user is None:
-            raise errors.RequestError(msg="员工信息不存在！")
+            raise errors.RequestError(data="员工信息不存在！")
         if current_user.is_user:
-            raise errors.RequestError(msg="该员工已设置为系统用户！")
+            raise errors.RequestError(data="该员工已设置为系统用户！")
         salt = text_captcha(5)
         # current_user.password = get_hash_password(f'{password}{salt}')
         # current_user.username = username
@@ -51,8 +59,8 @@ class CrudUser(BaseCRUD[User, UserSchemaCreate, UserSchemaUpdate]):
 
         await self.update(
             session=session,
-            db_obj=current_user,
             obj_in={
+                "id": current_user.id,
                 "salt": salt,
                 "password": get_hash_password(f'{password}{salt}'),
                 "username": username,

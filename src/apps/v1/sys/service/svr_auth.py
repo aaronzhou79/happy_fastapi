@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from typing import Any
 
 from fastapi import Request, Response
-from fastapi.security import HTTPBasicCredentials
 from starlette.background import BackgroundTask, BackgroundTasks
 
 from src.apps.v1.sys.crud.user import crud_user
-from src.apps.v1.sys.models import AuthLoginParam, LoginLogSchemaCreate, User
+from src.apps.v1.sys.models.login_log import LoginLogCreate
+from src.apps.v1.sys.models.user import AuthLoginParam, GetLoginToken, GetNewToken, User, UserCreate, UserUpdate
 from src.apps.v1.sys.service.svr_login_log import SvrLoginLog
-from src.apps.v1.sys.token_schema import GetLoginToken, GetNewToken
 from src.common.base_service import BaseService
 from src.common.enums import LoginLogStatusType, UserStatus
 from src.core.conf import settings
@@ -27,7 +25,7 @@ from src.database.db_session import AuditAsyncSession, async_audit_session, asyn
 from src.utils.timezone import TimeZone
 
 
-class AuthService(BaseService[User, AuthLoginParam, AuthLoginParam]):
+class AuthService(BaseService[User, UserCreate, UserUpdate]):
     """用户认证服务"""
     @staticmethod
     async def login(
@@ -45,7 +43,7 @@ class AuthService(BaseService[User, AuthLoginParam, AuthLoginParam]):
             return BackgroundTask(
                     SvrLoginLog.create_login_log,
                     session=session,
-                    login_log_in=LoginLogSchemaCreate(
+                    login_log_in=LoginLogCreate(
                         user_uuid=user_uuid,                  # type: ignore
                         username=username,                    # type: ignore
                         status=status,                        # type: ignore
@@ -67,12 +65,13 @@ class AuthService(BaseService[User, AuthLoginParam, AuthLoginParam]):
                 captcha_code = await redis_client.get(
                     f'{settings.CAPTCHA_LOGIN_REDIS_PREFIX}:{request.state.ip}')
                 if not captcha_code:
-                    raise errors.RequestError(msg='验证码失效，请重新获取')
+                    raise errors.RequestError(data='验证码失效，请重新获取')
                 if captcha_code.lower() != obj.captcha.lower():
-                    raise errors.RequestError(msg='验证码有误')
+                    raise errors.RequestError(data='验证码有误')
             current_user = await crud_user.get_by_fields(session=session, username=obj.username)
-            if current_user is None:
-                raise errors.RequestError(msg="用户名有误!")
+            if len(current_user) != 1:
+                raise errors.RequestError(data="用户名有误!")
+            current_user = current_user[0]
             user_uuid = current_user.uuid
             username = current_user.username
             if not password_verify(f'{obj.password}{current_user.salt}', f'{current_user.password}'):
@@ -96,8 +95,7 @@ class AuthService(BaseService[User, AuthLoginParam, AuthLoginParam]):
                 await redis_client.delete(f'{settings.CAPTCHA_LOGIN_REDIS_PREFIX}:{request.state.ip}')
             await crud_user.update(
                 session=session,
-                db_obj=current_user,
-                obj_in={"last_login_time": TimeZone.now()},
+                obj_in={"id": current_user_id, "last_login_time": TimeZone.now()},
             )
             try:
                 response.set_cookie(
@@ -131,8 +129,9 @@ class AuthService(BaseService[User, AuthLoginParam, AuthLoginParam]):
             raise errors.TokenError(msg='Refresh Token 无效')
         async with async_audit_session(async_session(), None) as db:
             current_user = await crud_user.get_by_fields(session=db, id=user_id)
-            if not current_user:
-                raise errors.RequestError(msg='用户名或密码有误')
+            if len(current_user) != 1:
+                raise errors.RequestError(data='用户名或密码有误')
+            current_user = current_user[0]
             if not current_user.status:
                 raise errors.AuthorizationError(msg='用户已被锁定, 请联系统管理员')
             current_token = await get_token(request)
@@ -179,3 +178,4 @@ class AuthService(BaseService[User, AuthLoginParam, AuthLoginParam]):
             await crud_user.set_as_user(session=session, id=id, username=username, password=password, roles=roles)
 
 
+svr_auth = AuthService(crud_user)

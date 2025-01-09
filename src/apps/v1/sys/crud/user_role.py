@@ -1,11 +1,17 @@
+# src/apps/v1/sys/crud/user_role.py
+# !/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# @Date    : 2024/12/31
+# @Author  : Aaron Zhou
+# @File    : user_role.py
+# @Software: Cursor
+# @Description: 用户角色对应表相关CRUD类
+from src.apps.v1.sys.models.user_role import UserRole, UserRoleCreate, UserRoleUpdate
+from src.common.base_crud import CRUDBase
 
-from src.apps.v1.sys.models import UserRole
-from src.common.base_crud import BaseCRUD
 
-
-class CrudUserRole(BaseCRUD):
+class CrudUserRole(CRUDBase):
     """用户角色对应表相关CRUD类"""
-    pass
 
 
-crud_user_role = CrudUserRole(UserRole)
+crud_user_role = CrudUserRole(UserRole, UserRoleCreate, UserRoleUpdate)

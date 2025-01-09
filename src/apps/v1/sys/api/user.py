@@ -6,17 +6,16 @@
 # @File    : user.py
 # @Software: Cursor
 # @Description: 用户管理API
-
-
+from src.apps.v1.sys.models.user import User, UserBase, UserCreate, UserUpdate
+from src.apps.v1.sys.service.svr_user import svr_user
 from src.common.base_api import BaseAPI
-
-from ..models import User, UserSchemaBase, UserSchemaCreate, UserSchemaUpdate
 
 user_api = BaseAPI(
     model=User,
-    create_schema=UserSchemaCreate,
-    update_schema=UserSchemaUpdate,
-    base_schema=UserSchemaBase,
+    service=svr_user,
+    create_schema=UserCreate,
+    update_schema=UserUpdate,
+    base_schema=UserBase,
     prefix="/user",
     gen_delete=True,
     tags=["用户管理"],

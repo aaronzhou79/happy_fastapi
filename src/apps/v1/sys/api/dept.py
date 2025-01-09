@@ -7,49 +7,22 @@
 # @Software: Cursor
 # @Description: 用户管理API
 
-import asyncio
 
-from fastapi import Request
 
-from src.apps.v1.sys.crud.dept import crud_dept
-from src.apps.v1.sys.models import Dept, DeptSchemaBase, DeptSchemaCreate, DeptSchemaUpdate, DeptSchemaWithUsers
+from src.apps.v1.sys.models.dept import Dept, DeptBase, DeptCreate, DeptUpdate, DeptWithUsers
 from src.common.base_api import BaseAPI
-from src.core.responses.response_schema import ResponseModel, response_base
-from src.database.db_session import CurrentSession, async_audit_session, async_session
+from src.apps.v1.sys.service.svr_dept import svr_dept
 
 dept_api = BaseAPI(
     model=Dept,
-    create_schema=DeptSchemaCreate,
-    update_schema=DeptSchemaUpdate,
-    base_schema=DeptSchemaBase,
-    with_schema=DeptSchemaWithUsers,
+    service=svr_dept,
+    create_schema=DeptCreate,
+    update_schema=DeptUpdate,
+    base_schema=DeptBase,
+    with_schema=DeptWithUsers,
     prefix="/dept",
     gen_delete=True,
+    gen_bulk_delete=True,
     gen_bulk_create=True,
     tags=["部门管理"],
 )
-
-@dept_api.router.post("/lock_test")
-async def lock_test(
-    session: CurrentSession,
-    request: Request,
-    dept_id: int,
-    name: str
-) -> ResponseModel:
-    """
-    测试锁。
-    """
-    model = await crud_dept.get_by_id(session, id=dept_id)
-    if not model:
-        return response_base.fail(data="部门不存在")
-
-    async def do_something() -> str:
-        await asyncio.sleep(30)
-        return "done"
-    # 使用 with_lock 执行自定义操作
-    await model.with_lock(lambda: do_something())
-
-    # update 和 delete 方法已经内置了锁保护
-    async with async_audit_session(async_session(), request) as session:
-        data = await model.update(session=session, id=model.id, name=name)
-    return response_base.success(data=data)

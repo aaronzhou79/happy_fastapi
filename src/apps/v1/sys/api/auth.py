@@ -7,10 +7,10 @@
 # @Software: Cursor
 # @Description: 用户认证API
 from typing import Annotated
-from fastapi import APIRouter, BackgroundTasks, Body, Depends, Query, Request, Response
-from pydantic import Field
 
-from src.apps.v1.sys.models import AuthLoginParam
+from fastapi import APIRouter, BackgroundTasks, Body, Request, Response
+
+from src.apps.v1.sys.models.user import AuthLoginParam
 from src.apps.v1.sys.service.svr_auth import AuthService
 from src.core.responses.response_schema import ResponseModel, response_base
 from src.core.security.jwt import DependsJwtAuth

@@ -32,15 +32,22 @@ class OperaLogCipherType(IntEnum):
     plan = 3
 
 
-class StatusType(IntEnum):
-    """状态类型"""
-
-    disable = 0
-    enable = 1
-
-
 class LoginLogStatusType(IntEnum):
     """登陆日志状态"""
+
+    fail = 0
+    success = 1
+
+
+class RoleStatusType(StrEnum):
+    """角色状态"""
+
+    active = "启用"
+    inactive = "禁用"
+
+
+class OperaLogStatusType(IntEnum):
+    """操作日志状态"""
 
     fail = 0
     success = 1

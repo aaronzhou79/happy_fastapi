@@ -6,15 +6,16 @@
 # @File    : role.py
 # @Software: Cursor
 # @Description: 角色管理API
+from src.apps.v1.sys.models.role import Role, RoleBase, RoleCreate, RoleUpdate
+from src.apps.v1.sys.service.svr_role import svr_role
 from src.common.base_api import BaseAPI
-
-from ..models import Role, RoleSchemaBase, RoleSchemaCreate, RoleSchemaUpdate
 
 role_api = BaseAPI(
     model=Role,
-    create_schema=RoleSchemaCreate,
-    update_schema=RoleSchemaUpdate,
-    base_schema=RoleSchemaBase,
+    service=svr_role,
+    create_schema=RoleCreate,
+    update_schema=RoleUpdate,
+    base_schema=RoleBase,
     prefix="/role",
     gen_bulk_create=True,
     gen_bulk_delete=True,

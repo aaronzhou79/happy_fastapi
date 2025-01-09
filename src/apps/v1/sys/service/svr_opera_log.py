@@ -7,18 +7,19 @@
 # @Software: Cursor
 # @Description: 操作日志服务
 from src.apps.v1.sys.crud.opera_log import crud_opera_log
-from src.apps.v1.sys.models import OperaLogSchemaCreate
+from src.apps.v1.sys.models.opera_log import OperaLog, OperaLogCreate, OperaLogUpdate
+from src.common.base_service import BaseService
 from src.common.logger import log
 from src.core.conf import settings
 from src.database.db_session import async_audit_session, async_session
 
 
-class SvrOperaLog:
+class SvrOperaLog(BaseService[OperaLog, OperaLogCreate, OperaLogUpdate]):
     """
     操作日志服务
     """
     @staticmethod
-    async def create_opera_log(opera_log_in: OperaLogSchemaCreate) -> dict:  # type: ignore
+    async def create_opera_log(opera_log_in: OperaLogCreate) -> dict:  # type: ignore
         """
         创建操作日志
         """
@@ -26,4 +27,7 @@ class SvrOperaLog:
             log.info("================================================")
             log.info(opera_log_in.model_dump())
         async with async_audit_session(async_session()) as session:
-            return await crud_opera_log.create(session, obj_in=opera_log_in.model_dump())
+            return await crud_opera_log.create(session=session, obj_in=opera_log_in)
+
+
+svr_opera_log = SvrOperaLog(crud=crud_opera_log)

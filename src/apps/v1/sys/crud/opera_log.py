@@ -1,11 +1,17 @@
+# src/apps/v1/sys/crud/opera_log.py
+# !/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# @Date    : 2024/12/31
+# @Author  : Aaron Zhou
+# @File    : opera_log.py
+# @Software: Cursor
+# @Description: 操作日志相关CRUD类
+from src.apps.v1.sys.models.opera_log import OperaLog, OperaLogCreate, OperaLogUpdate
+from src.common.base_crud import CRUDBase
 
-from src.apps.v1.sys.models import OperaLog
-from src.common.base_crud import BaseCRUD
 
-
-class CrudOperaLog(BaseCRUD):
+class CrudOperaLog(CRUDBase):
     """操作日志相关CRUD类"""
-    pass
 
 
-crud_opera_log = CrudOperaLog(OperaLog, cached=False)
+crud_opera_log = CrudOperaLog(OperaLog, OperaLogCreate, OperaLogUpdate)

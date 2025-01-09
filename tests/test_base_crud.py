@@ -8,7 +8,7 @@ from sqlalchemy import ForeignKey, String
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-from src.common.base_crud import BaseCRUD, CacheKeyBuilder
+from src.common.base_crud import CRUDBase, CacheKeyBuilder
 from src.common.data_model.query_fields import FilterCondition, FilterGroup, FilterOperator, QueryOptions, SortField
 from src.core.exceptions import errors
 from src.database.cache.cache_utils import CacheManager, CacheResult
@@ -112,13 +112,13 @@ def mock_cache():
 
 
 # 测试类
-class TestBaseCRUD:
-    """测试BaseCRUD类"""
+class TestCRUDBase:
+    """测试CRUDBase类"""
 
     @pytest.fixture
     def dept_crud(self, mock_cache):
         """创建部门CRUD实例"""
-        crud = BaseCRUD[Department, DepartmentCreate, DepartmentUpdate](
+        crud = CRUDBase[Department, DepartmentCreate, DepartmentUpdate](
             model=Department,
             cache_prefix="dept",
             cache_ttl=3600
@@ -129,7 +129,7 @@ class TestBaseCRUD:
     @pytest.fixture
     def emp_crud(self, mock_cache):
         """创建员工CRUD实例"""
-        crud = BaseCRUD[Employee, EmployeeCreate, EmployeeUpdate](
+        crud = CRUDBase[Employee, EmployeeCreate, EmployeeUpdate](
             model=Employee,
             cache_prefix="emp",
             cache_ttl=3600
