@@ -10,7 +10,7 @@ from typing import Literal
 
 from sqlmodel import Field, SQLModel
 
-from src.common.data_model.base_model import DatabaseModel
+from src.common.base_model import DatabaseModel
 
 
 # ------------------------------ UserRole ------------------------------

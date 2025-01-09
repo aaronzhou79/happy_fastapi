@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any, Literal
 from sqlmodel import Field, Relationship, SQLModel
 
 from src.apps.v1.sys.models.user_role import UserRole
-from src.common.data_model.base_model import DatabaseModel, id_pk
+from src.common.base_model import DatabaseModel, id_pk
 from src.common.enums import UserEmpType, UserStatus
 from src.core.conf import settings
 from src.database.db_session import uuid4_str

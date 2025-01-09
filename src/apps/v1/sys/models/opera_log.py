@@ -5,7 +5,7 @@ import sqlalchemy as sa
 
 from sqlmodel import Field, SQLModel
 
-from src.common.data_model.base_model import DatabaseModel, id_pk
+from src.common.base_model import DatabaseModel, id_pk
 from src.common.enums import OperaLogStatusType
 from src.utils.timezone import TimeZone
 

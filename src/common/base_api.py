@@ -7,12 +7,11 @@ from aiocache import RedisCache, cached
 from aiocache.serializers import PickleSerializer
 from fastapi import APIRouter, Body, Path, Query, Request
 from fastapi.params import Depends
-from sqlmodel import SQLModel
 from typing_extensions import Annotated
 
 from src.common.base_crud import CreateModelType, ModelType, UpdateModelType
 from src.common.base_service import BaseService
-from src.common.data_model.query_fields import QueryOptions
+from src.common.query_fields import QueryOptions
 from src.core.conf import settings
 from src.core.responses.response_schema import ResponseModel, response_base
 from src.database.cache.cache_conf import generate_cache_key, get_redis_settings

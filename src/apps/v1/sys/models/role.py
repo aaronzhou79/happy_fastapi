@@ -13,7 +13,7 @@ import sqlalchemy as sa
 from sqlmodel import Field, Relationship, SQLModel
 
 from src.apps.v1.sys.models.user_role import UserRole
-from src.common.data_model.base_model import DatabaseModel, id_pk
+from src.common.base_model import DatabaseModel, id_pk
 from src.common.enums import RoleStatusType
 
 if TYPE_CHECKING:

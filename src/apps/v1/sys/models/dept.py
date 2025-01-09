@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Literal
 from sqlmodel import Field, Relationship, SQLModel
 from sqlmodel.main import SQLModelMetaclass
 
-from src.common.data_model.base_model import DatabaseModel, id_pk
+from src.common.base_model import DatabaseModel, id_pk
 from src.common.decorators import optional_fields
 
 if TYPE_CHECKING:

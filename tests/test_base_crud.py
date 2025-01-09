@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from src.common.base_crud import CRUDBase, CacheKeyBuilder
-from src.common.data_model.query_fields import FilterCondition, FilterGroup, FilterOperator, QueryOptions, SortField
+from src.common.query_fields import FilterCondition, FilterGroup, FilterOperator, QueryOptions, SortField
 from src.core.exceptions import errors
 from src.database.cache.cache_utils import CacheManager, CacheResult
 

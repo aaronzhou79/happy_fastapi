@@ -18,7 +18,7 @@ from starlette.middleware.authentication import AuthenticationMiddleware
 from src.middleware.jwt_auth_middleware import JwtAuthMiddleware
 
 from src.apps import router as apps_router
-from src.common.data_model.base_model import create_table
+from src.common.base_model import create_table
 from src.common.logger import log, set_customize_logfile, setup_logging
 from src.core.conf import settings
 from src.core.exceptions.exception_handler import register_exception
