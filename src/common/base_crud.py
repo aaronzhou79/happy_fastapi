@@ -4,11 +4,12 @@ import sqlalchemy as sa
 
 from sqlmodel import SQLModel, insert, select
 
+from src.common.base_model import DatabaseModel
 from src.common.query_fields import QueryOptions, SortOrder
 from src.core.exceptions import errors
 from src.database.db_session import AuditAsyncSession
 
-ModelType = TypeVar("ModelType", bound=SQLModel)
+ModelType = TypeVar("ModelType", bound=DatabaseModel)
 CreateModelType = TypeVar("CreateModelType", bound=SQLModel)
 UpdateModelType = TypeVar("UpdateModelType", bound=SQLModel)
 

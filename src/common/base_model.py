@@ -91,6 +91,7 @@ class DatabaseModel(AsyncAttrs, DateTimeMixin):
         return await self.to_dict(exclude=exclude_fields, max_depth=max_depth)
 
     def __repr__(self) -> str:
+        """字符串表示"""
         return f"<{self.__class__.__name__} id={getattr(self, 'id', None)}, name={getattr(self, 'name', None)}, code={getattr(self, 'code', None)}>"
 
 
