@@ -23,6 +23,17 @@ class StrEnum(_EnumBase, str, Enum):
     """字符串枚举"""
 
 
+class HookTypeEnum(StrEnum):
+    """钩子类型"""
+
+    before_create = "before_create"
+    after_create = "after_create"
+    before_update = "before_update"
+    after_update = "after_update"
+    before_delete = "before_delete"
+    after_delete = "after_delete"
+
+
 class OperaLogCipherType(IntEnum):
     """操作日志加密类型"""
 

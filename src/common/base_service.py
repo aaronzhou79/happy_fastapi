@@ -3,6 +3,7 @@ from typing import Annotated, Any, Callable, Dict, Generic, Sequence
 from sqlmodel import Field
 
 from src.common.base_crud import CreateModelType, CRUDBase, ModelType, UpdateModelType
+from src.common.enums import HookTypeEnum
 from src.common.query_fields import QueryOptions
 from src.database.db_session import AuditAsyncSession
 
@@ -21,9 +22,9 @@ class BaseService(Generic[ModelType, CreateModelType, UpdateModelType]):
         if hooks:
             for hook_type, hook_funcs in hooks.items():
                 for hook_func in hook_funcs:
-                    self.crud.add_hook(hook_type, hook_func)
+                    self.crud.add_hook(HookTypeEnum(hook_type), hook_func)
 
-    def add_hook(self, hook_type: str, hook_func: Callable[..., Any]) -> None:
+    def add_hook(self, hook_type: HookTypeEnum, hook_func: Callable[..., Any]) -> None:
         """添加钩子函数
 
         Args:

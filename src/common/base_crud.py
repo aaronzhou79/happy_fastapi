@@ -6,6 +6,7 @@ import sqlalchemy as sa
 from sqlmodel import SQLModel, insert, select
 
 from src.common.base_model import DatabaseModel
+from src.common.enums import HookTypeEnum
 from src.common.query_fields import QueryOptions, SortOrder
 from src.core.exceptions import errors
 from src.database.db_session import AuditAsyncSession
@@ -26,7 +27,7 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         # 初始化钩子字典
         self._hooks: Dict[str, List[HookType]] = defaultdict(list)
 
-    def add_hook(self, hook_type: str, hook_func: HookType) -> None:
+    def add_hook(self, hook_type: HookTypeEnum, hook_func: HookType) -> None:
         """添加钩子函数
 
         Args:
@@ -35,7 +36,7 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         """
         self._hooks[hook_type].append(hook_func)
 
-    async def _run_hooks(self, hook_type: str, *args, **kwargs) -> None:
+    async def _run_hooks(self, hook_type: HookTypeEnum, *args, **kwargs) -> None:
         """运行指定类型的所有钩子函数"""
         for hook in self._hooks[hook_type]:
             await hook(*args, **kwargs)
@@ -78,14 +79,14 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
             create_data = obj_in.model_dump()
 
         # 运行创建前钩子
-        await self._run_hooks("before_create", session, create_data)
+        await self._run_hooks(HookTypeEnum.before_create, session, create_data)
 
         db_obj = self.model(**create_data)
         session.add(db_obj)
         await session.flush()
 
         # 运行创建后钩子
-        await self._run_hooks("after_create", session, db_obj)
+        await self._run_hooks(HookTypeEnum.after_create, session, db_obj)
 
         return db_obj
 
@@ -106,7 +107,7 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
             raise errors.RequestError(data="请求更新的对象不存在！")
 
         # 运行更新前钩子
-        await self._run_hooks("before_update", session, db_obj, update_data)
+        await self._run_hooks(HookTypeEnum.before_update, session, db_obj, update_data)
 
         for field in update_data:
             if hasattr(db_obj, field):
@@ -116,7 +117,7 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         await session.flush()
 
         # 运行更新后钩子
-        await self._run_hooks("after_update", session, db_obj)
+        await self._run_hooks(HookTypeEnum.after_update, session, db_obj)
 
         return db_obj
 
@@ -127,13 +128,13 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
             raise errors.RequestError(data="请求删除的对象不存在！")
 
         # 运行删除前钩子
-        await self._run_hooks("before_delete", session, obj)
+        await self._run_hooks(HookTypeEnum.before_delete, session, obj)
 
         await session.delete(obj)
         await session.flush()
 
         # 运行删除后钩子
-        await self._run_hooks("after_delete", session, obj)
+        await self._run_hooks(HookTypeEnum.after_delete, session, obj)
 
     async def delete_by_fields(self, session: AuditAsyncSession, **kwargs) -> bool:
         """根据字段删除对象"""
