@@ -89,7 +89,6 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         await self._run_hooks(
             HookTypeEnum.before_create,
             session=session,
-            create_data=create_data,
             obj_in=obj_in
         )
 
@@ -123,7 +122,6 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
             HookTypeEnum.before_update,
             session=session,
             db_obj=db_obj,
-            update_data=update_data,
             obj_in=obj_in
         )
 

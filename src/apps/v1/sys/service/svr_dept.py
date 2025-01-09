@@ -32,25 +32,25 @@ class SvrDept(BaseService[Dept, DeptCreate, DeptUpdate]):
         """创建前钩子"""
         print(f"Before create: {obj_in}")
 
-    async def after_create(self, session: AuditAsyncSession, obj: Dept) -> None:
+    async def after_create(self, session: AuditAsyncSession, db_obj: Dept, obj_in: DeptCreate) -> None:
         """创建后钩子"""
-        print(f"After create: {obj}")
+        print(f"After create: {db_obj} | {obj_in}")
 
-    async def before_update(self, session: AuditAsyncSession, obj_in: DeptUpdate, obj: Dept) -> None:
+    async def before_update(self, session: AuditAsyncSession, db_obj: Dept, obj_in: DeptUpdate) -> None:
         """更新前钩子"""
-        print(f"Before update: {obj_in}")
+        print(f"Before update: {db_obj} | {obj_in}")
 
-    async def after_update(self, session: AuditAsyncSession, obj: Dept) -> None:
+    async def after_update(self, session: AuditAsyncSession, db_obj: Dept, obj_in: DeptUpdate) -> None:
         """更新后钩子"""
-        print(f"After update: {obj}")
+        print(f"After update: {db_obj} | {obj_in}")
 
-    async def before_delete(self, session: AuditAsyncSession, obj: Dept) -> None:
+    async def before_delete(self, session: AuditAsyncSession, db_obj: Dept) -> None:
         """删除前钩子"""
-        print(f"Before delete: {obj}")
+        print(f"Before delete: {db_obj}")
 
-    async def after_delete(self, session: AuditAsyncSession, obj: Dept) -> None:
+    async def after_delete(self, session: AuditAsyncSession, db_obj: Dept) -> None:
         """删除后钩子"""
-        print(f"After delete: {obj}")
+        print(f"After delete: {db_obj}")
 
 
 svr_dept = SvrDept()

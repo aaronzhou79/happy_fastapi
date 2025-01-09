@@ -77,7 +77,7 @@ class DatabaseModel(AsyncAttrs, DateTimeMixin):
         *,
         exclude: list[str] | None = None,
         include: list[str] | None = None,
-        max_depth: int = Field(default=1, le=3, description="最大递归深度"),
+        max_depth: int = 1,
         limit: int = 20,
         _depth: int = 1,
         _visited: set | None = None
@@ -179,7 +179,7 @@ class DatabaseModel(AsyncAttrs, DateTimeMixin):
 
     async def to_api_dict(
         self,
-        max_depth: int = Field(default=1, le=3, description="最大递归深度")
+        max_depth: int = 1
     ) -> dict[str, Any]:
         """转换为API响应格式的字典"""
         exclude_fields = ['password']
