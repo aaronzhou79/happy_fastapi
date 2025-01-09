@@ -1,20 +1,21 @@
 # src/common/data_model/base_model.py
 
 import asyncio
+
 from datetime import datetime
-from typing import Annotated, Any, Type, TypeVar
+from typing import Annotated, Any, TypeVar
 
-from sqlmodel import Field, SQLModel
-from sqlalchemy.ext.asyncio import AsyncAttrs
-from sqlalchemy.orm import declared_attr
 import sqlalchemy as sa
-from sqlalchemy import inspect
-from sqlalchemy.orm import RelationshipProperty
 
-from src.database.db_session import AuditAsyncSession, async_session, async_engine
-from src.utils.timezone import TimeZone
-from src.utils.snowflake import id_worker
+from sqlalchemy import inspect
+from sqlalchemy.ext.asyncio import AsyncAttrs
+from sqlalchemy.orm import RelationshipProperty
+from sqlmodel import Field, SQLModel
+
 from src.core.conf import settings
+from src.database.db_session import AuditAsyncSession, async_session
+from src.utils.snowflake import id_worker
+from src.utils.timezone import TimeZone
 
 T = TypeVar('T', bound='DatabaseModel')
 
@@ -33,6 +34,7 @@ else:
         description='主键ID',
         sa_type=sa.BIGINT,
     )]
+
 
 class SoftDeleteMixin(SQLModel):
     """软删除混入类"""
@@ -76,6 +78,7 @@ class DatabaseModel(AsyncAttrs, DateTimeMixin):
         exclude: list[str] | None = None,
         include: list[str] | None = None,
         max_depth: int = 2,
+        limit: int = 20,
         _depth: int = 1,
         _visited: set | None = None
     ) -> dict[str, Any]:
@@ -141,7 +144,8 @@ class DatabaseModel(AsyncAttrs, DateTimeMixin):
             if value is None:
                 data[key] = None
             elif isinstance(value, list):
-                # 处理集合关联
+                # 处理集合关联,只取前20条
+                limited_value = value[:limit]
                 data[key] = [
                     await item.to_dict(
                         exclude=exclude,
@@ -150,7 +154,7 @@ class DatabaseModel(AsyncAttrs, DateTimeMixin):
                         _depth=_depth + 1,
                         _visited=_visited
                     ) if hasattr(item, "to_dict") else item
-                    for item in value
+                    for item in limited_value
                 ]
                 # 等待所有异步操作完成
                 if data[key] and isinstance(data[key][0], list):

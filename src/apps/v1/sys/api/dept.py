@@ -5,10 +5,7 @@
 # @Author  : Aaron Zhou
 # @File    : dept.py
 # @Software: Cursor
-# @Description: 用户管理API
-
-
-
+# @Description: 部门管理API
 from src.apps.v1.sys.models.dept import Dept, DeptBase, DeptCreate, DeptUpdate, DeptWithUsers
 from src.apps.v1.sys.service.svr_dept import svr_dept
 from src.common.base_api import BaseAPI
