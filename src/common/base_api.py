@@ -212,7 +212,7 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
             *,
             id: int,
             max_depth: Annotated[int, Query(le=3, description="关联数据的最大深度")] = 2
-        ) -> ResponseModel[self.with_schema]:  # type: ignore
+        ) -> ResponseModel:  # type: ignore
             item = await self.service.get_by_id(session=session, id=id)
             if not item:
                 return response_base.fail(data=f"{self.model.__name__}不存在")
@@ -227,10 +227,12 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
         )
         async def query(
             session: CurrentSession,
-            options: QueryOptions
+            options: QueryOptions,
+            max_depth: Annotated[int, Query(le=3, description="关联数据的最大深度")] = 2
         ) -> ResponseModel:  # type: ignore
-            items, total = await self.service.get_by_options(session=session, options=options)
-            return response_base.success(data={"total": total, "items": items})
+            total, items = await self.service.get_by_options(session=session, options=options)
+            data = [await item.to_api_dict(max_depth=max_depth) for item in items]
+            return response_base.success(data={"total": total, "items": data})
 
     def include_router(self, router: APIRouter) -> None:
         """将路由包含到其他路由器中"""

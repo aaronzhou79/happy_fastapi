@@ -7,12 +7,15 @@
 # @Software: Cursor
 # @Description: 数据初始化
 from typing import Sequence
+
 from src.apps.v1.sys.crud.dept import crud_dept
 from src.apps.v1.sys.crud.role import crud_role
 from src.apps.v1.sys.crud.user import crud_user
+from src.apps.v1.sys.crud.user_role import crud_user_role
 from src.apps.v1.sys.models.dept import Dept, DeptCreate
 from src.apps.v1.sys.models.role import Role, RoleCreate
 from src.apps.v1.sys.models.user import User, UserCreate
+from src.apps.v1.sys.models.user_role import UserRole, UserRoleCreate
 from src.common.enums import RoleStatusType, UserEmpType
 from src.database.db_session import async_session as async_session
 from src.database.db_session import uuid4_str
@@ -28,43 +31,76 @@ async def init_data() -> None:
                 DeptCreate(
                     name='研发部',
                     code='dev',
+                    notes='研发部',
                 ),
                 DeptCreate(
                     name='测试部',
                     code='test',
+                    notes='测试部',
                 ),
                 DeptCreate(
                     name='运维部',
                     code='ops',
+                    notes='运维部',
                 ),
                 DeptCreate(
                     name='财务部',
                     code='finance',
+                    notes='财务部',
                 ),
                 DeptCreate(
                     name='人事部',
                     code='hr',
+                    notes='人事部',
                 ),
                 DeptCreate(
                     name='市场部',
                     code='market',
+                    notes='市场部',
                 ),
                 DeptCreate(
                     name='法务部',
                     code='law',
+                    notes='法务部',
                 ),
                 DeptCreate(
                     name='行政部',
                     code='admin',
+                    notes='行政部',
                 ),
                 DeptCreate(
                     name='后勤部',
                     code='logistics',
+                    notes='后勤部',
                 ),
             ]
         )
-        if depts is None:
-            return
+
+        roles = await crud_role.bulk_create(
+            session,
+            [
+                RoleCreate(
+                    name='总经理',
+                    code='admin',
+                    status=RoleStatusType.active,
+                ),
+                RoleCreate(
+                    name='部门经理',
+                    code='dept_manager',
+                    status=RoleStatusType.active,
+                ),
+                RoleCreate(
+                    name='助理',
+                    code='assistant',
+                    status=RoleStatusType.active,
+                ),
+                RoleCreate(
+                    name='员工',
+                    code='staff',
+                    status=RoleStatusType.active,
+                ),
+            ]
+        )
 
         # 批量创建用户
         users = await crud_user.bulk_create(
@@ -147,34 +183,12 @@ async def init_data() -> None:
             ]
         )
 
-        roles = await crud_role.bulk_create(
+        await crud_user_role.bulk_create(
             session,
             [
-                RoleCreate(
-                    name='总经理',
-                    code='admin',
-                    status=RoleStatusType.active,
-                ),
-                RoleCreate(
-                    name='部门经理',
-                    code='dept_manager',
-                    status=RoleStatusType.active,
-                ),
-                RoleCreate(
-                    name='助理',
-                    code='assistant',
-                    status=RoleStatusType.active,
-                ),
-                RoleCreate(
-                    name='员工',
-                    code='staff',
-                    status=RoleStatusType.active,
-                ),
+                UserRoleCreate(user_id=users[0].id, role_id=roles[0].id),
+                UserRoleCreate(user_id=users[0].id, role_id=roles[1].id),
             ]
         )
 
         await session.commit()
-
-        print(depts)
-        print(users)
-        print(roles)

@@ -10,8 +10,8 @@
 
 
 from src.apps.v1.sys.models.dept import Dept, DeptBase, DeptCreate, DeptUpdate, DeptWithUsers
-from src.common.base_api import BaseAPI
 from src.apps.v1.sys.service.svr_dept import svr_dept
+from src.common.base_api import BaseAPI
 
 dept_api = BaseAPI(
     model=Dept,

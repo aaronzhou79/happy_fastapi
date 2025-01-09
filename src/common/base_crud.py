@@ -149,7 +149,7 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
 
         created_objects = []
 
-        cols = [getattr(self.model, 'id')]
+        cols = [getattr(self.model, 'id')] if hasattr(self.model, 'id') else []
         if hasattr(self.model, 'name'):
             cols.append(getattr(self.model, 'name'))
         if hasattr(self.model, 'code'):
@@ -162,7 +162,10 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
             batch = values[i:i + batch_size]
 
             # 使用insert().values()进行批量插入
-            stmt = insert(self.model).values(batch).returning(*tuple_cols)
+            if tuple_cols:
+                stmt = insert(self.model).values(batch).returning(*tuple_cols)
+            else:
+                stmt = insert(self.model).values(batch)
             result = await session.execute(stmt)
 
             created_objects.extend(result.all())
