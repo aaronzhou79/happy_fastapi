@@ -23,9 +23,6 @@ class SvrOperaLog(BaseService[OperaLog, OperaLogCreate, OperaLogUpdate]):
         """
         创建操作日志
         """
-        if settings.APP_DEBUG:
-            log.info("================================================")
-            log.info(opera_log_in.model_dump())
         async with async_audit_session(async_session()) as session:
             return await crud_opera_log.create(session=session, obj_in=opera_log_in)
 

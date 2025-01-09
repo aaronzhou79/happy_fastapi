@@ -101,13 +101,19 @@ class DatabaseModel(AsyncAttrs, DateTimeMixin):
         # 检查是否已访问过该对象,避免循环引用
         obj_id = id(self)
         if obj_id in _visited:
-            return {"id": getattr(self, "id", None), "name": getattr(self, "name", None), "code": getattr(self, "code", None)}
+            return {
+                "id": getattr(self, "id", None),
+                "name": getattr(self, "name", None),
+                "code": getattr(self, "code", None)}
 
         _visited.add(obj_id)
 
         # 如果超过最大深度, 只返回基础对象
         if _depth > max_depth:
-            return {"id": getattr(self, "id", None), "name": getattr(self, "name", None), "code": getattr(self, "code", None)}
+            return {
+                "id": getattr(self, "id", None),
+                "name": getattr(self, "name", None),
+                "code": getattr(self, "code", None)}
 
         # 获取基础字段数据
         data = self.model_dump(exclude_none=True)

@@ -9,7 +9,7 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from starlette.requests import Request
 
 from src.apps.v1.sys.models.opera_log import OperaLogCreate
-from src.apps.v1.sys.service.svr_opera_log import SvrOperaLog
+from src.apps.v1.sys.service.svr_opera_log import svr_opera_log
 from src.common.dataclasses import RequestCallNext
 from src.common.enums import OperaLogCipherType, OperaLogStatusType
 from src.common.logger import log
@@ -77,7 +77,7 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
             opera_time=start_time,                                  # type: ignore
         )
 
-        create_task(SvrOperaLog.create_opera_log(opera_log_in))
+        create_task(svr_opera_log.create_opera_log(opera_log_in))
 
         # 错误抛出
         err = request_next.err

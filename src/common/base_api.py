@@ -228,10 +228,9 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
         async def query(
             session: CurrentSession,
             options: QueryOptions,
-            max_depth: Annotated[int, Query(le=3, description="关联数据的最大深度")] = 2
         ) -> ResponseModel:  # type: ignore
             total, items = await self.service.get_by_options(session=session, options=options)
-            data = [await item.to_api_dict(max_depth=max_depth) for item in items]
+            data = [await item.to_api_dict(max_depth=1) for item in items]
             return response_base.success(data={"total": total, "items": data})
 
     def include_router(self, router: APIRouter) -> None:

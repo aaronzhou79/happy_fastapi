@@ -10,7 +10,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Body, Request, Response
 
-from src.apps.v1.sys.models.user import AuthLoginParam
+from src.apps.v1.sys.models.user import AuthLoginParam, UserGetWithRoles
 from src.apps.v1.sys.service.svr_auth import AuthService
 from src.core.responses.response_schema import ResponseModel, response_base
 from src.core.security.jwt import DependsJwtAuth
@@ -64,3 +64,14 @@ async def set_as_user(
     """设置为用户"""
     data = await AuthService.set_as_user(request=request, id=id, username=username, password=password, roles=roles)
     return response_base.success(data=data)
+
+
+@router.get("/me",
+    dependencies=[
+        DependsJwtAuth,
+    ])
+async def me(request: Request) -> ResponseModel:
+    """获取当前用户信息"""
+    data = UserGetWithRoles.model_validate(request.user.user_data.model_dump())
+    return response_base.success(data=data)
+

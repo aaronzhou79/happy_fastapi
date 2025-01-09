@@ -6,8 +6,8 @@ from starlette.background import BackgroundTask, BackgroundTasks
 
 from src.apps.v1.sys.crud.user import crud_user
 from src.apps.v1.sys.models.login_log import LoginLogCreate
-from src.apps.v1.sys.models.user import AuthLoginParam, GetLoginToken, GetNewToken, User, UserCreate, UserUpdate
-from src.apps.v1.sys.service.svr_login_log import SvrLoginLog
+from src.apps.v1.sys.models.user import AuthLoginParam, GetLoginToken, GetNewToken, User, UserCreate, UserGetWithRoles, UserUpdate
+from src.apps.v1.sys.service.svr_login_log import svr_login_log
 from src.common.base_service import BaseService
 from src.common.enums import LoginLogStatusType, UserStatus
 from src.core.conf import settings
@@ -23,6 +23,7 @@ from src.core.security.jwt import (
 from src.database.db_redis import redis_client
 from src.database.db_session import AuditAsyncSession, async_audit_session, async_session
 from src.utils.timezone import TimeZone
+from src.utils.trace_id import get_request_trace_id
 
 
 class AuthService(BaseService[User, UserCreate, UserUpdate]):
@@ -41,9 +42,10 @@ class AuthService(BaseService[User, UserCreate, UserUpdate]):
             msg: str,
         ) -> BackgroundTask:
             return BackgroundTask(
-                    SvrLoginLog.create_login_log,
+                svr_login_log.create_login_log(
                     session=session,
                     login_log_in=LoginLogCreate(
+                        trace_id=get_request_trace_id(request),  # type: ignore
                         user_uuid=user_uuid,                  # type: ignore
                         username=username,                    # type: ignore
                         status=status,                        # type: ignore
@@ -59,6 +61,7 @@ class AuthService(BaseService[User, UserCreate, UserUpdate]):
                         msg=msg,                              # type: ignore
                     ),
                 )
+            )
 
         async with async_audit_session(async_session(), request=request) as session:
             if settings.CAPTCHA_NEED:
@@ -108,11 +111,11 @@ class AuthService(BaseService[User, UserCreate, UserUpdate]):
             except Exception as e:
                 errors.TokenError(msg=f'set cookie error: {str(e)}')
             await session.refresh(current_user)
-            user_dict = await current_user.to_dict()
+            user_dict = await current_user.to_dict(max_depth=1)
             return GetLoginToken(
                 access_token=access_token.access_token,
                 access_token_expire_time=access_token.access_token_expire_time,
-                user=user_dict,
+                user=UserGetWithRoles.model_validate(user_dict),
             )
 
     @staticmethod

@@ -28,7 +28,7 @@ class OperaLogBase(SQLModel):
     args: dict | None = Field(default=None, sa_type=sa.JSON)
     status: OperaLogStatusType = Field(default=OperaLogStatusType.success)
     code: str = Field(max_length=20)
-    msg: str | None = Field(default=None, max_length=500)
+    msg: str | None = Field(default=None, max_length=2000, sa_type=sa.Text)
     cost_time: float = Field(ge=0)  # 添加非负数验证
     opera_time: datetime = Field(default_factory=TimeZone.now, index=True)
 

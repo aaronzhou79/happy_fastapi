@@ -17,12 +17,11 @@ class SvrLoginLog(BaseService[LoginLog, LoginLogCreate, LoginLogUpdate]):
     """
     登录日志服务
     """
-    @staticmethod
-    async def create_login_log(session: AuditAsyncSession, login_log_in: LoginLogCreate) -> dict:  # type: ignore
+    async def create_login_log(self, session: AuditAsyncSession, login_log_in: LoginLogCreate) -> LoginLog:
         """
         创建登录日志
         """
-        return await crud_login_log.create(session=session, obj_in=login_log_in)
+        return await self.crud.create(session=session, obj_in=login_log_in)
 
 
 svr_login_log = SvrLoginLog(crud=crud_login_log)

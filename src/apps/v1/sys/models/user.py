@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any, Literal
 
 from sqlmodel import Field, Relationship, SQLModel
 
+from src.apps.v1.sys.models.role import Role
 from src.apps.v1.sys.models.user_role import UserRole
 from src.common.base_model import DatabaseModel, id_pk
 from src.common.enums import UserEmpType, UserStatus
@@ -11,7 +12,6 @@ from src.database.db_session import uuid4_str
 
 if TYPE_CHECKING:
     from src.apps.v1.sys.models.dept import Dept
-    from src.apps.v1.sys.models.role import Role
 
 
 class UserBase(SQLModel):
@@ -69,6 +69,12 @@ class UserUpdate(UserBase):
     id: int
 
 
+class UserGetWithRoles(UserBase):
+    """用户获取模型"""
+    id: int
+    roles: list[Role]
+
+
 class AuthBase(SQLModel):
     """认证基础模型"""
     username: str
@@ -80,6 +86,14 @@ class AuthLoginParam(AuthBase):
     if settings.CAPTCHA_NEED:
         captcha: str
 
+    class Config:
+        json_schema_extra = {
+            'example': {
+                'username': 'admin',
+                'password': '123456',
+            }
+        }
+
 
 class GetSwaggerToken(SQLModel):
     """
@@ -87,7 +101,7 @@ class GetSwaggerToken(SQLModel):
     """
     access_token: str
     token_type: str = 'Bearer'
-    user: UserBase  # type: ignore
+    user: UserGetWithRoles  # type: ignore
 
 
 class AccessTokenBase(SQLModel):
@@ -109,4 +123,4 @@ class GetLoginToken(AccessTokenBase):
     """
     获取登录令牌
     """
-    user: dict[str, Any]
+    user: UserGetWithRoles

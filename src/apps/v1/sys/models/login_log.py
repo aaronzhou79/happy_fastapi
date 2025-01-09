@@ -12,11 +12,11 @@ from src.utils.timezone import TimeZone
 class LoginLogBase(SQLModel):
     """登录日志表"""
 
-    trace_id: str = Field(max_length=32, description='跟踪ID')
-    user_uuid: str = Field(max_length=32, description='用户UUID')
-    username: str = Field(max_length=32, description='用户名')
+    trace_id: str = Field(max_length=64, description='跟踪ID')
+    user_uuid: str = Field(max_length=64, description='用户UUID')
+    username: str = Field(max_length=64, description='用户名')
     status: int = Field(description='登录状态(0失败 1成功)')
-    ip: str = Field(max_length=32, description='登录IP地址')
+    ip: str = Field(max_length=64, description='登录IP地址')
     country: str | None = Field(default=None, description='国家')
     region: str | None = Field(default=None, description='地区')
     city: str | None = Field(default=None, description='城市')
@@ -24,7 +24,7 @@ class LoginLogBase(SQLModel):
     os: str | None = Field(default=None, description='操作系统')
     browser: str | None = Field(default=None, description='浏览器')
     device: str | None = Field(default=None, description='设备')
-    msg: str = Field(default=None, description='提示消息')
+    msg: str = Field(default=None, description='提示消息', sa_type=sa.Text)
     login_time: datetime = Field(default_factory=TimeZone.now, description='登录时间')
 
 

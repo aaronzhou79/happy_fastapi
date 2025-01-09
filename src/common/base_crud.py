@@ -70,7 +70,12 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         obj_in: Dict | UpdateModelType
     ) -> ModelType:
         """更新对象"""
-        db_obj = await self.get_by_id(session=session, id=getattr(obj_in, 'id'))
+        if isinstance(obj_in, dict):
+            update_data = obj_in
+        else:
+            update_data = obj_in.model_dump(exclude_unset=True)
+
+        db_obj = await self.get_by_id(session=session, id=update_data['id'])
         if db_obj is None:
             raise errors.RequestError(data="请求更新的对象不存在！")
 
