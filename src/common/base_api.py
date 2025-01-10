@@ -10,9 +10,9 @@ from fastapi.params import Depends
 from typing_extensions import Annotated
 
 from src.common.base_crud import CreateModelType, ModelType, UpdateModelType
+from src.common.base_model import DatabaseModel
 from src.common.base_service import BaseService
 from src.common.query_fields import QueryOptions
-from src.common.tree_service import TreeService
 from src.core.conf import settings
 from src.core.responses.response_schema import ResponseModel, response_base
 from src.database.cache.cache_conf import generate_cache_key, get_redis_settings
@@ -96,10 +96,10 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
         async def create(
             request: Request,
             obj_in: Annotated[self.create_schema, Body(..., description="创建模型")]  # type: ignore
-        ) -> ResponseModel[self.base_schema]:  # type: ignore
+        ) -> ResponseModel[self.model]:  # type: ignore
             async with async_audit_session(async_session(), request) as session:
                 result = await self.service.create(session=session, obj_in=obj_in)
-                data = await result.to_api_dict()
+                data = await result.to_api_dict()  # type: ignore
             return response_base.success(data=data)
 
     def _register_bulk_create(self) -> None:
@@ -218,7 +218,7 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
             item = await self.service.get_by_id(session=session, id=id)
             if not item:
                 return response_base.fail(data=f"{self.model.__name__}不存在")
-            data = await item.to_api_dict(max_depth=max_depth)
+            data = await item.to_api_dict(max_depth=max_depth)  # type: ignore
             return response_base.success(data=data)
 
     def _register_query(self) -> None:
@@ -232,98 +232,8 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
             options: QueryOptions,
         ) -> ResponseModel:  # type: ignore
             total, items = await self.service.get_by_options(session=session, options=options)
-            data = [await item.to_api_dict() for item in items]
+            data = [await item.to_api_dict() for item in items]  # type: ignore
             return response_base.success(data={"total": total, "items": data})
-
-    def _register_tree_routes(self) -> None:
-        """注册树形结构相关路由"""
-        if not issubclass(self.service.__class__, TreeService):
-            return
-
-        @self.router.get(
-            "/tree",
-            summary=f"获取{self.model.__name__}树形结构"
-        )
-        async def get_tree(
-            session: CurrentSession,
-            root_id: Annotated[int | None, Query(description="根节点ID")] = None,
-            max_depth: Annotated[int, Query(ge=-1, description="最大深度,-1表示不限制")] = -1
-        ) -> ResponseModel:
-            items = await self.service.get_tree(   # type: ignore[attr-defined]
-                session=session,
-                root_id=root_id,
-                max_depth=max_depth
-            )
-            return response_base.success(data=items)
-
-        @self.router.put(
-            "/move",
-            summary=f"移动{self.model.__name__}节点"
-        )
-        async def move_node(
-            request: Request,
-            node_id: Annotated[int, Body(..., description="要移动的节点ID")],
-            new_parent_id: Annotated[int | None, Body(..., description="新的父节点ID")]
-        ) -> ResponseModel:
-            async with async_audit_session(async_session(), request) as session:
-                result = await self.service.move_node(    # type: ignore[attr-defined]
-                    session=session,
-                    node_id=node_id,
-                    new_parent_id=new_parent_id
-                )
-                data = await result.to_api_dict()
-            return response_base.success(data=data)
-
-        @self.router.put(
-            "/bulk_move",
-            summary=f"批量移动{self.model.__name__}节点"
-        )
-        async def bulk_move_nodes(
-            request: Request,
-            node_ids: Annotated[list[int], Body(..., description="要移动的节点ID列表")],
-            new_parent_id: Annotated[int | None, Body(..., description="新的父节点ID")]
-        ) -> ResponseModel:
-            async with async_audit_session(async_session(), request) as session:
-                results = await self.service.bulk_move_nodes(    # type: ignore[attr-defined]
-                    session=session,
-                    node_ids=node_ids,
-                    new_parent_id=new_parent_id
-                )
-                data = [await item.to_api_dict() for item in results]
-            return response_base.success(data=data)
-
-        @self.router.post(
-            "/copy",
-            summary=f"复制{self.model.__name__}子树"
-        )
-        async def copy_subtree(
-            request: Request,
-            node_id: Annotated[int, Body(..., description="要复制的节点ID")],
-            new_parent_id: Annotated[int | None, Body(..., description="新的父节点ID")]
-        ) -> ResponseModel:
-            async with async_audit_session(async_session(), request) as session:
-                result = await self.service.copy_subtree(    # type: ignore[attr-defined]
-                    session=session,
-                    node_id=node_id,
-                    new_parent_id=new_parent_id
-                )
-                data = await result.to_api_dict()
-            return response_base.success(data=data)
-
-        @self.router.get(
-            "/siblings/{node_id}",
-            summary=f"获取{self.model.__name__}同级节点"
-        )
-        async def get_siblings(
-            session: CurrentSession,
-            node_id: Annotated[int, Path(..., description="节点ID")]
-        ) -> ResponseModel:
-            items = await self.service.get_siblings(    # type: ignore[attr-defined]
-                session=session,
-                node_id=node_id
-            )
-            data = [await item.to_api_dict() for item in items]
-            return response_base.success(data=data)
 
     def include_router(self, router: APIRouter) -> None:
         """将路由包含到其他路由器中"""

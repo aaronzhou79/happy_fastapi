@@ -25,56 +25,66 @@ async def init_data() -> None:
     """初始化数据"""
     async with async_session() as session:
         # 批量创建部门
-        depts = await crud_dept.bulk_create(
-            session,
-            [
-                DeptCreate(
-                    name='研发部',
-                    code='dev',
-                    notes='研发部',
-                ),
-                DeptCreate(
-                    name='测试部',
-                    code='test',
-                    notes='测试部',
-                ),
-                DeptCreate(
-                    name='运维部',
-                    code='ops',
-                    notes='运维部',
-                ),
-                DeptCreate(
-                    name='财务部',
-                    code='finance',
-                    notes='财务部',
-                ),
-                DeptCreate(
-                    name='人事部',
-                    code='hr',
-                    notes='人事部',
-                ),
-                DeptCreate(
-                    name='市场部',
-                    code='market',
-                    notes='市场部',
-                ),
-                DeptCreate(
-                    name='法务部',
-                    code='law',
-                    notes='法务部',
-                ),
-                DeptCreate(
-                    name='行政部',
-                    code='admin',
-                    notes='行政部',
-                ),
-                DeptCreate(
-                    name='后勤部',
-                    code='logistics',
-                    notes='后勤部',
-                ),
-            ]
-        )
+        depts_in = [
+            DeptCreate(
+                name='研发部',
+                code='dev',
+                notes='研发部',
+                parent_id=None,
+            ),
+            DeptCreate(
+                name='测试部',
+                code='test',
+                notes='测试部',
+                parent_id=None,
+            ),
+            DeptCreate(
+                name='运维部',
+                code='ops',
+                notes='运维部',
+                parent_id=None,
+            ),
+            DeptCreate(
+                name='财务部',
+                code='finance',
+                notes='财务部',
+                parent_id=None,
+            ),
+            DeptCreate(
+                name='人事部',
+                code='hr',
+                notes='人事部',
+                parent_id=None,
+            ),
+            DeptCreate(
+                name='市场部',
+                code='market',
+                notes='市场部',
+                parent_id=None,
+            ),
+            DeptCreate(
+                name='法务部',
+                code='law',
+                notes='法务部',
+                parent_id=None,
+            ),
+            DeptCreate(
+                name='行政部',
+                code='admin',
+                notes='行政部',
+                parent_id=None,
+            ),
+            DeptCreate(
+                name='后勤部',
+                code='logistics',
+                notes='后勤部',
+                parent_id=None,
+            ),
+        ]
+        depts = []
+        for dept_in in depts_in:
+            dept = await crud_dept.create(session, obj_in=dept_in)
+            depts.append(dept)
 
         roles = await crud_role.bulk_create(
             session,
@@ -110,7 +120,7 @@ async def init_data() -> None:
                     username='admin',
                     name='超级管理员',
                     email='admin@example.com',
-                    password='$2b$12$RJXAtJodRw37ZQGxTPlu0OH.aN5lNXG6yvC4Tp9GIQEBmMY/YCc.m',
+                    password='$2b$12$RJXAtJodRw37ZQGxTPlu0OH.aN5lNXG6yvC4Tp9GIQEBmMY/YCc.m',  # noqa: S106
                     salt='bcNjV',
                     uuid=uuid4_str(),
                     emp_type=UserEmpType.admin,

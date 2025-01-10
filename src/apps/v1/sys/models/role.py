@@ -26,7 +26,7 @@ class RoleBase(SQLModel):
 
     name: str = Field(..., max_length=32)
     code: str = Field(..., max_length=32, unique=True)
-    sort: int = Field(default=0)
+    sort_order: int = Field(default=0)
     status: RoleStatusType = Field(default=RoleStatusType.active)
     description: str | None = Field(default=None, sa_type=sa.Text)
 
