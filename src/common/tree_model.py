@@ -28,15 +28,44 @@ class TreeModel(SQLModel):
         sa_column_kwargs={"comment": "排序号"}
     )
 
-    async def get_children(self, session: AuditAsyncSession) -> Sequence["TreeModel"]:
+    async def has_children(self, session: AuditAsyncSession) -> bool:
+        """是否有子节点"""
+        children = await self.get_children(session)
+        return len(children) > 0
+
+    async def get_siblings(
+        self,
+        session: AuditAsyncSession,
+        include_self: bool = False
+    ) -> Sequence["TreeModel"]:
+        """获取同级节点"""
+        stmt = select(self.__class__).where(
+            self.__class__.parent_id == self.parent_id,  # type: ignore
+        ).order_by(asc(self.__class__.sort_order))
+        if not include_self:
+            stmt = stmt.where(self.__class__.id != self.id)  # type: ignore
+        result = await session.execute(stmt)
+        return result.scalars().all()
+
+    async def get_children(
+        self,
+        session: AuditAsyncSession,
+        include_self: bool = False
+    ) -> Sequence["TreeModel"]:
         """获取子节点"""
         stmt = select(self.__class__).where(
             self.__class__.parent_id == self.id   # type: ignore
         ).order_by(asc(self.__class__.sort_order))
+        if not include_self:
+            stmt = stmt.where(self.__class__.id != self.id)  # type: ignore
         result = await session.execute(stmt)
         return result.scalars().all()
 
-    async def get_ancestors(self, session: AuditAsyncSession) -> Sequence["TreeModel"]:
+    async def get_ancestors(
+        self,
+        session: AuditAsyncSession,
+        include_self: bool = False
+    ) -> Sequence["TreeModel"]:
         """获取祖先节点"""
         if not self.path or self.path == "/":
             return []
@@ -52,5 +81,7 @@ class TreeModel(SQLModel):
         stmt = select(self.__class__).where(
             self.__class__.id.in_(ancestor_ids)  # type: ignore
         ).order_by(asc(self.__class__.level))
+        if not include_self:
+            stmt = stmt.where(self.__class__.id != self.id)  # type: ignore
         result = await session.execute(stmt)
         return result.scalars().all()

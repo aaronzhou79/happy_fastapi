@@ -28,7 +28,7 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
     def __init__(
         self,
         model: Type[ModelType],
-        service: BaseService[ModelType, CreateModelType, UpdateModelType] | TreeService,
+        service: BaseService[ModelType, CreateModelType, UpdateModelType],
         create_schema: Type[CreateModelType] | None = None,
         update_schema: Type[UpdateModelType] | None = None,
         base_schema: Type[ModelType] | Any = Any,
@@ -86,8 +86,6 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
             self._register_query()
         # 基础查询接口总是生成
         self._register_get()
-        if issubclass(self.service.__class__, TreeService):
-            self._register_tree_routes()
 
     def _register_create(self) -> None:
         """注册创建接口"""
@@ -256,8 +254,7 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
                 root_id=root_id,
                 max_depth=max_depth
             )
-            data = [await item.to_api_dict() for item in items]
-            return response_base.success(data=data)
+            return response_base.success(data=items)
 
         @self.router.put(
             "/move",
@@ -275,6 +272,57 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
                     new_parent_id=new_parent_id
                 )
                 data = await result.to_api_dict()
+            return response_base.success(data=data)
+
+        @self.router.put(
+            "/bulk_move",
+            summary=f"批量移动{self.model.__name__}节点"
+        )
+        async def bulk_move_nodes(
+            request: Request,
+            node_ids: Annotated[list[int], Body(..., description="要移动的节点ID列表")],
+            new_parent_id: Annotated[int | None, Body(..., description="新的父节点ID")]
+        ) -> ResponseModel:
+            async with async_audit_session(async_session(), request) as session:
+                results = await self.service.bulk_move_nodes(    # type: ignore[attr-defined]
+                    session=session,
+                    node_ids=node_ids,
+                    new_parent_id=new_parent_id
+                )
+                data = [await item.to_api_dict() for item in results]
+            return response_base.success(data=data)
+
+        @self.router.post(
+            "/copy",
+            summary=f"复制{self.model.__name__}子树"
+        )
+        async def copy_subtree(
+            request: Request,
+            node_id: Annotated[int, Body(..., description="要复制的节点ID")],
+            new_parent_id: Annotated[int | None, Body(..., description="新的父节点ID")]
+        ) -> ResponseModel:
+            async with async_audit_session(async_session(), request) as session:
+                result = await self.service.copy_subtree(    # type: ignore[attr-defined]
+                    session=session,
+                    node_id=node_id,
+                    new_parent_id=new_parent_id
+                )
+                data = await result.to_api_dict()
+            return response_base.success(data=data)
+
+        @self.router.get(
+            "/siblings/{node_id}",
+            summary=f"获取{self.model.__name__}同级节点"
+        )
+        async def get_siblings(
+            session: CurrentSession,
+            node_id: Annotated[int, Path(..., description="节点ID")]
+        ) -> ResponseModel:
+            items = await self.service.get_siblings(    # type: ignore[attr-defined]
+                session=session,
+                node_id=node_id
+            )
+            data = [await item.to_api_dict() for item in items]
             return response_base.success(data=data)
 
     def include_router(self, router: APIRouter) -> None:

@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from src.apps.v1.sys.models.user import User
 
 
-class DeptBase(TreeModel):
+class DeptBase(SQLModel):
     """部门基础模型"""
     __tablename__: Literal["sys_dept"] = "sys_dept"
 
@@ -20,7 +20,7 @@ class DeptBase(TreeModel):
         None, max_length=255, description="备注")
 
 
-class Dept(DeptBase, DatabaseModel, table=True):
+class Dept(DeptBase, TreeModel, DatabaseModel, table=True):
     """部门表"""
     __tablename__: Literal["sys_dept"] = "sys_dept"
     id: id_pk  # type: ignore
@@ -31,12 +31,11 @@ class Dept(DeptBase, DatabaseModel, table=True):
 
 class DeptCreate(DeptBase):
     """部门创建模型"""
+    parent_id: int | None = Field(default=None)
+    sort_order: int = Field(default=0)
 
-    path: str | None = Field(default=None, exclude=True)
-    level: int | None = Field(default=None, exclude=True)
 
-
-class DeptUpdate(DeptBase):
+class DeptUpdate(DeptCreate):
     """部门更新模型"""
     id: int
 

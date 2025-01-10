@@ -102,6 +102,9 @@ class Settings(BaseSettings):
     REDIS_TIMEOUT: int = 5
     REDIS_PREFIX: str = "HC"
     REDIS_CACHE_KEY_PREFIX: str = f'{REDIS_PREFIX}:cache'
+    CACHE_EXPIRE_IN_SECONDS: int = 60 * 60 * 24 * 7  # 7天
+    CACHE_TREE_EXPIRE_IN_SECONDS: int = 60 * 60 * 24 * 30  # 30天
+    MAX_TREE_DEPTH: int = 10  # 树的最大深度
 
     # Log
     LOG_ROOT_LEVEL: str = 'NOTSET'

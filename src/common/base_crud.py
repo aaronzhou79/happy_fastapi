@@ -8,10 +8,11 @@ from sqlmodel import SQLModel, insert, select
 from src.common.base_model import DatabaseModel
 from src.common.enums import HookTypeEnum
 from src.common.query_fields import QueryOptions, SortOrder
+from src.common.tree_model import TreeModel
 from src.core.exceptions import errors
 from src.database.db_session import AuditAsyncSession
 
-ModelType = TypeVar("ModelType", bound=DatabaseModel)
+ModelType = TypeVar("ModelType", bound=DatabaseModel | TreeModel)
 CreateModelType = TypeVar("CreateModelType", bound=SQLModel)
 UpdateModelType = TypeVar("UpdateModelType", bound=SQLModel)
 
