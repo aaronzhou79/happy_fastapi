@@ -15,6 +15,7 @@ from src.common.base_service import BaseService
 from src.common.enums import HookTypeEnum
 from src.core.exceptions import errors
 from src.database.db_session import AuditAsyncSession
+from src.utils.encrypt import generate_salt, hash_password
 
 
 class SvrUser(BaseService[User, UserCreate, UserUpdate]):
@@ -54,6 +55,17 @@ class SvrUser(BaseService[User, UserCreate, UserUpdate]):
                         role_id=role_id
                     )
                 )
+
+    async def create(self, session: AuditAsyncSession, obj_in: UserCreateWithRoles) -> User:
+        """创建用户"""
+        # 生成盐值和密码哈希
+        salt = generate_salt()
+        if obj_in.password:
+            password_hash = hash_password(obj_in.password, salt)
+            obj_in.password = password_hash
+            obj_in.salt = salt
+
+        return await super().create(session=session, obj_in=obj_in)
 
 
 svr_user = SvrUser()

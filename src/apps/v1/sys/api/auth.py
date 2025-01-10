@@ -11,14 +11,14 @@ from typing import Annotated
 from fastapi import APIRouter, BackgroundTasks, Body, Request, Response
 
 from src.apps.v1.sys.models.user import AuthLoginParam, UserGetWithRoles
-from src.apps.v1.sys.service.svr_auth import AuthService
+from src.apps.v1.sys.service.auth import svr_auth
 from src.core.responses.response_schema import ResponseModel, response_base
 from src.core.security.jwt import DependsJwtAuth
 
 """
 用户认证API
 """
-router = APIRouter(prefix="/auth", tags=["用户认证"])
+router = APIRouter(prefix="/auth", tags=["系统管理/用户认证"])
 
 
 @router.post("/login")
@@ -34,7 +34,7 @@ async def login(
     :param obj: 用户名密码
     :return: 登录成功后的token
     """
-    data = await AuthService.login(request=request, response=response, obj=obj, background_tasks=background_tasks)
+    data = await svr_auth.login(request=request, response=response, obj=obj, background_tasks=background_tasks)
     return response_base.success(data=data)
 
 
@@ -49,7 +49,7 @@ async def logout(
     response: Response,
 ) -> ResponseModel:
     """用户登出"""
-    data = await AuthService.logout(request=request, response=response)
+    data = await svr_auth.logout(request=request, response=response)
     return response_base.success(data=data)
 
 
@@ -62,7 +62,7 @@ async def set_as_user(
     roles: Annotated[list[int] | None, Body(..., description="角色ID列表")] = None,
 ) -> ResponseModel:
     """设置为用户"""
-    data = await AuthService.set_as_user(request=request, id=id, username=username, password=password, roles=roles)
+    data = await svr_auth.set_as_user(request=request, id=id, username=username, password=password, roles=roles)
     return response_base.success(data=data)
 
 

@@ -9,6 +9,9 @@ from cryptography.hazmat.backends.openssl import backend
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from itsdangerous import URLSafeSerializer
+from passlib.context import CryptContext
+import secrets
+import string
 
 from src.common.logger import log
 
@@ -110,3 +113,35 @@ class ItsDCipher:
             log.error(f'ItsDangerous decrypt failed: {e}')
             plaintext = ciphertext
         return plaintext
+
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+def generate_salt(length: int = 16) -> str:
+    """生成随机盐值"""
+    alphabet = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(alphabet) for _ in range(length))
+
+
+def hash_password(password: str, salt: str) -> str:
+    """
+    使用bcrypt加密密码
+
+    Args:
+        password: 原始密码
+        salt: 盐值
+    """
+    return pwd_context.hash(password + salt)
+
+
+def verify_password(plain_password: str, salt: str, hashed_password: str) -> bool:
+    """
+    验证密码
+
+    Args:
+        plain_password: 原始密码
+        salt: 盐值
+        hashed_password: 加密后的密码
+    """
+    return pwd_context.verify(plain_password + salt, hashed_password)

@@ -1,5 +1,5 @@
 from src.apps.v1.sys.models.login_log import LoginLog, LoginLogCreate
-from src.apps.v1.sys.service.svr_login_log import svr_login_log
+from src.apps.v1.sys.service.login_log import svr_login_log
 from src.common.base_api import BaseAPI
 
 login_log_api = BaseAPI(
@@ -10,5 +10,5 @@ login_log_api = BaseAPI(
     gen_create=False,
     gen_delete=False,
     gen_bulk_create=False,
-    tags=["登录日志"],
+    tags=["系统管理/登录日志"],
 )

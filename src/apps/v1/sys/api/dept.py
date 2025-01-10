@@ -7,7 +7,7 @@
 # @Software: Cursor
 # @Description: 部门管理API
 from src.apps.v1.sys.models.dept import Dept, DeptCreate, DeptUpdate, DeptWithUsers
-from src.apps.v1.sys.service.svr_dept import svr_dept
+from src.apps.v1.sys.service.dept import svr_dept
 from src.common.tree_api import TreeAPI
 
 # 创建部门API路由

@@ -6,8 +6,16 @@ from starlette.background import BackgroundTask, BackgroundTasks
 
 from src.apps.v1.sys.crud.user import crud_user
 from src.apps.v1.sys.models.login_log import LoginLogCreate
-from src.apps.v1.sys.models.user import AuthLoginParam, GetLoginToken, GetNewToken, User, UserCreate, UserGetWithRoles, UserUpdate
-from src.apps.v1.sys.service.svr_login_log import svr_login_log
+from src.apps.v1.sys.models.user import (
+    AuthLoginParam,
+    GetLoginToken,
+    GetNewToken,
+    User,
+    UserCreate,
+    UserGetWithRoles,
+    UserUpdate,
+)
+from src.apps.v1.sys.service.login_log import svr_login_log
 from src.common.base_service import BaseService
 from src.common.enums import LoginLogStatusType, UserStatus
 from src.core.conf import settings
@@ -18,19 +26,23 @@ from src.core.security.jwt import (
     create_refresh_token,
     get_token,
     jwt_decode,
-    password_verify,
 )
 from src.database.db_redis import redis_client
 from src.database.db_session import AuditAsyncSession, async_audit_session, async_session
+from src.utils.encrypt import verify_password
 from src.utils.timezone import TimeZone
 from src.utils.trace_id import get_request_trace_id
 
 
 class AuthService(BaseService[User, UserCreate, UserUpdate]):
     """用户认证服务"""
-    @staticmethod
     async def login(
-        *, request: Request, response: Response, obj: AuthLoginParam, background_tasks: BackgroundTasks
+        self,
+        *,
+        request: Request,
+        response: Response,
+        obj: AuthLoginParam,
+        background_tasks: BackgroundTasks
     ) -> GetLoginToken:
         """登录"""
         def _record_login_log(
@@ -63,6 +75,12 @@ class AuthService(BaseService[User, UserCreate, UserUpdate]):
                 )
             )
 
+        # 检查登录失败次数
+        fail_count_key = f"login:fail_count:{request.state.ip}"
+        fail_count = await redis_client.get(fail_count_key)
+        if fail_count and int(fail_count) >= 5:
+            raise errors.RequestError(data="登录失败次数过多,请15分钟后重试")
+
         async with async_audit_session(async_session(), request=request) as session:
             if settings.CAPTCHA_NEED:
                 captcha_code = await redis_client.get(
@@ -73,14 +91,14 @@ class AuthService(BaseService[User, UserCreate, UserUpdate]):
                     raise errors.RequestError(data='验证码有误')
             current_user = await crud_user.get_by_fields(session=session, username=obj.username)
             if len(current_user) != 1:
-                raise errors.RequestError(data="用户名有误!")
+                await self._handle_login_fail(request.state.ip)
+                raise errors.RequestError(data="用户名或密码错误")
             current_user = current_user[0]
             user_uuid = current_user.uuid
             username = current_user.username
-            if not password_verify(f'{obj.password}{current_user.salt}', f'{current_user.password}'):
-                task = _record_login_log(
-                    session, request, user_uuid, username, LoginLogStatusType.fail, '用户名或密码有误')
-                raise errors.AuthorizationError(msg='用户名或密码有误', background=task)
+            if not verify_password(str(obj.password), str(current_user.salt), str(current_user.password)):
+                await self._handle_login_fail(request.state.ip)
+                raise errors.RequestError(data="用户名或密码错误")
 
             if not current_user.status and current_user.status != UserStatus.ACTIVE:
                 task = _record_login_log(
@@ -179,6 +197,16 @@ class AuthService(BaseService[User, UserCreate, UserUpdate]):
         """设置为用户"""
         async with async_audit_session(async_session(), request=request) as session:
             await crud_user.set_as_user(session=session, id=id, username=username, password=password, roles=roles)
+
+    async def _handle_login_fail(self, ip: str) -> None:
+        """处理登录失败"""
+        key = f"login:fail_count:{ip}"
+        fail_count = await redis_client.get(key)
+        if fail_count:
+            fail_count = int(fail_count) + 1
+            await redis_client.setex(key, 900, fail_count)  # 15分钟后过期
+        else:
+            await redis_client.setex(key, 900, 1)
 
 
 svr_auth = AuthService(crud_user)

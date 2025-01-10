@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, ClassVar, Literal
+from typing import TYPE_CHECKING, Literal
 
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -18,6 +18,8 @@ class DeptBase(SQLModel):
     code: str = Field(..., max_length=32, unique=True, description="部门编码")
     notes: str | None = Field(
         None, max_length=255, description="备注")
+    parent_id: int | None = Field(default=None, foreign_key="sys_dept.id", description="父部门ID")
+    sort_order: int = Field(default=0, description="排序")
 
 
 class Dept(DeptBase, TreeModel, DatabaseModel, table=True):
@@ -27,12 +29,15 @@ class Dept(DeptBase, TreeModel, DatabaseModel, table=True):
 
     # Relationships
     users: list["User"] = Relationship(back_populates="dept")
+    children: list["Dept"] = Relationship(
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan"
+        }
+    )
 
 
 class DeptCreate(DeptBase):
     """部门创建模型"""
-    parent_id: int | None = Field(default=None)
-    sort_order: int = Field(default=0)
 
 
 class DeptUpdate(DeptCreate):

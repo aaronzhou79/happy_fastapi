@@ -117,6 +117,16 @@ class TokenError(HTTPError):
         super().__init__(code=self.code, msg=msg, headers=headers or {'WWW-Authenticate': 'Bearer'})
 
 
+class RuleExecutionError(BaseError):
+    """
+    规则执行错误异常类
+    """
+    code = StandardResponseCode.HTTP_400
+
+    def __init__(self, *, msg: str = 'Rule Execution Error', data: Any = None, background: BackgroundTask | None = None):
+        super().__init__(msg=msg, data=data, background=background)
+
+
 class DBError(BaseError):
     """
     数据库错误异常类

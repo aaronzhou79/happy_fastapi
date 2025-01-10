@@ -12,11 +12,13 @@ import sqlalchemy as sa
 
 from sqlmodel import Field, Relationship, SQLModel
 
+from src.apps.v1.sys.models.role_permission import RolePermission
 from src.apps.v1.sys.models.user_role import UserRole
 from src.common.base_model import DatabaseModel, id_pk
 from src.common.enums import RoleStatusType
 
 if TYPE_CHECKING:
+    from src.apps.v1.sys.models.permission import Permission
     from src.apps.v1.sys.models.user import User
 
 
@@ -38,6 +40,10 @@ class Role(RoleBase, DatabaseModel, table=True):
 
     # Relationships
     users: list["User"] = Relationship(back_populates="roles", link_model=UserRole)
+    permissions: list["Permission"] = Relationship(
+        back_populates="roles",
+        link_model=RolePermission
+    )
 
 
 class RoleCreate(RoleBase):

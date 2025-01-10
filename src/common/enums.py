@@ -57,6 +57,14 @@ class RoleStatusType(StrEnum):
     inactive = "禁用"
 
 
+class PermissionType(StrEnum):
+    """权限类型"""
+
+    menu = "menu"
+    api = "api"
+    data = "data"
+
+
 class OperaLogStatusType(IntEnum):
     """操作日志状态"""
 

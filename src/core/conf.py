@@ -178,8 +178,14 @@ class Settings(BaseSettings):
     ]
 
     # JWT
+    JWT_PERMS_REDIS_PREFIX: str = f'{REDIS_PREFIX}:perms'
+    JWT_PERMS_REDIS_EXPIRE_SECONDS: int = 60 * 60 * 24 * 7
     JWT_USER_REDIS_PREFIX: str = f'{REDIS_PREFIX}:user'
     JWT_USER_REDIS_EXPIRE_SECONDS: int = 60 * 60 * 24 * 7
+
+    # 权限规则
+    PERMISSION_RULES_REDIS_PREFIX: str = f'{REDIS_PREFIX}:rules'
+    PERMISSION_RULES_REDIS_EXPIRE_SECONDS: int = 60 * 60 * 24 * 7
 
     # 验证码
     CAPTCHA_NEED: bool = False

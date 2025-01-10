@@ -7,7 +7,7 @@
 # @Software: Cursor
 # @Description: 用户管理API
 from src.apps.v1.sys.models.user import User, UserCreateWithRoles, UserGetWithRoles, UserUpdate
-from src.apps.v1.sys.service.svr_user import svr_user
+from src.apps.v1.sys.service.user import svr_user
 from src.common.base_api import BaseAPI
 
 user_api = BaseAPI(
@@ -18,5 +18,5 @@ user_api = BaseAPI(
     base_schema=UserGetWithRoles,
     prefix="/user",
     gen_delete=True,
-    tags=["用户管理"],
+    tags=["系统管理/用户管理"],
 )
