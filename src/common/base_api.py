@@ -12,6 +12,7 @@ from typing_extensions import Annotated
 from src.common.base_crud import CreateModelType, ModelType, UpdateModelType
 from src.common.base_service import BaseService
 from src.common.query_fields import QueryOptions
+from src.common.tree_service import TreeService
 from src.core.conf import settings
 from src.core.responses.response_schema import ResponseModel, response_base
 from src.database.cache.cache_conf import generate_cache_key, get_redis_settings
@@ -27,7 +28,7 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
     def __init__(
         self,
         model: Type[ModelType],
-        service: BaseService[ModelType, CreateModelType, UpdateModelType],
+        service: BaseService[ModelType, CreateModelType, UpdateModelType] | TreeService,
         create_schema: Type[CreateModelType] | None = None,
         update_schema: Type[UpdateModelType] | None = None,
         base_schema: Type[ModelType] | Any = Any,
@@ -85,6 +86,8 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
             self._register_query()
         # 基础查询接口总是生成
         self._register_get()
+        if issubclass(self.service.__class__, TreeService):
+            self._register_tree_routes()
 
     def _register_create(self) -> None:
         """注册创建接口"""
@@ -233,6 +236,46 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
             total, items = await self.service.get_by_options(session=session, options=options)
             data = [await item.to_api_dict() for item in items]
             return response_base.success(data={"total": total, "items": data})
+
+    def _register_tree_routes(self) -> None:
+        """注册树形结构相关路由"""
+        if not issubclass(self.service.__class__, TreeService):
+            return
+
+        @self.router.get(
+            "/tree",
+            summary=f"获取{self.model.__name__}树形结构"
+        )
+        async def get_tree(
+            session: CurrentSession,
+            root_id: Annotated[int | None, Query(description="根节点ID")] = None,
+            max_depth: Annotated[int, Query(ge=-1, description="最大深度,-1表示不限制")] = -1
+        ) -> ResponseModel:
+            items = await self.service.get_tree(   # type: ignore[attr-defined]
+                session=session,
+                root_id=root_id,
+                max_depth=max_depth
+            )
+            data = [await item.to_api_dict() for item in items]
+            return response_base.success(data=data)
+
+        @self.router.put(
+            "/move",
+            summary=f"移动{self.model.__name__}节点"
+        )
+        async def move_node(
+            request: Request,
+            node_id: Annotated[int, Body(..., description="要移动的节点ID")],
+            new_parent_id: Annotated[int | None, Body(..., description="新的父节点ID")]
+        ) -> ResponseModel:
+            async with async_audit_session(async_session(), request) as session:
+                result = await self.service.move_node(    # type: ignore[attr-defined]
+                    session=session,
+                    node_id=node_id,
+                    new_parent_id=new_parent_id
+                )
+                data = await result.to_api_dict()
+            return response_base.success(data=data)
 
     def include_router(self, router: APIRouter) -> None:
         """将路由包含到其他路由器中"""

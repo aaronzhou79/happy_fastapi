@@ -21,5 +21,6 @@ dept_api = BaseAPI(
     gen_delete=True,
     gen_bulk_delete=True,
     gen_bulk_create=True,
+
     tags=["部门管理"],
 )

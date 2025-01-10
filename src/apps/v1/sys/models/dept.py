@@ -1,16 +1,15 @@
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, ClassVar, Literal
 
 from sqlmodel import Field, Relationship, SQLModel
-from sqlmodel.main import SQLModelMetaclass
 
 from src.common.base_model import DatabaseModel, id_pk
-from src.common.decorators import optional_fields
+from src.common.tree_model import TreeModel
 
 if TYPE_CHECKING:
     from src.apps.v1.sys.models.user import User
 
 
-class DeptBase(SQLModel):
+class DeptBase(TreeModel):
     """部门基础模型"""
     __tablename__: Literal["sys_dept"] = "sys_dept"
 
@@ -32,6 +31,9 @@ class Dept(DeptBase, DatabaseModel, table=True):
 
 class DeptCreate(DeptBase):
     """部门创建模型"""
+
+    path: str | None = Field(default=None, exclude=True)
+    level: int | None = Field(default=None, exclude=True)
 
 
 class DeptUpdate(DeptBase):
