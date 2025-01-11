@@ -12,6 +12,12 @@ from src.common.base_crud import CRUDBase
 
 class CrudLoginLog(CRUDBase):
     """登录日志相关CRUD类"""
+    def __init__(self):
+        super().__init__(
+            model=LoginLog,
+            create_model=LoginLogCreate,
+            update_model=LoginLogUpdate,
+        )
 
 
-crud_login_log = CrudLoginLog(LoginLog, LoginLogCreate, LoginLogUpdate)
+crud_login_log = CrudLoginLog()

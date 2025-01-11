@@ -17,7 +17,7 @@ class SvrPermission(TreeService):
     权限服务
     """
     def __init__(self):
-        super().__init__(crud=crud_permission)
+        self.crud = crud_permission
 
 
 svr_permission = SvrPermission()

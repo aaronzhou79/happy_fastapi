@@ -17,7 +17,7 @@ class SvrDept(TreeService):
     部门服务
     """
     def __init__(self):
-        super().__init__(crud=crud_dept)
+        self.crud = crud_dept
 
 
 svr_dept = SvrDept()

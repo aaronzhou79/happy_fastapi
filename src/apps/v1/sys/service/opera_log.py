@@ -6,11 +6,10 @@
 # @File    : svr_opera_log.py
 # @Software: Cursor
 # @Description: 操作日志服务
+
 from src.apps.v1.sys.crud.opera_log import crud_opera_log
 from src.apps.v1.sys.models.opera_log import OperaLog, OperaLogCreate, OperaLogUpdate
 from src.common.base_service import BaseService
-from src.common.logger import log
-from src.core.conf import settings
 from src.database.db_session import async_audit_session, async_session
 
 
@@ -18,13 +17,15 @@ class SvrOperaLog(BaseService[OperaLog, OperaLogCreate, OperaLogUpdate]):
     """
     操作日志服务
     """
-    @staticmethod
-    async def create_opera_log(opera_log_in: OperaLogCreate) -> dict:  # type: ignore
+    def __init__(self):
+        self.crud = crud_opera_log
+
+    async def create_opera_log(self, opera_log_in: OperaLogCreate) -> dict:  # type: ignore
         """
         创建操作日志
         """
         async with async_audit_session(async_session()) as session:
-            return await crud_opera_log.create(session=session, obj_in=opera_log_in)
+            return await self.crud.create(session=session, obj_in=opera_log_in)
 
 
-svr_opera_log = SvrOperaLog(crud=crud_opera_log)
+svr_opera_log = SvrOperaLog()

@@ -12,6 +12,12 @@ from src.common.tree_crud import TreeCRUD
 
 class CrudPermission(TreeCRUD):
     """权限相关CRUD类"""
+    def __init__(self):
+        super().__init__(
+            model=Permission,
+            create_model=PermissionCreate,
+            update_model=PermissionUpdate,
+        )
 
 
-crud_permission = CrudPermission(Permission, PermissionCreate, PermissionUpdate)
+crud_permission = CrudPermission()

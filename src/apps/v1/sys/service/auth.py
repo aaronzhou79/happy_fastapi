@@ -35,6 +35,17 @@ from src.utils.trace_id import get_request_trace_id
 
 
 class AuthService(BaseService[User, UserCreate, UserUpdate]):
+    def __init__(self):
+        self.crud = crud_user
+    @staticmethod
+    async def get_user_by_id(*, id: int) -> User | None:
+        """根据用户ID获取用户"""
+        async with async_session() as session:
+            user = await crud_user.get_by_fields(session=session, id=id)
+            if len(user)!= 1:
+                return None
+            return user[0]
+
     """用户认证服务"""
     async def login(
         self,
@@ -209,4 +220,4 @@ class AuthService(BaseService[User, UserCreate, UserUpdate]):
             await redis_client.setex(key, 900, 1)
 
 
-svr_auth = AuthService(crud_user)
+svr_auth = AuthService()

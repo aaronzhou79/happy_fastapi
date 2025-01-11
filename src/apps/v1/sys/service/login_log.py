@@ -17,6 +17,9 @@ class SvrLoginLog(BaseService[LoginLog, LoginLogCreate, LoginLogUpdate]):
     """
     登录日志服务
     """
+    def __init__(self):
+        self.crud = crud_login_log
+
     async def create_login_log(self, session: AuditAsyncSession, login_log_in: LoginLogCreate) -> LoginLog:
         """
         创建登录日志
@@ -24,4 +27,4 @@ class SvrLoginLog(BaseService[LoginLog, LoginLogCreate, LoginLogUpdate]):
         return await self.crud.create(session=session, obj_in=login_log_in)
 
 
-svr_login_log = SvrLoginLog(crud=crud_login_log)
+svr_login_log = SvrLoginLog()

@@ -17,6 +17,13 @@ from src.database.db_session import AuditAsyncSession
 
 class CrudPermissionRule(CRUDBase):
     """权限规则相关CRUD类"""
+    def __init__(self):
+        super().__init__(
+            model=PermissionRule,
+            create_model=PermissionRuleCreate,
+            update_model=PermissionRuleUpdate,
+        )
+
     async def get_by_permission(self, session: AuditAsyncSession, permission_id: int) -> Sequence[PermissionRule]:
         """获取权限规则"""
         result = await session.execute(
@@ -25,4 +32,4 @@ class CrudPermissionRule(CRUDBase):
         return result.scalars().all()
 
 
-crud_permission_rule = CrudPermissionRule(PermissionRule, PermissionRuleCreate, PermissionRuleUpdate)
+crud_permission_rule = CrudPermissionRule()

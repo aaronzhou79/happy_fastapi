@@ -17,6 +17,8 @@ class SvrRole(BaseService[Role, RoleCreate, RoleUpdate]):
     """
     角色服务
     """
+    def __init__(self):
+        self.crud = crud_role
 
 
-svr_role = SvrRole(crud=crud_role)
+svr_role = SvrRole()

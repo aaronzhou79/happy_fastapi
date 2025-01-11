@@ -12,6 +12,12 @@ from src.common.base_crud import CRUDBase
 
 class CrudOperaLog(CRUDBase):
     """操作日志相关CRUD类"""
+    def __init__(self):
+        super().__init__(
+            model=OperaLog,
+            create_model=OperaLogCreate,
+            update_model=OperaLogUpdate,
+        )
 
 
-crud_opera_log = CrudOperaLog(OperaLog, OperaLogCreate, OperaLogUpdate)
+crud_opera_log = CrudOperaLog()

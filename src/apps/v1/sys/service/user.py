@@ -23,7 +23,7 @@ class SvrUser(BaseService[User, UserCreate, UserUpdate]):
     用户服务
     """
     def __init__(self):
-        super().__init__(crud=crud_user)
+        self.crud = crud_user
         # 注册 after_create 钩子
         self.add_hook(HookTypeEnum.after_create, self._handle_roles)
 

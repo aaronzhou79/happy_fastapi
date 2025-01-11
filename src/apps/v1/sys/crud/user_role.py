@@ -12,6 +12,12 @@ from src.common.base_crud import CRUDBase
 
 class CrudUserRole(CRUDBase):
     """用户角色对应表相关CRUD类"""
+    def __init__(self):
+        super().__init__(
+            model=UserRole,
+            create_model=UserRoleCreate,
+            update_model=UserRoleUpdate,
+        )
 
 
-crud_user_role = CrudUserRole(UserRole, UserRoleCreate, UserRoleUpdate)
+crud_user_role = CrudUserRole()

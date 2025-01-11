@@ -12,6 +12,12 @@ from src.common.tree_crud import TreeCRUD
 
 class CrudDept(TreeCRUD):
     """部门相关CRUD类"""
+    def __init__(self) -> None:
+        super().__init__(
+            model=Dept,
+            create_model=DeptCreate,
+            update_model=DeptUpdate,
+        )
 
 
-crud_dept = CrudDept(Dept, DeptCreate, DeptUpdate)
+crud_dept = CrudDept()
