@@ -35,6 +35,7 @@ from src.utils.trace_id import get_request_trace_id
 
 
 class AuthService(BaseService[User, UserCreate, UserUpdate]):
+    """用户认证服务"""
     def __init__(self):
         self.crud = crud_user
     @staticmethod
@@ -42,7 +43,7 @@ class AuthService(BaseService[User, UserCreate, UserUpdate]):
         """根据用户ID获取用户"""
         async with async_session() as session:
             user = await crud_user.get_by_fields(session=session, id=id)
-            if len(user)!= 1:
+            if len(user) != 1:
                 return None
             return user[0]
 
