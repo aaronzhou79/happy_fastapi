@@ -3,6 +3,7 @@ from src.apps.v1.sys.service.login_log import svr_login_log
 from src.common.base_api import BaseAPI
 
 login_log_api = BaseAPI(
+    module_name="sys",
     model=LoginLog,
     service=svr_login_log,
     create_schema=LoginLogCreate,

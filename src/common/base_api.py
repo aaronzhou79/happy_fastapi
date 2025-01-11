@@ -27,6 +27,7 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
 
     def __init__(
         self,
+        module_name: str,
         model: Type[ModelType],
         service: BaseService[ModelType, CreateModelType, UpdateModelType],
         create_schema: Type[CreateModelType] | None = None,
@@ -44,6 +45,7 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
         cache_ttl: int = 3600 if settings.APP_ENV == "prod" else 60,
         **kwargs: Any,
     ) -> None:
+        self.module_name = module_name
         self.model = model
         self.service = service
         self.create_schema = create_schema
@@ -59,7 +61,8 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
         self.gen_bulk_delete = gen_bulk_delete
         self.gen_query = gen_query
         self.cache_ttl = cache_ttl
-        self.cache_prefix = f"{self.model.__name__}"
+        self.cache_prefix = f"{self.module_name}.{self.model.__name__}"
+        self.perm_prefix = f"{self.module_name}:{self.model.__name__}"
         self.redis_manager = RedisManager(prefix=self.cache_prefix)
         self.router = APIRouter(
             prefix=self.prefix,
@@ -91,7 +94,7 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
             summary=f"创建{self.model.__name__}",
             dependencies=[
                 DependsJwtAuth,
-                Depends(RequestPermission(f"{self.model.__name__}:create"))
+                Depends(RequestPermission(f"{self.perm_prefix}:create"))
             ]
         )
         async def create(
@@ -107,7 +110,11 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
         """注册批量创建接口"""
         @self.router.post(
             "/bulk_create",
-            summary=f"批量创建{self.model.__name__}"
+            summary=f"批量创建{self.model.__name__}",
+            dependencies=[
+                DependsJwtAuth,
+                Depends(RequestPermission(f"{self.perm_prefix}:bulk_create"))
+            ]
         )
         async def bulk_create(
             request: Request,
@@ -123,7 +130,11 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
         """注册更新接口"""
         @self.router.put(
             "/update",
-            summary=f"更新{self.model.__name__}"
+            summary=f"更新{self.model.__name__}",
+            dependencies=[
+                DependsJwtAuth,
+                Depends(RequestPermission(f"{self.perm_prefix}:update"))
+            ]
         )
         async def update(
             request: Request,
@@ -147,7 +158,11 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
         """注册删除接口"""
         @self.router.delete(
             "/delete/{id}",
-            summary=f"删除{self.model.__name__}"
+            summary=f"删除{self.model.__name__}",
+            dependencies=[
+                DependsJwtAuth,
+                Depends(RequestPermission(f"{self.perm_prefix}:delete"))
+            ]
         )
         async def delete(
             request: Request,
@@ -170,7 +185,11 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
         """注册批量删除接口"""
         @self.router.delete(
             "/bulk_delete",
-            summary=f"批量删除{self.model.__name__}"
+            summary=f"批量删除{self.model.__name__}",
+            dependencies=[
+                DependsJwtAuth,
+                Depends(RequestPermission(f"{self.perm_prefix}:bulk_delete"))
+            ]
         )
         async def bulk_delete(
             request: Request,
@@ -196,7 +215,11 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
         """注册获取单个接口"""
         @self.router.get(
             "/get",
-            summary=f"获取{self.model.__name__}"
+            summary=f"获取{self.model.__name__}",
+            dependencies=[
+                DependsJwtAuth,
+                # Depends(RequestPermission(f"{self.perm_prefix}:get"))
+            ]
         )
         @cached(
             ttl=self.cache_ttl,
@@ -204,7 +227,7 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
             serializer=PickleSerializer(),
             plugins=[CacheLogPlugin()],
             key_builder=lambda *args, **kwargs: generate_cache_key(
-                f"{self.model.__name__}",
+                f"{self.cache_prefix}:{self.model.__name__}",
                 f"id_{kwargs.get('id')}",
                 f"depth_{kwargs.get('max_depth')}"
             ),
@@ -226,7 +249,11 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
         """注册查询接口"""
         @self.router.post(
             "/query",
-            summary=f"查询{self.model.__name__}"
+            summary=f"查询{self.model.__name__}",
+            dependencies=[
+                DependsJwtAuth,
+                # Depends(RequestPermission(f"{self.perm_prefix}:query"))
+            ]
         )
         async def query(
             session: CurrentSession,

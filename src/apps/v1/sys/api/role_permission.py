@@ -11,6 +11,7 @@ from src.apps.v1.sys.service.role_permission import svr_role_permission
 from src.common.base_api import BaseAPI
 
 role_permission_api = BaseAPI(
+    module_name="sys",
     model=RolePermission,
     service=svr_role_permission,
     create_schema=RolePermissionCreate,

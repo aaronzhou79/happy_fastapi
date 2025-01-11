@@ -3,6 +3,7 @@ from src.apps.v1.sys.service.opera_log import svr_opera_log
 from src.common.base_api import BaseAPI
 
 opera_log_api = BaseAPI(
+    module_name="sys",
     model=OperaLog,
     service=svr_opera_log,
     create_schema=OperaLogCreate,

@@ -1,12 +1,14 @@
 from typing import Any, Type
 
-from fastapi import APIRouter, Body, Path, Query, Request
+from fastapi import APIRouter, Body, Depends, Path, Query, Request
 from typing_extensions import Annotated
 
 from src.common.base_api import BaseAPI
 from src.common.base_crud import CreateModelType, ModelType, UpdateModelType
 from src.common.tree_service import TreeService
 from src.core.responses.response_schema import ResponseModel, response_base
+from src.core.security.auth_security import DependsJwtAuth
+from src.core.security.permission import RequestPermission
 from src.database.db_session import CurrentSession, async_audit_session, async_session
 
 
@@ -29,11 +31,13 @@ class TreeAPI(BaseAPI[ModelType, CreateModelType, UpdateModelType]):
 
     def __init__(
         self,
+        module_name: str,
         model: Type[ModelType],
         service: TreeService,
         **kwargs: Any
     ) -> None:
-        super().__init__(model, service, **kwargs)
+        super().__init__(module_name, model, service, **kwargs)
+        self.module_name = module_name
         self.tree_router = APIRouter()
         self.service: TreeService = service
         self._register_tree_routes()
@@ -60,7 +64,11 @@ class TreeAPI(BaseAPI[ModelType, CreateModelType, UpdateModelType]):
         """注册获取树形结构路由"""
         @self.tree_router.get(
             "/tree",
-            summary=f"获取{self.model.__name__}树形结构"
+            summary=f"获取{self.model.__name__}树形结构",
+            dependencies=[
+                DependsJwtAuth,
+                # Depends(RequestPermission(f"{self.perm_prefix}:tree"))
+            ]
         )
         async def get_tree(
             session: CurrentSession,
@@ -81,7 +89,11 @@ class TreeAPI(BaseAPI[ModelType, CreateModelType, UpdateModelType]):
         """注册获取同级节点路由"""
         @self.tree_router.get(
             "/siblings/{node_id}",
-            summary=f"获取{self.model.__name__}同级节点"
+            summary=f"获取{self.model.__name__}同级节点",
+            dependencies=[
+                DependsJwtAuth,
+                # Depends(RequestPermission(f"{self.perm_prefix}:siblings"))
+            ]
         )
         async def get_siblings(
             session: CurrentSession,
@@ -99,7 +111,11 @@ class TreeAPI(BaseAPI[ModelType, CreateModelType, UpdateModelType]):
         """注册获取祖先节点路由"""
         @self.tree_router.get(
             "/ancestors/{node_id}",
-            summary=f"获取{self.model.__name__}祖先节点"
+            summary=f"获取{self.model.__name__}祖先节点",
+            dependencies=[
+                DependsJwtAuth,
+                # Depends(RequestPermission(f"{self.perm_prefix}:ancestors"))
+            ]
         )
         async def get_ancestors(
             session: CurrentSession,
@@ -113,7 +129,11 @@ class TreeAPI(BaseAPI[ModelType, CreateModelType, UpdateModelType]):
         """注册移动节点路由"""
         @self.tree_router.put(
             "/move",
-            summary=f"移动{self.model.__name__}节点"
+            summary=f"移动{self.model.__name__}节点",
+            dependencies=[
+                DependsJwtAuth,
+                Depends(RequestPermission(f"{self.perm_prefix}:move"))
+            ]
         )
         async def move_node(
             request: Request,
@@ -133,7 +153,11 @@ class TreeAPI(BaseAPI[ModelType, CreateModelType, UpdateModelType]):
         """注册批量移动节点路由"""
         @self.tree_router.put(
             "/bulk_move",
-            summary=f"批量移动{self.model.__name__}节点"
+            summary=f"批量移动{self.model.__name__}节点",
+            dependencies=[
+                DependsJwtAuth,
+                Depends(RequestPermission(f"{self.perm_prefix}:bulk_move"))
+            ]
         )
         async def bulk_move_nodes(
             request: Request,
@@ -156,7 +180,11 @@ class TreeAPI(BaseAPI[ModelType, CreateModelType, UpdateModelType]):
         """注册复制子树路由"""
         @self.tree_router.post(
             "/copy",
-            summary=f"复制{self.model.__name__}子树"
+            summary=f"复制{self.model.__name__}子树",
+            dependencies=[
+                DependsJwtAuth,
+                Depends(RequestPermission(f"{self.perm_prefix}:copy"))
+            ]
         )
         async def copy_subtree(
             request: Request,

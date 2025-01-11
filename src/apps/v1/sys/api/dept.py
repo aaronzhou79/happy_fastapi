@@ -12,6 +12,7 @@ from src.common.tree_api import TreeAPI
 
 # 创建部门API路由
 dept_api = TreeAPI(
+    module_name="sys",
     model=Dept,
     service=svr_dept,
     create_schema=DeptCreate,

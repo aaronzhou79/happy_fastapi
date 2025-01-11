@@ -11,6 +11,7 @@ from src.apps.v1.sys.service.user_role import svr_user_role
 from src.common.base_api import BaseAPI
 
 user_role_api = BaseAPI(
+    module_name="sys",
     model=UserRole,
     service=svr_user_role,
     create_schema=UserRoleCreate,

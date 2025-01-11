@@ -9,7 +9,6 @@
 
 from fastapi import APIRouter
 
-from .api.auth import router as auth_api
 from .api.dept import dept_api
 from .api.login_log import login_log_api
 from .api.opera_log import opera_log_api
@@ -22,13 +21,12 @@ from .api.user_role import user_role_api
 
 router = APIRouter(prefix="/sys")
 
-router.include_router(auth_api)
+router.include_router(user_api.router)
 router.include_router(dept_api.router)
 router.include_router(role_api.router)
-router.include_router(user_api.router)
 router.include_router(user_role_api.router)
-router.include_router(opera_log_api.router)
-router.include_router(login_log_api.router)
 router.include_router(permission_api.router)
 router.include_router(permission_rule_api.router)
 router.include_router(role_permission_api.router)
+router.include_router(opera_log_api.router)
+router.include_router(login_log_api.router)

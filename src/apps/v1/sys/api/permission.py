@@ -12,6 +12,7 @@ from src.common.tree_api import TreeAPI
 
 # 创建部门API路由
 permission_api = TreeAPI(
+    module_name="sys",
     model=Permission,
     service=svr_permission,
     create_schema=PermissionCreate,
