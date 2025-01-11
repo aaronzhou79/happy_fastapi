@@ -13,6 +13,7 @@ from typing import AsyncIterator
 from asgi_correlation_id import CorrelationIdMiddleware
 from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.routing import APIRoute
 from fastapi_limiter import FastAPILimiter
 from starlette.middleware.authentication import AuthenticationMiddleware
 
@@ -89,11 +90,29 @@ def register_app() -> FastAPI:
 
     register_middleware(app)
 
-    app.include_router(apps_router)
+    register_routers(app)
 
     register_exception(app)
 
     return app
+
+
+def register_routers(app: FastAPI) -> None:
+    """注册路由"""
+
+    def _generate_operation_id(route: APIRoute) -> str:
+        """生成简化的operation_id
+
+        去掉api/v1前缀,使用更简洁的格式: {module}_{resource}
+        """
+        # 获取路径中最后两段作为资源名
+        path_parts = route.path.strip("/").replace("api/v1/", "").split("/")
+        resource = "_".join(path_parts)
+
+        return f"{resource}"
+
+    app.router.generate_unique_id_function = _generate_operation_id
+    app.include_router(apps_router)
 
 
 def register_middleware(app: FastAPI) -> None:
