@@ -62,12 +62,13 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
         self.gen_query = gen_query
         self.cache_ttl = cache_ttl
         self.cache_prefix = f"{self.module_name}.{self.model.__name__}"
-        self.perm_prefix = f"{self.module_name}:{self.model.__name__}"
+        self.perm_prefix = f"{self.module_name}:{self.model.__name__.lower()}"
         self.redis_manager = RedisManager(prefix=self.cache_prefix)
         self.router = APIRouter(
             prefix=self.prefix,
             tags=self.tags or [],
         )
+        self.summary_suffix = f"{str(self.router.tags[0]).split('/')[-1]}"
         self._register_routes()
 
     def _register_routes(self) -> None:
@@ -91,7 +92,7 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
         """注册创建接口"""
         @self.router.post(
             "/create",
-            summary=f"创建{self.model.__name__}",
+            summary=f"创建 {self.summary_suffix} {self.perm_prefix}:create",
             dependencies=[
                 DependsJwtAuth,
                 Depends(RequestPermission(f"{self.perm_prefix}:create"))
@@ -110,7 +111,7 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
         """注册批量创建接口"""
         @self.router.post(
             "/bulk_create",
-            summary=f"批量创建{self.model.__name__}",
+            summary=f"批量创建 {self.summary_suffix} {self.perm_prefix}:bulk_create",
             dependencies=[
                 DependsJwtAuth,
                 Depends(RequestPermission(f"{self.perm_prefix}:bulk_create"))
@@ -130,7 +131,7 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
         """注册更新接口"""
         @self.router.put(
             "/update",
-            summary=f"更新{self.model.__name__}",
+            summary=f"更新 {self.summary_suffix} {self.perm_prefix}:update",
             dependencies=[
                 DependsJwtAuth,
                 Depends(RequestPermission(f"{self.perm_prefix}:update"))
@@ -158,7 +159,7 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
         """注册删除接口"""
         @self.router.delete(
             "/delete/{id}",
-            summary=f"删除{self.model.__name__}",
+            summary=f"删除 {self.summary_suffix} {self.perm_prefix}:delete",
             dependencies=[
                 DependsJwtAuth,
                 Depends(RequestPermission(f"{self.perm_prefix}:delete"))
@@ -185,7 +186,7 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
         """注册批量删除接口"""
         @self.router.delete(
             "/bulk_delete",
-            summary=f"批量删除{self.model.__name__}",
+            summary=f"批量删除 {self.summary_suffix} {self.perm_prefix}:bulk_delete",
             dependencies=[
                 DependsJwtAuth,
                 Depends(RequestPermission(f"{self.perm_prefix}:bulk_delete"))
@@ -215,7 +216,7 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
         """注册获取单个接口"""
         @self.router.get(
             "/get",
-            summary=f"获取{self.model.__name__}",
+            summary=f"获取 {self.summary_suffix}",
             dependencies=[
                 DependsJwtAuth,
                 # Depends(RequestPermission(f"{self.perm_prefix}:get"))
@@ -249,7 +250,7 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
         """注册查询接口"""
         @self.router.post(
             "/query",
-            summary=f"查询{self.model.__name__}",
+            summary=f"查询 {self.summary_suffix}",
             dependencies=[
                 DependsJwtAuth,
                 # Depends(RequestPermission(f"{self.perm_prefix}:query"))
