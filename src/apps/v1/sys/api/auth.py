@@ -13,7 +13,7 @@ from fastapi import APIRouter, BackgroundTasks, Body, Request, Response
 from src.apps.v1.sys.models.user import AuthLoginParam, UserGetWithRoles
 from src.apps.v1.sys.service.auth import svr_auth
 from src.core.responses.response_schema import ResponseModel, response_base
-from src.core.security.jwt import DependsJwtAuth
+from src.core.security.auth_security import DependsJwtAuth
 
 """
 用户认证API

@@ -18,6 +18,7 @@ from .api.permission_rule import permission_rule_api
 from .api.role import role_api
 from .api.role_permission import role_permission_api
 from .api.user import user_api
+from .api.user_role import user_role_api
 
 router = APIRouter(prefix="/sys")
 
@@ -25,6 +26,7 @@ router.include_router(auth_api)
 router.include_router(dept_api.router)
 router.include_router(role_api.router)
 router.include_router(user_api.router)
+router.include_router(user_role_api.router)
 router.include_router(opera_log_api.router)
 router.include_router(login_log_api.router)
 router.include_router(permission_api.router)

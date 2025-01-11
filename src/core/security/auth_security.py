@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from datetime import timedelta
+from typing import Annotated
 
 from fastapi import Depends, Request
 from fastapi.security import HTTPBearer
@@ -8,6 +9,7 @@ from fastapi.security.utils import get_authorization_scheme_param
 from jose import ExpiredSignatureError, JWTError, jwt
 from passlib.context import CryptContext
 
+from src.apps.v1.sys.models.user import UserGetWithRoles
 from src.common.dataclasses import AccessToken, NewToken, RefreshToken
 from src.core.conf import settings
 from src.database.db_redis import redis_client
@@ -177,7 +179,24 @@ async def superuser_verify(request: Request) -> bool:
     :param request:
     :return:
     """
-    superuser = request.user.is_superuser
-    if not superuser or not request.user.is_staff:
+    superuser = request.user.user_data.is_superuser
+    if not superuser or not request.user.user_data.is_staff:
         raise AuthorizationError
     return superuser
+
+
+async def get_current_user(request: Request) -> UserGetWithRoles:
+    """
+    获取当前用户
+    """
+    token = request.headers.get('Authorization')
+    if not token:
+        raise AuthorizationError(msg="用户未登录")
+    user_id = jwt_decode(token)
+    user = await redis_client.get(f'{settings.TOKEN_REDIS_PREFIX}:{user_id}:{token}')
+    if not user:
+        raise AuthorizationError(msg="用户未登录")
+    return UserGetWithRoles(**user)
+
+
+CurrentUser = Annotated[UserGetWithRoles, Depends(get_current_user)]

@@ -6,8 +6,13 @@
 # @File    : permission.py
 # @Software: Cursor
 # @Description: 权限相关CRUD类
+from typing import Sequence
+
+from sqlmodel import select
+
 from src.apps.v1.sys.models.role_permission import RolePermission, RolePermissionCreate, RolePermissionUpdate
 from src.common.base_crud import CRUDBase
+from src.database.db_session import AuditAsyncSession
 
 
 class CrudRolePermission(CRUDBase):

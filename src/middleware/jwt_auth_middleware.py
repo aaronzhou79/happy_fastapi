@@ -14,7 +14,7 @@ from src.common.logger import log
 from src.core.conf import settings
 from src.core.exceptions.errors import TokenError
 from src.core.responses.response_schema import MsgSpecJSONResponse
-from src.core.security import jwt
+from src.core.security import auth_security
 from src.database.db_redis import redis_client
 from src.database.db_session import async_audit_session, async_session
 
@@ -81,7 +81,7 @@ class JwtAuthMiddleware(AuthenticationBackend):
             return None
 
         try:
-            sub = await jwt.jwt_authentication(token)
+            sub = await auth_security.jwt_authentication(token)
             cache_user = await redis_client.get(f'{settings.JWT_USER_REDIS_PREFIX}:{sub}')
             if not cache_user:
                 async with async_audit_session(async_session(), request=request) as db:

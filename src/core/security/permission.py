@@ -1,11 +1,15 @@
-from typing import Callable, Sequence
-from fastapi import Depends, Request
-from fastapi.security import SecurityScopes
-from src.core.exceptions.errors import AuthorizationError
-from src.core.security.rule_engine import RuleEngine
-from src.database.db_redis import redis_client
+from typing import Sequence
+
+from fastapi import Request
+from jose import jwt
+
+from src.apps.v1.sys.service.permission import svr_permission
 from src.core.conf import settings
+from src.core.exceptions.errors import AuthorizationError
+from src.core.security import auth_security
+from src.database.db_redis import redis_client
 from src.database.db_session import async_audit_session, async_session
+
 
 class RequestPermission:
     """权限验证装饰器"""
@@ -17,11 +21,10 @@ class RequestPermission:
 
     async def __call__(self, request: Request):
         """权限验证装饰器"""
-        if not hasattr(request, "user"):
-            raise AuthorizationError(msg="用户未登录")
+        user = await auth_security.get_current_user(request)
 
         # 超级管理员跳过权限验证
-        if request.user.user_data.is_superuser:
+        if user.is_superuser:
             return
 
         # 获取用户权限列表
@@ -30,10 +33,16 @@ class RequestPermission:
         )
         if not user_perms:
             user_perms = []
-            for role in request.user.user_data.roles:
-                for perm in role.permissions:
-                    if perm.perms:
-                        user_perms.extend(perm.perms.split(","))
+            role_ids = [role.id for role in request.user.user_data.roles]
+            async with async_session() as session:
+                role_permissions = await svr_permission.get_role_permissions(
+                    session=session,
+                    role_id=role_ids
+                )
+
+                for perm in role_permissions:
+                    if perm.perm_code:
+                        user_perms.extend(perm.perm_code.split(","))
 
             if user_perms:
                 await redis_client.setex(

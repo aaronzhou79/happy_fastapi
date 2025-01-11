@@ -6,8 +6,16 @@
 # @File    : permission.py
 # @Software: Cursor
 # @Description: 权限相关CRUD类
+from typing import Sequence
+
+from sqlmodel import any_, select
+from sqlalchemy.orm import joinedload, selectinload
+
 from src.apps.v1.sys.models.permission import Permission, PermissionCreate, PermissionUpdate
+from src.apps.v1.sys.models.role import Role
+from src.apps.v1.sys.models.role_permission import RolePermission
 from src.common.tree_crud import TreeCRUD
+from src.database.db_session import AuditAsyncSession
 
 
 class CrudPermission(TreeCRUD):
@@ -18,6 +26,22 @@ class CrudPermission(TreeCRUD):
             create_model=PermissionCreate,
             update_model=PermissionUpdate,
         )
+
+    async def get_permissions_by_role(
+        self,
+        session: AuditAsyncSession,
+        role_ids: list[int]
+    ) -> Sequence[Permission]:
+        """
+        获取角色权限
+        """
+        stmt = (
+            select(Permission)
+            .join(RolePermission, RolePermission.permission_id == Permission.id)
+            .where(RolePermission.role_id in (role_ids))
+        )
+        result = await session.execute(stmt)
+        return result.scalars().all()
 
 
 crud_permission = CrudPermission()

@@ -13,7 +13,7 @@ from src.common.base_service import BaseService
 from src.common.query_fields import QueryOptions
 from src.core.conf import settings
 from src.core.responses.response_schema import ResponseModel, response_base
-from src.core.security.jwt import DependsJwtAuth
+from src.core.security.auth_security import DependsJwtAuth
 from src.core.security.permission import RequestPermission
 from src.database.cache.cache_conf import generate_cache_key, get_redis_settings
 from src.database.cache.cache_plugins import CacheLogPlugin

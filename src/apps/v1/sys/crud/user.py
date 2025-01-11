@@ -13,7 +13,7 @@ from src.apps.v1.sys.crud.user_role import crud_user_role
 from src.apps.v1.sys.models.user import User, UserCreate, UserUpdate
 from src.common.base_crud import CRUDBase
 from src.core.exceptions import errors
-from src.core.security.jwt import get_hash_password
+from src.core.security.auth_security import get_hash_password
 from src.database.db_session import AuditAsyncSession
 
 
