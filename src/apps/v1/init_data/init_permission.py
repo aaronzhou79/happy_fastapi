@@ -21,6 +21,55 @@ async def init_permissions(session: AuditAsyncSession) -> List[PermissionCreate]
     )
     sys_manage = await svr_permission.create(session, sys_manage)
 
+    # 部门管理相关权限
+    dept_manage = PermissionCreate(
+        name="Department Management",
+        type=PermissionType.MENU,
+        code="dept_manage",
+        description="Department management menu",
+        api_path="/system/dept",
+        component="system/dept/index",
+        icon="setting",
+        sort_order=2,
+        parent_id=sys_manage.id
+    )
+    dept_manage = await svr_permission.create(session, dept_manage)
+
+    dept_list = PermissionCreate(
+        name="Department List",
+        type=PermissionType.API,
+        code="dept_list",
+        description="View department list",
+        api_path="/api/v1/depts",
+        api_method="GET",
+        parent_id=dept_manage.id
+    )
+    await svr_permission.create(session, dept_list)
+
+    dept_create = PermissionCreate(
+        name="Create Department",
+        type=PermissionType.API,
+        code="dept_create",
+        perm_code="dept:create",
+        description="Create new department",
+        api_path="/api/v1/depts",
+        api_method="POST",
+        parent_id=dept_manage.id
+    )
+    await svr_permission.create(session, dept_create)
+
+    dept_update = PermissionCreate(
+        name="Update Department",
+        type=PermissionType.API,
+        code="dept_update",
+        perm_code="dept:update",
+        description="Update department info",
+        api_path="/api/v1/depts/{id}",
+        api_method="PUT",
+        parent_id=dept_manage.id
+    )
+    await svr_permission.create(session, dept_update)
+
     # 用户管理相关权限
     user_manage = PermissionCreate(
         name="User Management",

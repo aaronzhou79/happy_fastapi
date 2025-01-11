@@ -38,7 +38,7 @@ class CrudPermission(TreeCRUD):
         stmt = (
             select(Permission)
             .join(RolePermission, RolePermission.permission_id == Permission.id)
-            .where(RolePermission.role_id in (role_ids))
+            .where(RolePermission.role_id.in_(role_ids))  # type: ignore
         )
         result = await session.execute(stmt)
         return result.scalars().all()

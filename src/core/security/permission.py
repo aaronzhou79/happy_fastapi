@@ -3,6 +3,7 @@ from typing import Sequence
 from fastapi import Request
 from jose import jwt
 
+from src.apps.v1.sys.models.user import UserGetWithRoles
 from src.apps.v1.sys.service.permission import svr_permission
 from src.core.conf import settings
 from src.core.exceptions.errors import AuthorizationError
@@ -21,7 +22,7 @@ class RequestPermission:
 
     async def __call__(self, request: Request):
         """权限验证装饰器"""
-        user = await auth_security.get_current_user(request)
+        user = UserGetWithRoles.model_validate(request.user.user_data.model_dump())
 
         # 超级管理员跳过权限验证
         if user.is_superuser:
@@ -29,11 +30,11 @@ class RequestPermission:
 
         # 获取用户权限列表
         user_perms = await redis_client.get(
-            f"{settings.JWT_PERMS_REDIS_PREFIX}:{request.user.user_data.id}"
+            f"{settings.JWT_PERMS_REDIS_PREFIX}:{user.id}"
         )
         if not user_perms:
             user_perms = []
-            role_ids = [role.id for role in request.user.user_data.roles]
+            role_ids = [role.id for role in user.roles]
             async with async_session() as session:
                 role_permissions = await svr_permission.get_role_permissions(
                     session=session,
@@ -42,20 +43,20 @@ class RequestPermission:
 
                 for perm in role_permissions:
                     if perm.perm_code:
-                        user_perms.extend(perm.perm_code.split(","))
+                        user_perms.extend(perm.perm_code.lower().split(","))
 
             if user_perms:
                 await redis_client.setex(
-                    f"{settings.JWT_PERMS_REDIS_PREFIX}:{request.user.user_data.id}",
+                    f"{settings.JWT_PERMS_REDIS_PREFIX}:{user.id}",
                     settings.JWT_PERMS_REDIS_EXPIRE_SECONDS,
                     ",".join(set(user_perms))
                 )
         else:
-            user_perms = user_perms.split(",")
+            user_perms = user_perms.lower().split(",")
 
         # 验证权限
         for permission in self.permissions:
-            if permission not in user_perms:
+            if permission.lower() not in user_perms:
                 raise AuthorizationError(msg=f"缺少权限: {permission}")
 
 

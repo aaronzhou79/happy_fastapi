@@ -32,6 +32,8 @@ class SvrPermission(TreeService):
         """
         if isinstance(role_id, int):
             role_ids = [role_id]
+        else:
+            role_ids = role_id
         return await self.crud.get_permissions_by_role(session, role_ids)
 
 

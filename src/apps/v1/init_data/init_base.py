@@ -204,7 +204,7 @@ async def init_base(session: AuditAsyncSession) -> None:
     await crud_user_role.bulk_create(
         session,
         [
-            UserRoleCreate(user_id=users[0].id, role_id=roles[0].id),
-            UserRoleCreate(user_id=users[0].id, role_id=roles[1].id),
+            UserRoleCreate(user_id=users[1].id, role_id=roles[0].id),
+            UserRoleCreate(user_id=users[1].id, role_id=roles[1].id),
         ]
     )
