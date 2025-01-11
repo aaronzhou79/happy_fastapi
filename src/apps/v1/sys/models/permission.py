@@ -23,6 +23,7 @@ class PermissionBase(SQLModel):
     api_path: str | None = Field(default=None, max_length=200, description="API路径")
     api_method: str | None = Field(default=None, max_length=10, description="HTTP方法")
     component: str | None = Field(default=None, max_length=100, description="前端组件")
+    perm_code: str | None = Field(default=None, max_length=100, description="权限编码")
     icon: str | None = Field(default=None, max_length=50, description="图标")
     sort_order: int = Field(default=0, description="排序")
     is_visible: bool = Field(default=True, description="是否可见")

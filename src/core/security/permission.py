@@ -21,8 +21,8 @@ def require_permissions(
     """
     def decorator(func: Callable) -> Callable:
         @wraps(func)
-        async def wrapper(*args: Any, **kwargs: Any) -> Any:
-            request = next((arg for arg in args if isinstance(arg, Request)), None)
+        async def wrapper(request: Request, *args: Any, **kwargs: Any) -> Any:
+            # request = next((arg for arg in args if isinstance(arg, Request)), None)
             if not request:
                 raise AuthorizationError(msg="无法获取请求上下文")
 
