@@ -88,22 +88,22 @@ async def init_base(session: AuditAsyncSession) -> None:
             RoleCreate(
                 name='总经理',
                 code='admin',
-                status=RoleStatus.active,
+                status=RoleStatus.ACTIVE,
             ),
             RoleCreate(
                 name='部门经理',
                 code='dept_manager',
-                status=RoleStatus.active,
+                status=RoleStatus.ACTIVE,
             ),
             RoleCreate(
                 name='助理',
                 code='assistant',
-                status=RoleStatus.active,
+                status=RoleStatus.ACTIVE,
             ),
             RoleCreate(
                 name='员工',
                 code='staff',
-                status=RoleStatus.active,
+                status=RoleStatus.ACTIVE,
             ),
         ]
     )
@@ -119,7 +119,7 @@ async def init_base(session: AuditAsyncSession) -> None:
                 password='$2b$12$RJXAtJodRw37ZQGxTPlu0OH.aN5lNXG6yvC4Tp9GIQEBmMY/YCc.m',  # noqa: S106
                 salt='bcNjV',
                 uuid=uuid4_str(),
-                emp_type=UserEmpType.admin,
+                emp_type=UserEmpType.ADMIN,
                 is_user=True,
             ),
             UserCreate(
@@ -127,7 +127,7 @@ async def init_base(session: AuditAsyncSession) -> None:
                 email='zhangsan@example.com',
                 dept_id=depts[0].id,
                 uuid=uuid4_str(),
-                emp_type=UserEmpType.staff,
+                emp_type=UserEmpType.STAFF,
                 is_user=False,
             ),
             UserCreate(
@@ -135,7 +135,7 @@ async def init_base(session: AuditAsyncSession) -> None:
                 email='lis@example.com',
                 dept_id=depts[0].id,
                 uuid=uuid4_str(),
-                emp_type=UserEmpType.staff,
+                emp_type=UserEmpType.STAFF,
                 is_user=False,
             ),
             UserCreate(
@@ -143,7 +143,7 @@ async def init_base(session: AuditAsyncSession) -> None:
                 email='wangwu@example.com',
                 dept_id=depts[1].id,
                 uuid=uuid4_str(),
-                emp_type=UserEmpType.staff,
+                emp_type=UserEmpType.STAFF,
                 is_user=False,
             ),
             UserCreate(
@@ -151,7 +151,7 @@ async def init_base(session: AuditAsyncSession) -> None:
                 email='zhaoliu@example.com',
                 dept_id=depts[1].id,
                 uuid=uuid4_str(),
-                emp_type=UserEmpType.staff,
+                emp_type=UserEmpType.STAFF,
                 is_user=False,
             ),
             UserCreate(
@@ -159,7 +159,7 @@ async def init_base(session: AuditAsyncSession) -> None:
                 email='sunqi@example.com',
                 dept_id=depts[2].id,
                 uuid=uuid4_str(),
-                emp_type=UserEmpType.staff,
+                emp_type=UserEmpType.STAFF,
                 is_user=False,
             ),
             UserCreate(
@@ -167,7 +167,7 @@ async def init_base(session: AuditAsyncSession) -> None:
                 email='zhouba@example.com',
                 dept_id=depts[2].id,
                 uuid=uuid4_str(),
-                emp_type=UserEmpType.staff,
+                emp_type=UserEmpType.STAFF,
                 is_user=False,
             ),
             UserCreate(
@@ -175,7 +175,7 @@ async def init_base(session: AuditAsyncSession) -> None:
                 email='wujiu@example.com',
                 dept_id=depts[3].id,
                 uuid=uuid4_str(),
-                emp_type=UserEmpType.staff,
+                emp_type=UserEmpType.STAFF,
                 is_user=False,
             ),
             UserCreate(
@@ -183,7 +183,7 @@ async def init_base(session: AuditAsyncSession) -> None:
                 email='zhengshi@example.com',
                 dept_id=depts[3].id,
                 uuid=uuid4_str(),
-                emp_type=UserEmpType.staff,
+                emp_type=UserEmpType.STAFF,
                 is_user=False,
             ),
         ]
