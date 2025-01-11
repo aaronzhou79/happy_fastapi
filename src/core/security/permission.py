@@ -15,9 +15,8 @@ class RequestPermission:
         self.permissions = permissions
         self.evaluate_rules = evaluate_rules
 
-
     async def __call__(self, request: Request):
-        # 验证用户是否登录
+        """权限验证装饰器"""
         if not hasattr(request, "user"):
             raise AuthorizationError(msg="用户未登录")
 

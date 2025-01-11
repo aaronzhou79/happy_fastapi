@@ -121,6 +121,18 @@ async def init_base(session: AuditAsyncSession) -> None:
                 uuid=uuid4_str(),
                 emp_type=UserEmpType.ADMIN,
                 is_user=True,
+                is_superuser=True,
+            ),
+            UserCreate(
+                username='user',
+                name='普通用户',
+                email='user@example.com',
+                password='$2b$12$RJXAtJodRw37ZQGxTPlu0OH.aN5lNXG6yvC4Tp9GIQEBmMY/YCc.m',  # noqa: S106
+                salt='bcNjV',
+                uuid=uuid4_str(),
+                emp_type=UserEmpType.STAFF,
+                is_user=True,
+                is_superuser=False,
             ),
             UserCreate(
                 name='张三',

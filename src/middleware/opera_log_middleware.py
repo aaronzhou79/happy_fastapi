@@ -90,7 +90,7 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
         """执行请求"""
         code = 200
         msg = 'Success'
-        status = OperaLogStatus.success
+        status = OperaLogStatus.SUCCESS
         err = None
         response = None
         try:
@@ -101,7 +101,7 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
             # code 处理包含 SQLAlchemy 和 Pydantic
             code = getattr(e, 'code', None) or code
             msg = getattr(e, 'msg', None) or msg
-            status = OperaLogStatus.fail
+            status = OperaLogStatus.FAIL
             err = e
 
         # 确保 response 不为 None
@@ -167,10 +167,10 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
         def _encrypt_value(value: str, cipher_type: OperaLogCipher) -> str:
             """加密单个值"""
             encrypt_map = {
-                OperaLogCipher.aes: lambda x: (AESCipher(settings.OPERA_LOG_ENCRYPT_SECRET_KEY).encrypt(x)).hex(),
-                OperaLogCipher.md5: Md5Cipher.encrypt,
-                OperaLogCipher.itsdangerous: lambda x: ItsDCipher(settings.OPERA_LOG_ENCRYPT_SECRET_KEY).encrypt(x),
-                OperaLogCipher.plan: lambda x: x,
+                OperaLogCipher.AES: lambda x: (AESCipher(settings.OPERA_LOG_ENCRYPT_SECRET_KEY).encrypt(x)).hex(),
+                OperaLogCipher.MD5: Md5Cipher.encrypt,
+                OperaLogCipher.ITSDANGEROUS: lambda x: ItsDCipher(settings.OPERA_LOG_ENCRYPT_SECRET_KEY).encrypt(x),
+                OperaLogCipher.PLAN: lambda x: x,
             }
             return encrypt_map.get(cipher_type, lambda _: '******')(value)
         for key in args.keys():

@@ -1,7 +1,10 @@
 from typing import Literal
+
 from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, SQLModel
+
 from src.common.base_model import DatabaseModel, id_pk
+
 
 class RolePermissionBase(SQLModel):
     """角色-权限关联基础模型"""

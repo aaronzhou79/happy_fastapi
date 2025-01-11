@@ -16,6 +16,7 @@ from .api.opera_log import opera_log_api
 from .api.permission import permission_api
 from .api.permission_rule import permission_rule_api
 from .api.role import role_api
+from .api.role_permission import role_permission_api
 from .api.user import user_api
 
 router = APIRouter(prefix="/sys")
@@ -28,3 +29,4 @@ router.include_router(opera_log_api.router)
 router.include_router(login_log_api.router)
 router.include_router(permission_api.router)
 router.include_router(permission_rule_api.router)
+router.include_router(role_permission_api.router)
