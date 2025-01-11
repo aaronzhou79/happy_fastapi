@@ -15,7 +15,6 @@ from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi_limiter import FastAPILimiter
 from starlette.middleware.authentication import AuthenticationMiddleware
-from src.middleware.jwt_auth_middleware import JwtAuthMiddleware
 
 from src.apps import router as apps_router
 from src.common.base_model import create_table
@@ -24,6 +23,7 @@ from src.core.conf import settings
 from src.core.exceptions.exception_handler import register_exception
 from src.core.responses.response_schema import MsgSpecJSONResponse
 from src.database.db_redis import redis_client
+from src.middleware.jwt_auth_middleware import JwtAuthMiddleware
 from src.middleware.opera_log_middleware import OperaLogMiddleware
 from src.middleware.profiling_middleware import ProfilingMiddleware
 from src.middleware.state_middleware import StateMiddleware
