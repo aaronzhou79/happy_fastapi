@@ -22,6 +22,7 @@ class SvrPermissionRule(BaseService[PermissionRule, PermissionRuleCreate, Permis
     """
     def __init__(self):
         self.crud = crud_permission_rule
+        super().__init__(crud=self.crud)
 
     async def get_by_permission(self, session: AuditAsyncSession, permission_id: int) -> Sequence[PermissionRule]:
         """获取权限规则"""

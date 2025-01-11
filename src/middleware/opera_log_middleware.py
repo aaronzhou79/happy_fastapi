@@ -11,7 +11,7 @@ from starlette.requests import Request
 from src.apps.v1.sys.models.opera_log import OperaLogCreate
 from src.apps.v1.sys.service.opera_log import svr_opera_log
 from src.common.dataclasses import RequestCallNext
-from src.common.enums import OperaLogCipherType, OperaLogStatusType
+from src.common.enums import OperaLogCipher, OperaLogStatus
 from src.common.logger import log
 from src.core.conf import settings
 from src.utils.encrypt import AESCipher, ItsDCipher, Md5Cipher
@@ -90,7 +90,7 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
         """执行请求"""
         code = 200
         msg = 'Success'
-        status = OperaLogStatusType.success
+        status = OperaLogStatus.success
         err = None
         response = None
         try:
@@ -101,7 +101,7 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
             # code 处理包含 SQLAlchemy 和 Pydantic
             code = getattr(e, 'code', None) or code
             msg = getattr(e, 'msg', None) or msg
-            status = OperaLogStatusType.fail
+            status = OperaLogStatus.fail
             err = e
 
         # 确保 response 不为 None
@@ -164,16 +164,16 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
         if not args:
             return {}
 
-        def _encrypt_value(value: str, cipher_type: OperaLogCipherType) -> str:
+        def _encrypt_value(value: str, cipher_type: OperaLogCipher) -> str:
             """加密单个值"""
             encrypt_map = {
-                OperaLogCipherType.aes: lambda x: (AESCipher(settings.OPERA_LOG_ENCRYPT_SECRET_KEY).encrypt(x)).hex(),
-                OperaLogCipherType.md5: Md5Cipher.encrypt,
-                OperaLogCipherType.itsdangerous: lambda x: ItsDCipher(settings.OPERA_LOG_ENCRYPT_SECRET_KEY).encrypt(x),
-                OperaLogCipherType.plan: lambda x: x,
+                OperaLogCipher.aes: lambda x: (AESCipher(settings.OPERA_LOG_ENCRYPT_SECRET_KEY).encrypt(x)).hex(),
+                OperaLogCipher.md5: Md5Cipher.encrypt,
+                OperaLogCipher.itsdangerous: lambda x: ItsDCipher(settings.OPERA_LOG_ENCRYPT_SECRET_KEY).encrypt(x),
+                OperaLogCipher.plan: lambda x: x,
             }
             return encrypt_map.get(cipher_type, lambda _: '******')(value)
         for key in args.keys():
             if key in settings.OPERA_LOG_ENCRYPT_KEY_INCLUDE:
-                args[key] = _encrypt_value(args[key], OperaLogCipherType(settings.OPERA_LOG_ENCRYPT_TYPE))
+                args[key] = _encrypt_value(args[key], OperaLogCipher(settings.OPERA_LOG_ENCRYPT_TYPE))
         return args

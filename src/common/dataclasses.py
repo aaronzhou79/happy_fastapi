@@ -6,7 +6,7 @@ from datetime import datetime
 
 from fastapi import Response
 
-from src.common.enums import OperaLogStatusType
+from src.common.enums import OperaLogStatus
 
 
 @dataclasses.dataclass
@@ -32,7 +32,7 @@ class RequestCallNext:
     """请求调用下一个中间件"""
     code: int
     msg: str
-    status: OperaLogStatusType
+    status: OperaLogStatus
     err: Exception | None
     response: Response
 

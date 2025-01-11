@@ -14,7 +14,7 @@ from src.apps.v1.sys.models.dept import DeptCreate
 from src.apps.v1.sys.models.role import RoleCreate
 from src.apps.v1.sys.models.user import UserCreate
 from src.apps.v1.sys.models.user_role import UserRoleCreate
-from src.common.enums import RoleStatusType, UserEmpType
+from src.common.enums import RoleStatus, UserEmpType
 from src.database.db_session import AuditAsyncSession, uuid4_str
 
 
@@ -88,22 +88,22 @@ async def init_base(session: AuditAsyncSession) -> None:
             RoleCreate(
                 name='总经理',
                 code='admin',
-                status=RoleStatusType.active,
+                status=RoleStatus.active,
             ),
             RoleCreate(
                 name='部门经理',
                 code='dept_manager',
-                status=RoleStatusType.active,
+                status=RoleStatus.active,
             ),
             RoleCreate(
                 name='助理',
                 code='assistant',
-                status=RoleStatusType.active,
+                status=RoleStatus.active,
             ),
             RoleCreate(
                 name='员工',
                 code='staff',
-                status=RoleStatusType.active,
+                status=RoleStatus.active,
             ),
         ]
     )

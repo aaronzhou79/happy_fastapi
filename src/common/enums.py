@@ -34,53 +34,60 @@ class HookTypeEnum(StrEnum):
     after_delete = "after_delete"
 
 
-class OperaLogCipherType(IntEnum):
+class OperaLogCipher(IntEnum):
     """操作日志加密类型"""
 
-    aes = 0
-    md5 = 1
-    itsdangerous = 2
-    plan = 3
+    AES = 0
+    MD5 = 1
+    ITSDANGEROUS = 2
+    PLAN = 3
 
 
-class LoginLogStatusType(IntEnum):
+class LoginLogStatus(IntEnum):
     """登陆日志状态"""
 
-    fail = 0
-    success = 1
+    FAIL = 0
+    SUCCESS = 1
 
 
-class RoleStatusType(StrEnum):
+class RoleStatus(StrEnum):
     """角色状态"""
 
-    active = "启用"
-    inactive = "禁用"
+    ACTIVE = "启用"
+    INACTIVE = "禁用"
 
 
 class PermissionType(StrEnum):
     """权限类型"""
 
-    menu = "menu"
-    api = "api"
-    data = "data"
+    MENU = "menu"
+    API = "api"
+    DATA = "data"
 
 
-class OperaLogStatusType(IntEnum):
+class PermissionRuleStatus(StrEnum):
+    """权限规则状态"""
+
+    ENABLE = "启用"
+    DISABLE = "禁用"
+
+
+class OperaLogStatus(IntEnum):
     """操作日志状态"""
 
-    fail = 0
-    success = 1
+    FAIL = 0
+    SUCCESS = 1
 
 
 class UserEmpType(StrEnum):
     """用户员工类型"""
 
-    admin = "管理员"
-    staff = "员工"
-    sales = "销售"
-    finance = "财务"
-    hr = "人事"
-    it = "IT"
+    ADMIN = "管理员"
+    STAFF = "员工"
+    SALES = "销售"
+    FINANCE = "财务"
+    HR = "人事"
+    IT = "IT"
 
 
 class UserStatus(StrEnum):

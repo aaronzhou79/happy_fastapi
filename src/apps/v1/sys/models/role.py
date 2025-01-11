@@ -15,7 +15,7 @@ from sqlmodel import Field, Relationship, SQLModel
 from src.apps.v1.sys.models.role_permission import RolePermission
 from src.apps.v1.sys.models.user_role import UserRole
 from src.common.base_model import DatabaseModel, id_pk
-from src.common.enums import RoleStatusType
+from src.common.enums import RoleStatus
 
 if TYPE_CHECKING:
     from src.apps.v1.sys.models.permission import Permission
@@ -29,7 +29,7 @@ class RoleBase(SQLModel):
     name: str = Field(..., max_length=32)
     code: str = Field(..., max_length=32, unique=True)
     sort_order: int = Field(default=0)
-    status: RoleStatusType = Field(default=RoleStatusType.active)
+    status: RoleStatus = Field(default=RoleStatus.ACTIVE)
     description: str | None = Field(default=None, sa_type=sa.Text)
 
 

@@ -5,16 +5,16 @@ from typing import Any, Callable, Generic, Sequence, Type
 
 from aiocache import RedisCache, cached
 from aiocache.serializers import PickleSerializer
-from fastapi import APIRouter, Body, Path, Query, Request
-from fastapi.params import Depends
+from fastapi import APIRouter, Body, Depends, Path, Query, Request
 from typing_extensions import Annotated
 
 from src.common.base_crud import CreateModelType, ModelType, UpdateModelType
-from src.common.base_model import DatabaseModel
 from src.common.base_service import BaseService
 from src.common.query_fields import QueryOptions
 from src.core.conf import settings
 from src.core.responses.response_schema import ResponseModel, response_base
+from src.core.security.jwt import DependsJwtAuth
+from src.core.security.permission import RequestPermission
 from src.database.cache.cache_conf import generate_cache_key, get_redis_settings
 from src.database.cache.cache_plugins import CacheLogPlugin
 from src.database.db_redis import redis_client
@@ -35,7 +35,6 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
         with_schema: Type[ModelType] | Any = Any,
         prefix: str = "",
         tags: list[str | Enum] | None = None,
-        dependencies: list[Depends] | None = None,
         gen_create: bool = True,
         gen_bulk_create: bool = False,
         gen_update: bool = True,
@@ -53,7 +52,6 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
         self.with_schema = with_schema
         self.prefix = prefix
         self.tags = tags
-        self.dependencies = dependencies or []
         self.gen_create = gen_create
         self.gen_bulk_create = gen_bulk_create
         self.gen_update = gen_update
@@ -66,7 +64,6 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
         self.router = APIRouter(
             prefix=self.prefix,
             tags=self.tags or [],
-            dependencies=self.dependencies or []
         )
         self._register_routes()
 
@@ -91,7 +88,11 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
         """注册创建接口"""
         @self.router.post(
             "/create",
-            summary=f"创建{self.model.__name__}"
+            summary=f"创建{self.model.__name__}",
+            dependencies=[
+                DependsJwtAuth,
+                Depends(RequestPermission(f"{self.model.__name__}:create"))
+            ]
         )
         async def create(
             request: Request,

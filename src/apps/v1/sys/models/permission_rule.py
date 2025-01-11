@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from sqlmodel import JSON, Column, Field, SQLModel
 
 from src.common.base_model import DatabaseModel, id_pk
+from src.common.enums import PermissionRuleStatus
 
 
 class RuleCondition(BaseModel):
@@ -26,9 +27,7 @@ class PermissionRuleBase(SQLModel):
     """权限规则基础模型"""
     permission_id: int = Field(..., foreign_key="sys_permission.id")
     rule: Rule = Field(..., sa_column=Column(JSON), description="权限规则")
-    status: bool = Field(default=True, description="规则状态")
-    start_time: datetime | None = Field(default=None, description="生效开始时间")
-    end_time: datetime | None = Field(default=None, description="生效结束时间")
+    status: PermissionRuleStatus = Field(default=PermissionRuleStatus.ENABLE, description="规则状态")
     description: str | None = Field(default=None, description="规则描述")
 
 

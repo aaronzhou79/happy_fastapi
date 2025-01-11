@@ -14,7 +14,7 @@ from .api.dept import dept_api
 from .api.login_log import login_log_api
 from .api.opera_log import opera_log_api
 from .api.permission import permission_api
-from .api.permission_rule import router as permission_rule_api
+from .api.permission_rule import permission_rule_api
 from .api.role import role_api
 from .api.user import user_api
 
@@ -27,4 +27,4 @@ router.include_router(user_api.router)
 router.include_router(opera_log_api.router)
 router.include_router(login_log_api.router)
 router.include_router(permission_api.router)
-router.include_router(permission_rule_api)
+router.include_router(permission_rule_api.router)

@@ -6,7 +6,7 @@ import sqlalchemy as sa
 from sqlmodel import Field, SQLModel
 
 from src.common.base_model import DatabaseModel, id_pk
-from src.common.enums import OperaLogStatusType
+from src.common.enums import OperaLogStatus
 from src.utils.timezone import TimeZone
 
 
@@ -26,7 +26,7 @@ class OperaLogBase(SQLModel):
     browser: str | None = Field(default=None, max_length=64)
     device: str | None = Field(default=None, max_length=64)
     args: dict | None = Field(default=None, sa_type=sa.JSON)
-    status: OperaLogStatusType = Field(default=OperaLogStatusType.success)
+    status: OperaLogStatus = Field(default=OperaLogStatus.SUCCESS)
     code: str = Field(max_length=20)
     msg: str | None = Field(default=None, max_length=2000, sa_type=sa.Text)
     cost_time: float = Field(ge=0)  # 添加非负数验证

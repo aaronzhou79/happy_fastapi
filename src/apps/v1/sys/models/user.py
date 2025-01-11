@@ -33,7 +33,7 @@ class UserBase(SQLModel):
     status: UserStatus = Field(
         default=UserStatus.ACTIVE, description="用户状态")
     emp_type: UserEmpType = Field(
-        default=UserEmpType.staff, description="员工类型")
+        default=UserEmpType.STAFF, description="员工类型")
     email: str | None = Field(
         default=None, max_length=128, description="邮箱")
     phone: str | None = Field(

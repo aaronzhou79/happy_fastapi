@@ -17,7 +17,7 @@ from src.apps.v1.sys.models.user import (
 )
 from src.apps.v1.sys.service.login_log import svr_login_log
 from src.common.base_service import BaseService
-from src.common.enums import LoginLogStatusType, UserStatus
+from src.common.enums import LoginLogStatus, UserStatus
 from src.core.conf import settings
 from src.core.exceptions import errors
 from src.core.security.jwt import (
@@ -61,7 +61,7 @@ class AuthService(BaseService[User, UserCreate, UserUpdate]):
             request: Request,
             user_uuid: str,
             username: str | None,
-            status: LoginLogStatusType,
+            status: LoginLogStatus,
             msg: str,
         ) -> BackgroundTask:
             return BackgroundTask(
@@ -113,14 +113,14 @@ class AuthService(BaseService[User, UserCreate, UserUpdate]):
 
             if not current_user.status and current_user.status != UserStatus.ACTIVE:
                 task = _record_login_log(
-                    session, request, user_uuid, username, LoginLogStatusType.fail, '用户已被锁定, 请联系统管理员')
+                    session, request, user_uuid, username, LoginLogStatus.fail, '用户已被锁定, 请联系统管理员')
                 raise errors.AuthorizationError(msg='用户已被锁定, 请联系统管理员', background=task)
 
             current_user_id = current_user.id
             access_token = await create_access_token(str(current_user_id), current_user.is_multi_login)
             refresh_token = await create_refresh_token(str(current_user_id), current_user.is_multi_login)
 
-            task = _record_login_log(session, request, user_uuid, username, LoginLogStatusType.success, '登录成功')
+            task = _record_login_log(session, request, user_uuid, username, LoginLogStatus.success, '登录成功')
             background_tasks.add_task(task)
 
             if settings.CAPTCHA_NEED:
