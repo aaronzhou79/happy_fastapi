@@ -1,5 +1,12 @@
-#!/usr/bin/env python3
+# src/utils/trace_id.py
+# !/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# @Date    : 2024/12/30
+# @Author  : Aaron Zhou
+# @File    : trace_id.py
+# @Software: Cursor
+# @Description: 获取请求 trace_id
+
 from fastapi import Request
 
 from src.core.conf import settings

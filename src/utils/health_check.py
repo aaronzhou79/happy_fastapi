@@ -1,5 +1,12 @@
-#!/usr/bin/env python3
+# src/utils/health_check.py
+# !/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# @Date    : 2024/12/30
+# @Author  : Aaron Zhou
+# @File    : health_check.py
+# @Software: Cursor
+# @Description: 健康检查
+
 from math import ceil
 
 from fastapi import FastAPI

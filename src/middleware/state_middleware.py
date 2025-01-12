@@ -1,5 +1,12 @@
-#!/usr/bin/env python3
+# src/middleware/state_middleware.py
+# !/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# @Date    : 2024/12/30
+# @Author  : Aaron Zhou
+# @File    : state_middleware.py
+# @Software: Cursor
+# @Description: 请求 state 中间件
+
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 

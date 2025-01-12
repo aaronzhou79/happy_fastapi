@@ -1,5 +1,12 @@
-#!/usr/bin/env python3
+# src/middleware/jwt_auth_middleware.py
+# !/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# @Date    : 2024/12/30
+# @Author  : Aaron Zhou
+# @File    : jwt_auth_middleware.py
+# @Software: Cursor
+# @Description: JWT 认证中间件
+
 from typing import Any
 
 from fastapi import Request, Response

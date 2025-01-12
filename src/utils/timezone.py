@@ -1,5 +1,12 @@
-#!/usr/bin/env python3
+# src/utils/timezone.py
+# !/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# @Date    : 2024/12/30
+# @Author  : Aaron Zhou
+# @File    : timezone.py
+# @Software: Cursor
+# @Description: 时区工具
+
 import zoneinfo
 
 from datetime import datetime

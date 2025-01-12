@@ -1,5 +1,12 @@
-#!/usr/bin/env python3
+# src/middleware/opera_log_middleware.py
+# !/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# @Date    : 2024/12/30
+# @Author  : Aaron Zhou
+# @File    : opera_log_middleware.py
+# @Software: Cursor
+# @Description: 操作日志中间件
+
 from asyncio import create_task
 
 from asgiref.sync import sync_to_async

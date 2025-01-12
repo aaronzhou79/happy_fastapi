@@ -1,9 +1,16 @@
+# src/utils/snowflake.py
+# !/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# @Date    : 2024/12/30
+# @Author  : Aaron Zhou
+# @File    : snowflake.py
+# @Software: Cursor
+# @Description: 雪花算法
+
 # Twitter's Snowflake algorithm implementation which is used to generate distributed IDs.
 # https://github.com/twitter-archive/snowflake/blob/snowflake-2010/src/main/scala/com/twitter/service/snowflake/IdWorker.scala
 
 import time
-
-# from core.conf import settings
 
 
 class SystemClockError(Exception):
@@ -43,6 +50,7 @@ class IdWorker:
                 sequence: int = 1):
         """
         初始化
+
         :param datacenter_id: 数据中心（机器区域）ID
         :param worker_id: 机器ID
         :param sequence: 起始序号

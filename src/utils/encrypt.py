@@ -1,7 +1,15 @@
-#!/usr/bin/env python3
+# src/utils/encrypt.py
+# !/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# @Date    : 2024/12/30
+# @Author  : Aaron Zhou
+# @File    : encrypt.py
+# @Software: Cursor
+# @Description: 加密解密工具
 import hashlib
 import os
+import secrets
+import string
 
 from typing import Any
 
@@ -10,8 +18,6 @@ from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from itsdangerous import URLSafeSerializer
 from passlib.context import CryptContext
-import secrets
-import string
 
 from src.common.logger import log
 

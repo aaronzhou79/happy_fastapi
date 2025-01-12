@@ -1,3 +1,12 @@
+# src/middleware/profiling_middleware.py
+# !/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# @Date    : 2024/12/30
+# @Author  : Aaron Zhou
+# @File    : profiling_middleware.py
+# @Software: Cursor
+# @Description: 性能分析中间件
+
 import cProfile
 import pstats
 import time
