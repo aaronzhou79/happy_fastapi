@@ -1,5 +1,8 @@
+import inspect
+
 from collections import defaultdict
-from typing import Any, AsyncGenerator, Callable, Dict, Generic, List, Sequence, TypeVar
+from dataclasses import dataclass
+from typing import Any, AsyncGenerator, Callable, Dict, Generic, Sequence, TypeVar
 
 import sqlalchemy as sa
 
@@ -16,7 +19,65 @@ ModelType = TypeVar("ModelType", bound=DatabaseModel | TreeModel)
 CreateModelType = TypeVar("CreateModelType", bound=SQLModel)
 UpdateModelType = TypeVar("UpdateModelType", bound=SQLModel)
 
-HookType = Callable[..., Any]
+# 定义钩子上下文类型
+@dataclass
+class HookContext:
+    """钩子执行上下文"""
+    session: AuditAsyncSession
+    params: Dict[str, Any]
+    results: Dict[str, Any]
+
+
+# 定义钩子函数类型
+HookFunc = Callable[[HookContext], Any]
+
+
+@dataclass
+class Hook:
+    """钩子配置类"""
+    func: HookFunc  # 钩子函数
+    priority: int = 0  # 优先级,数字越小优先级越高
+    condition: Callable[[HookContext], bool] | None = None  # 执行条件
+    error_handler: Callable[[Exception, HookContext], Any] | None = None  # 错误处理器
+
+
+class HookManager:
+    """钩子管理器"""
+    def __init__(self):
+        self.hooks: Dict[HookTypeEnum, list[Hook]] = defaultdict(list)
+
+    def add_hook(
+        self,
+        hook_type: HookTypeEnum,
+        func: HookFunc,
+        priority: int = 0,
+        condition: Callable[[HookContext], bool] | None = None,
+        error_handler: Callable[[Exception, HookContext], Any] | None = None
+    ) -> None:
+        """添加钩子"""
+        hook = Hook(func=func, priority=priority, condition=condition, error_handler=error_handler)
+        self.hooks[hook_type].append(hook)
+        # 按优先级排序
+        self.hooks[hook_type].sort(key=lambda x: x.priority)
+
+    async def execute_hooks(self, hook_type: HookTypeEnum, context: HookContext) -> None:
+        """执行指定类型的钩子"""
+        for hook in self.hooks[hook_type]:
+            # 检查条件
+            if hook.condition and not hook.condition(context):
+                continue
+
+            try:
+                # 处理同步/异步函数
+                if inspect.iscoroutinefunction(hook.func):
+                    await hook.func(context)
+                else:
+                    hook.func(context)
+            except Exception as e:
+                if hook.error_handler:
+                    hook.error_handler(e, context)
+                else:
+                    raise
 
 
 class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
@@ -25,29 +86,69 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         self.model = model
         self.create_model = create_model
         self.update_model = update_model
-        # 初始化钩子字典
-        self._hooks: Dict[str, List[HookType]] = defaultdict(list)
+        self.hook_manager = HookManager()
 
-    def add_hook(self, hook_type: HookTypeEnum, hook_func: HookType) -> None:
-        """添加钩子函数
+    def hook(
+        self,
+        hook_type: HookTypeEnum,
+        priority: int = 0,
+        condition: Callable[[HookContext], bool] | None = None,
+        error_handler: Callable[[Exception, HookContext], Any] | None = None
+    ) -> Callable[[HookFunc], HookFunc]:
+        """钩子装饰器"""
+        def decorator(func: HookFunc) -> HookFunc:
+            self.hook_manager.add_hook(
+                hook_type=hook_type,
+                func=func,
+                priority=priority,
+                condition=condition,
+                error_handler=error_handler
+            )
+            return func
+        return decorator
 
-        Args:
-            hook_type: 钩子类型,如 'before_create', 'after_update' 等
-            hook_func: 钩子函数
-        """
-        self._hooks[hook_type].append(hook_func)
+    async def _run_hooks(self, hook_type: HookTypeEnum, **kwargs) -> Dict[str, Any]:
+        """运行指定类型的钩子"""
+        context = HookContext(
+            session=kwargs.get('session'),   # type: ignore
+            params=kwargs,
+            results={}
+        )
+        await self.hook_manager.execute_hooks(hook_type, context)
+        return context.results
 
-    async def _run_hooks(self, hook_type: HookTypeEnum, **kwargs) -> None:
-        """运行指定类型的所有钩子函数
+    # 创建方法示例
+    async def create(self, session: AuditAsyncSession, *, obj_in: Dict | CreateModelType) -> ModelType:
+        """创建对象"""
+        # 运行创建前钩子
+        hook_results = await self._run_hooks(
+            HookTypeEnum.before_create,
+            session=session,
+            obj_in=obj_in,
+        )
 
-        标准参数名:
-        - session: 数据库会话
-        - db_obj: 数据库对象
-        - obj_in: 输入对象
-        - update_data: 更新数据
-        """
-        for hook in self._hooks[hook_type]:
-            await hook(**kwargs)
+        # 允许钩子修改创建数据
+        if 'modified_data' in hook_results:
+            obj_in = hook_results['modified_data']
+
+        if isinstance(obj_in, dict):
+            create_data = obj_in
+        else:
+            create_data = obj_in.model_dump()
+
+        db_obj = self.model(**create_data)
+        session.add(db_obj)
+        await session.flush()
+
+        # 运行创建后钩子
+        await self._run_hooks(
+            HookTypeEnum.after_create,
+            session=session,
+            db_obj=db_obj,
+            obj_in=obj_in
+        )
+
+        return db_obj.model_dump()
 
     async def get_by_id(self, session: AuditAsyncSession, id: Any) -> ModelType | None:
         """获取单个对象"""
@@ -78,34 +179,6 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         statement = statement.offset(skip).limit(limit)
         result = await session.execute(statement)
         return result.scalars().all()
-
-    async def create(self, session: AuditAsyncSession, *, obj_in: Dict | CreateModelType) -> ModelType:
-        """创建对象"""
-        if isinstance(obj_in, dict):
-            create_data = obj_in
-        else:
-            create_data = obj_in.model_dump()
-
-        # 运行创建前钩子
-        await self._run_hooks(
-            HookTypeEnum.before_create,
-            session=session,
-            obj_in=obj_in
-        )
-
-        db_obj = self.model(**create_data)
-        session.add(db_obj)
-        await session.flush()
-
-        # 运行创建后钩子
-        await self._run_hooks(
-            HookTypeEnum.after_create,
-            session=session,
-            db_obj=db_obj,
-            obj_in=obj_in
-        )
-
-        return db_obj
 
     async def update(self, session: AuditAsyncSession, *, obj_in: Dict | UpdateModelType) -> ModelType:
         """更新对象"""

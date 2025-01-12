@@ -27,8 +27,7 @@ class SvrPermission(TreeService):
     权限服务
     """
     def __init__(self):
-        self.crud = crud_permission
-        self.tree_crud = crud_permission
+        self.tree_crud = self.crud = crud_permission
 
     async def get_role_permissions(
         self,

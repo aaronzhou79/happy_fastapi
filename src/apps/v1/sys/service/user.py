@@ -11,6 +11,7 @@ from src.apps.v1.sys.crud.user import crud_user
 from src.apps.v1.sys.crud.user_role import crud_user_role
 from src.apps.v1.sys.models.user import User, UserCreate, UserCreateWithRoles, UserUpdate
 from src.apps.v1.sys.models.user_role import UserRoleCreate
+from src.common.base_crud import HookContext
 from src.common.base_service import BaseService
 from src.common.enums import HookTypeEnum
 from src.core.exceptions import errors
@@ -24,17 +25,25 @@ class SvrUser(BaseService[User, UserCreate, UserUpdate]):
     """
     def __init__(self):
         self.crud = crud_user
-        # 注册 after_create 钩子
-        self.add_hook(HookTypeEnum.after_create, self._handle_roles)
+        # Register hook
+        self.crud.hook_manager.add_hook(
+            hook_type=HookTypeEnum.before_create,
+            func=self._create_password,
+            priority=1
+        )
 
-    async def _handle_roles(self, session: AuditAsyncSession, db_obj: User, obj_in: UserCreateWithRoles) -> None:
-        """处理用户角色关联
+        self.crud.hook_manager.add_hook(
+            hook_type=HookTypeEnum.after_create,
+            func=self._handle_roles,
+            priority=1
+        )
 
-        Args:
-            session: 数据库会话
-            db_obj: 创建的用户对象
-            obj_in: 输入的创建数据
-        """
+    async def _handle_roles(self, context: HookContext) -> None:
+        """处理用户角色关联"""
+        db_obj = context.params['db_obj']
+        obj_in = context.params['obj_in']
+        session = context.session
+
         if hasattr(obj_in, 'roles') and obj_in.roles:
             # 验证所有role_id是否存在
             invalid_roles = []
@@ -56,16 +65,21 @@ class SvrUser(BaseService[User, UserCreate, UserUpdate]):
                     )
                 )
 
-    async def create(self, session: AuditAsyncSession, obj_in: UserCreateWithRoles) -> User:
+    async def _create_password(self, context: HookContext) -> HookContext:
         """创建用户"""
         # 生成盐值和密码哈希
         salt = generate_salt()
+        obj_in = context.params['obj_in']
         if obj_in.password:
             password_hash = hash_password(obj_in.password, salt)
             obj_in.password = password_hash
             obj_in.salt = salt
+        else:
+            raise errors.RequestError(data="密码不能为空")
 
-        return await super().create(session=session, obj_in=obj_in)
+        context.results['modified_data'] = obj_in
+
+        return context
 
 
 svr_user = SvrUser()

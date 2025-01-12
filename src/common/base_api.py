@@ -42,7 +42,7 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
         gen_delete: bool = True,
         gen_bulk_delete: bool = False,
         gen_query: bool = True,
-        cache_ttl: int = 3600 if settings.APP_ENV == "prod" else 60,
+        cache_ttl: int = settings.CACHE_EXPIRE_IN_SECONDS,
         **kwargs: Any,
     ) -> None:
         self.module_name = module_name
@@ -103,8 +103,7 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
             obj_in: Annotated[self.create_schema, Body(..., description="创建模型")]  # type: ignore
         ) -> ResponseModel[self.model]:  # type: ignore
             async with async_audit_session(async_session(), request) as session:
-                result = await self.service.create(session=session, obj_in=obj_in)
-                data = await result.to_api_dict()  # type: ignore
+                data = await self.service.create(session=session, obj_in=obj_in)
             return response_base.success(data=data)
 
     def _register_bulk_create(self) -> None:
@@ -238,7 +237,7 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
             session: CurrentSession,
             *,
             id: int,
-            max_depth: Annotated[int, Query(le=3, description="关联数据的最大深度")] = 2
+            max_depth: Annotated[int, Query(le=3, description="关联数据的最大深度")] = 1
         ) -> ResponseModel:  # type: ignore
             item = await self.service.get_by_id(session=session, id=id)
             if not item:

@@ -22,7 +22,7 @@ class BaseService(Generic[ModelType, CreateModelType, UpdateModelType]):
         if hooks:
             for hook_type, hook_funcs in hooks.items():
                 for hook_func in hook_funcs:
-                    self.crud.add_hook(HookTypeEnum(hook_type), hook_func)
+                    self.crud.hook_manager.add_hook(HookTypeEnum(hook_type), hook_func)
 
     def add_hook(self, hook_type: HookTypeEnum, hook_func: Callable[..., Any]) -> None:
         """添加钩子函数
@@ -31,7 +31,7 @@ class BaseService(Generic[ModelType, CreateModelType, UpdateModelType]):
             hook_type: 钩子类型,如 'before_create', 'after_update' 等
             hook_func: 钩子函数
         """
-        self.crud.add_hook(hook_type, hook_func)
+        self.crud.hook_manager.add_hook(hook_type, hook_func)
 
     async def get_by_id(self, session: AuditAsyncSession, id: int) -> ModelType | None:
         """获取单个数据"""
