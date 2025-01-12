@@ -8,11 +8,9 @@
 # @Description: 权限相关CRUD类
 from typing import Sequence
 
-from sqlmodel import any_, select
-from sqlalchemy.orm import joinedload, selectinload
+from sqlmodel import select
 
 from src.apps.v1.sys.models.permission import Permission, PermissionCreate, PermissionUpdate
-from src.apps.v1.sys.models.role import Role
 from src.apps.v1.sys.models.role_permission import RolePermission
 from src.common.tree_crud import TreeCRUD
 from src.database.db_session import AuditAsyncSession

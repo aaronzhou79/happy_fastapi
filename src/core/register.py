@@ -29,6 +29,7 @@ from src.middleware.opera_log_middleware import OperaLogMiddleware
 from src.middleware.profiling_middleware import ProfilingMiddleware
 from src.middleware.state_middleware import StateMiddleware
 from src.utils.health_check import http_limit_callback
+from src.apps.v1.init_data import init_permission
 
 
 async def init_limiter() -> None:

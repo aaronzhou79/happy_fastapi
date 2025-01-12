@@ -6,7 +6,7 @@
 # @File    : api.py
 # @Software: Cursor
 # @Description: 数据初始化API
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Request, Response
 
 from src.apps.v1.init_data.init_base import init_base
 from src.apps.v1.init_data.init_permission import init_permissions
@@ -19,11 +19,11 @@ router = APIRouter()
 
 
 @router.post('/init_data')
-async def initdata() -> Response:
+async def initdata(request: Request) -> Response:
     """初始化数据"""
     async with async_session() as session:
         await init_base(session)
-        await init_permissions(session)
+        await init_permissions(request.app)
 
         await crud_role_permission.bulk_create(
             session,
