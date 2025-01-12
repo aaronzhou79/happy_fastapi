@@ -1,5 +1,7 @@
 from typing import TYPE_CHECKING, Literal
 
+import sqlalchemy as sa
+
 from sqlmodel import Field, Relationship, SQLModel
 
 from src.common.base_model import DatabaseModel, id_pk
@@ -12,13 +14,22 @@ if TYPE_CHECKING:
 class DeptBase(SQLModel):
     """部门基础模型"""
     __tablename__: Literal["sys_dept"] = "sys_dept"
+    # Dept 模型
+    __table_args__ = (
+        sa.Index('idx_dept_parent_id', 'parent_id'),
+        sa.Index('idx_dept_name', 'name'),
+    )
 
     name: str = Field(
         ..., max_length=32, unique=True, description="部门名称")
     code: str = Field(..., max_length=32, unique=True, description="部门编码")
     notes: str | None = Field(
         None, max_length=255, description="备注")
-    parent_id: int | None = Field(default=None, foreign_key="sys_dept.id", description="父部门ID")
+    parent_id: int | None = Field(
+        default=None,
+        foreign_key="sys_dept.id",
+        ondelete='RESTRICT',
+        description="父部门ID")
     sort_order: int = Field(default=0, description="排序")
 
 
@@ -32,7 +43,8 @@ class Dept(DeptBase, TreeModel, DatabaseModel, table=True):
     children: list["Dept"] = Relationship(
         sa_relationship_kwargs={
             "cascade": "all, delete-orphan"
-        }
+        },
+        passive_deletes=True
     )
 
 

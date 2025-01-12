@@ -1,5 +1,7 @@
 from typing import TYPE_CHECKING, Literal
 
+import sqlalchemy as sa
+
 from sqlmodel import Field, Relationship, SQLModel
 
 from src.common.base_model import DatabaseModel, id_pk
@@ -15,11 +17,20 @@ if TYPE_CHECKING:
 class PermissionBase(SQLModel):
     """权限基础模型"""
     __tablename__: Literal["sys_permission"] = "sys_permission"
+    # Permission 模型
+    __table_args__ = (
+        sa.Index('idx_permission_parent_id', 'parent_id'),
+        sa.Index('idx_permission_api_path', 'api_path'),
+    )
 
     name: str = Field(..., max_length=50, description="权限名称")
     code: str = Field(..., max_length=50, unique=True, description="权限编码")
     type: PermissionType = Field(..., description="权限类型")
-    parent_id: int | None = Field(default=None, foreign_key="sys_permission.id")
+    parent_id: int | None = Field(
+        default=None,
+        foreign_key="sys_permission.id",
+        ondelete='RESTRICT',
+        description="父权限ID")
     api_path: str | None = Field(default=None, max_length=200, description="API路径")
     api_method: str | None = Field(default=None, max_length=10, description="HTTP方法")
     component: str | None = Field(default=None, max_length=100, description="前端组件")

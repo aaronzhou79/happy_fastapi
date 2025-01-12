@@ -16,8 +16,8 @@ from src.common.base_model import DatabaseModel, id_pk
 
 class UserRoleBase(SQLModel):
     """用户-角色关联基础模型"""
-    user_id: int = Field(default=None, foreign_key="sys_user.id")
-    role_id: int = Field(default=None, foreign_key="sys_role.id")
+    user_id: int = Field(default=None, foreign_key="sys_user.id", ondelete='CASCADE')
+    role_id: int = Field(default=None, foreign_key="sys_role.id", ondelete='CASCADE')
 
 
 class UserRole(UserRoleBase, DatabaseModel, table=True):

@@ -1,6 +1,8 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal
 
+import sqlalchemy as sa
+
 from sqlmodel import Field, Relationship, SQLModel
 
 from src.apps.v1.sys.models.role import Role
@@ -19,7 +21,7 @@ class UserBase(SQLModel):
     __tablename__: Literal["sys_user"] = "sys_user"
 
     dept_id: int | None = Field(
-        default=None, foreign_key="sys_dept.id", description="部门ID")
+        default=None, foreign_key="sys_dept.id", ondelete='RESTRICT', description="部门ID")
     name: str = Field(
         ..., max_length=32, description="真实姓名")
     username: str | None = Field(
@@ -53,11 +55,24 @@ class UserBase(SQLModel):
 class User(UserBase, DatabaseModel, table=True):
     """用户表"""
     __tablename__: Literal["sys_user"] = "sys_user"
+    __table_args__ = (
+        sa.Index('idx_user_dept_id', 'dept_id'),
+        sa.Index('idx_user_uuid', 'uuid'),
+    )
+
     id: id_pk  # type: ignore
 
     # Relationships
-    dept: "Dept" = Relationship(back_populates="users")
-    roles: list["Role"] = Relationship(back_populates="users", link_model=UserRole)
+    dept: "Dept" = Relationship(
+        back_populates="users",
+    )
+    roles: list["Role"] = Relationship(
+        back_populates="users",
+        link_model=UserRole,
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan"
+        }
+    )
 
 
 class UserCreate(UserBase):

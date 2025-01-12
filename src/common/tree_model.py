@@ -14,9 +14,10 @@ class TreeModel(SQLModel):
         index=True,
         sa_column_kwargs={"comment": "父节点ID"}
     )
-    path: str = Field(
+    tree_path: str = Field(
         default="/",
         index=True,
+        description="Materialized path",
         sa_column_kwargs={"comment": "节点路径"}
     )
     level: int = Field(
@@ -67,12 +68,12 @@ class TreeModel(SQLModel):
         include_self: bool = False
     ) -> Sequence["TreeModel"]:
         """获取祖先节点"""
-        if not self.path or self.path == "/":
+        if not self.tree_path or self.tree_path == "/":
             return []
 
         # 从path中获取所有祖先ID
         ancestor_ids = [
-            int(id_) for id_ in self.path.strip("/").split("/") if id_
+            int(id_) for id_ in self.tree_path.strip("/").split("/") if id_
         ]
 
         if not ancestor_ids:

@@ -43,11 +43,11 @@ class TreeCRUD(CRUDBase[TreeModel, CreateModelType, UpdateModelType]):
     ) -> None:
         """更新节点路径"""
         if parent is None:
-            node.path = f"/{node.id}/"  # type: ignore[attr-defined]
+            node.tree_path = f"/{node.id}/"  # type: ignore[attr-defined]
             node.level = 1
             node.parent_id = None
         else:
-            node.path = f"{parent.path}{node.id}/"  # type: ignore[attr-defined]
+            node.tree_path = f"{parent.tree_path}{node.id}/"  # type: ignore[attr-defined]
             node.level = parent.level + 1
             node.parent_id = parent.id   # type: ignore[attr-defined]
 
@@ -160,7 +160,7 @@ class TreeCRUD(CRUDBase[TreeModel, CreateModelType, UpdateModelType]):
 
         # 删除所有子节点
         stmt = select(self.model).where(
-            text(f"path LIKE '{node.path}%'")
+            text(f"path LIKE '{node.tree_path}%'")
         )
         result = await session.execute(stmt)
         children = result.scalars().all()
@@ -256,7 +256,7 @@ class TreeCRUD(CRUDBase[TreeModel, CreateModelType, UpdateModelType]):
             if not root:
                 return []
             stmt = select(self.model).where(
-                text(f"path LIKE '{root.path}%'")  # type: ignore[attr-defined]
+                text(f"path LIKE '{root.tree_path}%'")  # type: ignore[attr-defined]
             )
             if max_depth > 0:
                 stmt = stmt.where(
@@ -272,7 +272,7 @@ class TreeCRUD(CRUDBase[TreeModel, CreateModelType, UpdateModelType]):
 
         # 添加排序
         stmt = stmt.order_by(
-            self.model.path.asc(),  # type: ignore[attr-defined]
+            self.model.tree_path.asc(),  # type: ignore[attr-defined]
             self.model.sort_order.asc()  # type: ignore[attr-defined]
         )
 

@@ -36,6 +36,11 @@ class OperaLogBase(SQLModel):
 class OperaLog(OperaLogBase, DatabaseModel, table=True):
     """操作日志表"""
     __tablename__: Literal["sys_opera_log"] = "sys_opera_log"
+    # OperaLog 模型
+    __table_args__ = (
+        sa.Index('idx_opera_log_status', 'status'),
+        sa.Index('idx_opera_log_composite', 'username', 'status', 'opera_time'),
+    )
     id: id_pk  # type: ignore
 
 
