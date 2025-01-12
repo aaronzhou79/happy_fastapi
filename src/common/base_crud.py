@@ -148,7 +148,8 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
             obj_in=obj_in
         )
 
-        return db_obj.model_dump()
+        await session.flush()
+        return db_obj
 
     async def get_by_id(self, session: AuditAsyncSession, id: Any) -> ModelType | None:
         """获取单个对象"""

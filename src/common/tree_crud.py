@@ -306,8 +306,10 @@ class TreeCRUD(CRUDBase[TreeModel, CreateModelType, UpdateModelType]):
         await self._update_children_path(session, node)
 
         session.add(node)
+
         await session.flush()
 
+        await self._clear_tree_cache(session, node)
         return node
 
     async def _clear_tree_cache(self, session: AuditAsyncSession, node: TreeModel) -> None:
@@ -410,6 +412,7 @@ class TreeCRUD(CRUDBase[TreeModel, CreateModelType, UpdateModelType]):
         if not source_node:
             raise errors.RequestError(data={"源节点不存在"})
 
+        await self._clear_tree_cache(session, source_node)
         # 复制节点数据(排除id和路径相关字段)
         node_data = source_node.model_dump(
             exclude={'id', 'parent_id', 'path', 'level'}

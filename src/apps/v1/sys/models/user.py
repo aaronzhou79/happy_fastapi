@@ -70,7 +70,7 @@ class User(UserBase, DatabaseModel, table=True):
         back_populates="users",
         link_model=UserRole,
         sa_relationship_kwargs={
-            "cascade": "all, delete-orphan"
+            "cascade": "save-update"
         }
     )
 

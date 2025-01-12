@@ -43,7 +43,7 @@ class SvrPermission(TreeService):
             role_ids = role_id
         return await self.crud.get_permissions_by_role(session, role_ids)
 
-    async def init_permission(self, app: FastAPI) -> None:
+    async def init_permission(self, session: AuditAsyncSession, app: FastAPI) -> None:
         """初始化权限数据"""
         try:
             # 获取所有路由
@@ -68,19 +68,18 @@ class SvrPermission(TreeService):
                             )
 
             # 写入数据库
-            async with async_session() as session:
-                # 查询现有规则
-                stmt = select(Permission)
-                result = await session.execute(stmt)
-                exists = {(r.code, r.api_method): r for r in result.scalars()}
+            # 查询现有规则
+            stmt = select(Permission)
+            result = await session.execute(stmt)
+            exists = {(r.code, r.api_method): r for r in result.scalars()}
 
-                # 更新或插入规则
-                for perm in perms:
-                    key = (perm.code, perm.api_method)
-                    if key not in exists:
-                        await self.crud.create(session, obj_in=perm)
+            # 更新或插入规则
+            for perm in perms:
+                key = (perm.code, perm.api_method)
+                if key not in exists:
+                    await self.crud.create(session, obj_in=perm)
 
-                await session.commit()
+            await session.commit()
 
             log.info("🟢 权限规则初始化成功")
         except Exception as e:

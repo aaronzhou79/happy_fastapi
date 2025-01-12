@@ -23,7 +23,7 @@ async def initdata(request: Request) -> Response:
     """初始化数据"""
     async with async_session() as session:
         await init_base(session)
-        await init_permissions(request.app)
+        await init_permissions(session, request.app)
 
         await crud_role_permission.bulk_create(
             session,
