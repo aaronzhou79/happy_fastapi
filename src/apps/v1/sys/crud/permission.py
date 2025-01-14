@@ -18,12 +18,8 @@ from src.database.db_session import AuditAsyncSession
 
 class CrudPermission(TreeCRUD):
     """权限相关CRUD类"""
-    def __init__(self):
-        super().__init__(
-            model=Permission,
-            create_model=PermissionCreate,
-            update_model=PermissionUpdate,
-        )
+    def __init__(self) -> None:
+        super().__init__(Permission, PermissionCreate, PermissionUpdate)
 
     async def get_permissions_by_role(
         self,

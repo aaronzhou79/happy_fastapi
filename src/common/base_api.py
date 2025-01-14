@@ -238,7 +238,7 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
             *,
             id: int,
             max_depth: Annotated[int, Query(le=3, description="关联数据的最大深度")] = 1
-        ) -> ResponseModel:  # type: ignore
+        ) -> ResponseModel[self.with_schema]:  # type: ignore
             item = await self.service.get_by_id(session=session, id=id)
             if not item:
                 return response_base.fail(data=f"{self.model.__name__}不存在")
@@ -258,9 +258,9 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
         async def query(
             session: CurrentSession,
             options: QueryOptions,
-        ) -> ResponseModel:  # type: ignore
+        ) -> ResponseModel[self.with_schema]:  # type: ignore
             total, items = await self.service.get_by_options(session=session, options=options)
-            data = [await item.to_api_dict() for item in items]  # type: ignore
+            data = [await item.to_api_dict(max_depth=1) for item in items]  # type: ignore
             return response_base.success(data={"total": total, "items": data})
 
     def include_router(self, router: APIRouter) -> None:

@@ -14,6 +14,8 @@ from starlette.background import BackgroundTask
 
 from ..responses.response_code import CustomErrorCode, StandardResponseCode
 
+ErrorData = str | dict[str, Any] | list[str] | None
+
 
 class BaseError(Exception):
     """
@@ -21,7 +23,13 @@ class BaseError(Exception):
     """
     code: int
 
-    def __init__(self, *, msg: str | None = None, data: Any = None, background: BackgroundTask | None = None):
+    def __init__(
+        self,
+        *,
+        msg: str | None = None,
+        data: ErrorData = None,
+        background: BackgroundTask | None = None
+    ):
         self.msg = msg
         self.data = data
         # The original background task: https://www.starlette.io/background/

@@ -161,7 +161,7 @@ class TreeAPI(BaseAPI[ModelType, CreateModelType, UpdateModelType]):
         )
         async def bulk_move_nodes(
             request: Request,
-            node_ids: Annotated[list[int], Body(..., min_items=1, max_items=100, description="要移动的节点ID列表")],
+            node_ids: Annotated[list[int], Body(..., min_length=1, max_length=100, description="要移动的节点ID列表")],
             new_parent_id: Annotated[int | None, Body(..., description="新的父节点ID")]
         ) -> ResponseModel:
             # 验证节点ID不重复

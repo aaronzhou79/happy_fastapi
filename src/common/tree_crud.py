@@ -5,7 +5,7 @@ from typing import Any, Sequence
 
 from sqlalchemy import select, text
 
-from src.common.base_crud import CreateModelType, CRUDBase, UpdateModelType
+from src.common.base_crud import CreateModelType, CRUDBase, ModelType, UpdateModelType
 from src.common.tree_model import TreeModel
 from src.core.conf import settings
 from src.core.exceptions import errors
@@ -32,14 +32,21 @@ def datetime_parser(dct: dict) -> dict:
     return dct
 
 
-class TreeCRUD(CRUDBase[TreeModel, CreateModelType, UpdateModelType]):
+class TreeCRUD(CRUDBase):
     """树形结构CRUD基类"""
+    def __init__(
+            self, model: type[ModelType],
+            create_model: type[CreateModelType],
+            update_model: type[UpdateModelType]) -> None:
+        if not issubclass(model, TreeModel):
+            raise errors.RequestError(data={"必须是树形结构模型！"})
+        super().__init__(model, create_model, update_model)
 
     async def _update_node_path(
         self,
         session: AuditAsyncSession,
-        node: TreeModel,
-        parent: TreeModel | None = None
+        node: ModelType,
+        parent: ModelType | None = None
     ) -> None:
         """更新节点路径"""
         if parent is None:
@@ -48,25 +55,25 @@ class TreeCRUD(CRUDBase[TreeModel, CreateModelType, UpdateModelType]):
             node.parent_id = None
         else:
             node.tree_path = f"{parent.tree_path}{node.id}/"  # type: ignore[attr-defined]
-            node.level = parent.level + 1
+            node.level = parent.level + 1  # type: ignore[attr-defined]
             node.parent_id = parent.id   # type: ignore[attr-defined]
 
     async def _update_children_path(
         self,
         session: AuditAsyncSession,
-        node: TreeModel
+        node: ModelType
     ) -> None:
         """递归更新所有子节点的路径"""
-        children = await node.get_children(session)
+        children = await node.get_children(session)  # type: ignore[attr-defined]
         for child in children:
-            await self._update_node_path(session, child, node)
+            await self._update_node_path(session, child, node)  # type: ignore[attr-defined]
             session.add(child)
-            await self._update_children_path(session, child)
+            await self._update_children_path(session, child)  # type: ignore[attr-defined]
 
     async def _check_cycle(
         self,
         session: AuditAsyncSession,
-        node: TreeModel,
+        node: ModelType,
         new_parent_id: int
     ) -> bool:
         """检查是否会形成循环引用"""
@@ -77,7 +84,7 @@ class TreeCRUD(CRUDBase[TreeModel, CreateModelType, UpdateModelType]):
         if not new_parent:
             return False
 
-        ancestors = await new_parent.get_ancestors(session)
+        ancestors = await new_parent.get_ancestors(session)  # type: ignore[attr-defined]
         return any(a.id == node.id for a in ancestors)  # type: ignore[attr-defined]
 
     async def create(
@@ -85,7 +92,7 @@ class TreeCRUD(CRUDBase[TreeModel, CreateModelType, UpdateModelType]):
         session: AuditAsyncSession,
         *,
         obj_in: CreateModelType | dict
-    ) -> TreeModel:
+    ) -> ModelType:
         """创建节点"""
         if isinstance(obj_in, dict):
             create_data = obj_in
@@ -99,7 +106,7 @@ class TreeCRUD(CRUDBase[TreeModel, CreateModelType, UpdateModelType]):
                 raise errors.RequestError(data={"父节点不存在"})
 
         db_obj = await super().create(session, obj_in=create_data)
-        await self._clear_tree_cache(session, db_obj)
+        await self._clear_tree_cache(session, db_obj)  # type: ignore[attr-defined]
 
         # 更新路径
         if parent_id:
@@ -117,7 +124,7 @@ class TreeCRUD(CRUDBase[TreeModel, CreateModelType, UpdateModelType]):
         session: AuditAsyncSession,
         *,
         obj_in: UpdateModelType | dict
-    ) -> TreeModel:
+    ) -> ModelType:
         """更新节点"""
         if isinstance(obj_in, dict):
             update_data = obj_in
@@ -130,7 +137,7 @@ class TreeCRUD(CRUDBase[TreeModel, CreateModelType, UpdateModelType]):
 
         # 检查是否更新了父节点
         new_parent_id = update_data.get("parent_id")
-        if new_parent_id is not None and new_parent_id != db_obj.parent_id:
+        if new_parent_id is not None and new_parent_id != db_obj.parent_id:  # type: ignore[attr-defined]
             # 检查循环引用
             if await self._check_cycle(session, db_obj, new_parent_id):
                 raise errors.RequestError(data={"不能将节点移动到其子节点下"})
@@ -148,7 +155,7 @@ class TreeCRUD(CRUDBase[TreeModel, CreateModelType, UpdateModelType]):
             await self._update_children_path(session, db_obj)
 
         db_obj = await super().update(session, obj_in=update_data)
-        await self._clear_tree_cache(session, db_obj)
+        await self._clear_tree_cache(session, db_obj)  # type: ignore[attr-defined]
 
         return db_obj
 
@@ -160,7 +167,7 @@ class TreeCRUD(CRUDBase[TreeModel, CreateModelType, UpdateModelType]):
 
         # 删除所有子节点
         stmt = select(self.model).where(
-            text(f"path LIKE '{node.tree_path}%'")
+            text(f"path LIKE '{node.tree_path}%'")  # type: ignore[attr-defined]
         )
         result = await session.execute(stmt)
         children = result.scalars().all()
@@ -168,13 +175,13 @@ class TreeCRUD(CRUDBase[TreeModel, CreateModelType, UpdateModelType]):
         for child in children:
             await session.delete(child)
 
-        await self._clear_tree_cache(session, node)
+        await self._clear_tree_cache(session, node)  # type: ignore[attr-defined]
         await super().delete(session, id)
 
     async def to_tree_dict(
         self,
-        nodes: Sequence[TreeModel]
-    ) -> Sequence[dict]:
+        nodes: Sequence[ModelType]
+    ) -> Sequence[ModelType]:
         """将节点列表转换为树形结构字典"""
         # 按ID组织节点
         node_map: dict[int, dict] = {}
@@ -190,22 +197,22 @@ class TreeCRUD(CRUDBase[TreeModel, CreateModelType, UpdateModelType]):
         # 第二次遍历: 构建树形结构
         for node in nodes:
             node_dict = node_map[node.id]  # type: ignore[attr-defined]
-            if node.parent_id and node.parent_id in node_map:
+            if node.parent_id and node.parent_id in node_map:  # type: ignore[attr-defined]
                 # 如果有父节点，添加到父节点的children中
-                parent_dict = node_map[node.parent_id]
+                parent_dict = node_map[node.parent_id]  # type: ignore[attr-defined]
                 parent_dict['children'].append(node_dict)
             else:
                 # 如果没有父节点或父节点不在当前集合中，作为根节点
                 root_nodes.append(node_dict)
 
-        return root_nodes
+        return root_nodes  # type: ignore[return-value]
 
     async def get_tree(
         self,
         session: AuditAsyncSession,
         root_id: int | None = None,
         max_depth: int = -1
-    ) -> Sequence[dict]:
+    ) -> Sequence[ModelType]:
         """获取树形结构(带缓存)"""
         # 生成缓存key
         cache_key = (
@@ -228,7 +235,7 @@ class TreeCRUD(CRUDBase[TreeModel, CreateModelType, UpdateModelType]):
         nodes = await self._get_tree_from_db(session, root_id, max_depth)
 
         # 转换为树形结构
-        tree_data = await self.to_tree_dict(nodes)
+        tree_data = await self.to_tree_dict(nodes)  # type: ignore[attr-defined]
 
         try:
             # 缓存树形结构
@@ -247,7 +254,7 @@ class TreeCRUD(CRUDBase[TreeModel, CreateModelType, UpdateModelType]):
         session: AuditAsyncSession,
         root_id: int | None = None,
         max_depth: int = -1
-    ) -> Sequence[TreeModel]:
+    ) -> Sequence[ModelType]:
         """从数据库获取树形结构"""
         # 构建基础查询
         if root_id:
@@ -285,7 +292,7 @@ class TreeCRUD(CRUDBase[TreeModel, CreateModelType, UpdateModelType]):
         session: AuditAsyncSession,
         node_id: int,
         new_parent_id: int | None
-    ) -> TreeModel:
+    ) -> ModelType:
         """移动节点"""
         node = await self.get_by_id(session, node_id)
         if not node:
@@ -312,7 +319,7 @@ class TreeCRUD(CRUDBase[TreeModel, CreateModelType, UpdateModelType]):
         await self._clear_tree_cache(session, node)
         return node
 
-    async def _clear_tree_cache(self, session: AuditAsyncSession, node: TreeModel) -> None:
+    async def _clear_tree_cache(self, session: AuditAsyncSession, node: ModelType) -> None:
         """清除树形结构缓存"""
         # 清除当前节点的缓存
         await redis_client.delete_prefix(
@@ -321,10 +328,10 @@ class TreeCRUD(CRUDBase[TreeModel, CreateModelType, UpdateModelType]):
         )
 
         # 清除父节点的缓存
-        if node.parent_id:
+        if node.parent_id:  # type: ignore[attr-defined]
             await redis_client.delete_prefix(
                 f"{settings.REDIS_CACHE_KEY_PREFIX}:{self.model.__name__}:tree:"
-                f"node:{node.parent_id}"
+                f"node:{node.parent_id}"  # type: ignore[attr-defined]
             )
 
         # 清除根节点缓存
@@ -334,7 +341,7 @@ class TreeCRUD(CRUDBase[TreeModel, CreateModelType, UpdateModelType]):
         )
 
         # 清除祖先节点缓存
-        ancestors = await node.get_ancestors(session)
+        ancestors = await node.get_ancestors(session)  # type: ignore[attr-defined]
         for ancestor in ancestors:
             await redis_client.delete_prefix(
                 f"{settings.REDIS_CACHE_KEY_PREFIX}:{self.model.__name__}:tree:"
@@ -344,8 +351,8 @@ class TreeCRUD(CRUDBase[TreeModel, CreateModelType, UpdateModelType]):
     async def validate_node(
         self,
         session: AuditAsyncSession,
-        node: TreeModel,
-        parent: TreeModel | None = None
+        node: ModelType,
+        parent: ModelType | None = None
     ) -> None:
         """验证节点"""
         # 检查层级深度
@@ -354,7 +361,7 @@ class TreeCRUD(CRUDBase[TreeModel, CreateModelType, UpdateModelType]):
 
         # 检查同级节点名称唯一性
         if hasattr(node, 'name'):
-            siblings = await node.get_siblings(session)
+            siblings = await node.get_siblings(session)  # type: ignore[attr-defined]
             if any(s.name == node.name and s.id != node.id for s in siblings):  # type: ignore[attr-defined]
                 raise errors.RequestError(data={"同级节点名称重复"})
 
@@ -368,20 +375,20 @@ class TreeCRUD(CRUDBase[TreeModel, CreateModelType, UpdateModelType]):
         node = await self.get_by_id(session, node_id)
         if not node:
             raise errors.RequestError(data={"节点不存在"})
-        return await node.get_siblings(session, include_self=include_self)
+        return await node.get_siblings(session, include_self=include_self)  # type: ignore[attr-defined]
 
     async def get_ancestors(
         self,
         session: AuditAsyncSession,
         node_id: int,
         include_self: bool = False
-    ) -> Sequence[dict]:
+    ) -> Sequence[TreeModel]:
         """获取祖先节点"""
         node = await self.get_by_id(session, node_id)
         if not node:
             raise errors.RequestError(data={"节点不存在"})
-        ancestors = await node.get_ancestors(session, include_self=include_self)
-        return await self.to_tree_dict(ancestors)
+        ancestors = await node.get_ancestors(session, include_self=include_self)  # type: ignore[attr-defined]
+        return await self.to_tree_dict(ancestors)  # type: ignore[attr-defined]
 
     async def bulk_move_nodes(
         self,
@@ -405,7 +412,7 @@ class TreeCRUD(CRUDBase[TreeModel, CreateModelType, UpdateModelType]):
         session: AuditAsyncSession,
         node_id: int,
         new_parent_id: int | None
-    ) -> TreeModel:
+    ) -> ModelType:
         """复制子树"""
         # 获取源节点及其子节点
         source_node = await self.get_by_id(session, node_id)
@@ -423,7 +430,7 @@ class TreeCRUD(CRUDBase[TreeModel, CreateModelType, UpdateModelType]):
         new_node = await self.create(session, obj_in=node_data)
 
         # 递归复制子节点
-        children = await source_node.get_children(session)
+        children = await source_node.get_children(session)  # type: ignore[attr-defined]
         for child in children:
             await self.copy_subtree(session, child.id, new_node.id)  # type: ignore[attr-defined]
 

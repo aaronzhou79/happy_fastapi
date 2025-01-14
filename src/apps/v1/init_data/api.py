@@ -15,10 +15,10 @@ from src.apps.v1.sys.models.role_permission import RolePermissionCreate
 from src.core.responses.response_schema import response_base
 from src.database.db_session import async_session
 
-router = APIRouter()
+router = APIRouter(tags=['系统管理'])
 
 
-@router.post('/init_data')
+@router.post('/init_data', summary='初始化数据')
 async def initdata(request: Request) -> Response:
     """初始化数据"""
     async with async_session() as session:

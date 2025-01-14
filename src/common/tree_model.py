@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Sequence, TypedDict
 
 from sqlmodel import Field, SQLModel, asc, select
 
