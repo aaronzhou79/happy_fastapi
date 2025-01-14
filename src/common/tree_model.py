@@ -1,4 +1,4 @@
-from typing import Sequence, TypedDict
+from typing import Sequence
 
 from sqlmodel import Field, SQLModel, asc, select
 
@@ -8,6 +8,11 @@ from src.database.db_session import AuditAsyncSession
 class TreeModel(SQLModel):
     """树形结构基础模型"""
     __abstract__ = True
+
+    class Config:
+        from_attributes = True
+        extra = "allow"
+        arbitrary_types_allowed = True
 
     parent_id: int | None = Field(
         default=None,

@@ -26,7 +26,7 @@ class TreeService(BaseService, TreeCRUD):
         session: AuditAsyncSession,
         root_id: int | None = None,
         max_depth: int = -1
-    ) -> Sequence[dict]:
+    ) -> Sequence[TreeModel]:
         """获取树形结构"""
         return await self.tree_crud.get_tree(
             session,
@@ -91,7 +91,7 @@ class TreeService(BaseService, TreeCRUD):
         session: AuditAsyncSession,
         node_id: int,
         include_self: bool = False
-    ) -> Sequence[dict]:
+    ) -> Sequence[TreeModel]:
         """获取祖先节点"""
         return await self.tree_crud.get_ancestors(
             session,
