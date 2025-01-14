@@ -136,7 +136,7 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         else:
             create_data = obj_in.model_dump()
 
-        db_obj = self.model(**create_data)
+        db_obj = self.model.model_validate(create_data)
         session.add(db_obj)
         await session.flush()
 

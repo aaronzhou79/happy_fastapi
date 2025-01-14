@@ -17,27 +17,40 @@ if TYPE_CHECKING:
 class PermissionBase(SQLModel):
     """权限基础模型"""
     __tablename__: Literal["sys_permission"] = "sys_permission"
-    # Permission 模型
+
     __table_args__ = (
         sa.Index('idx_permission_parent_id', 'parent_id'),
+        sa.Index('idx_permission_route_path', 'route_path'),
         sa.Index('idx_permission_api_path', 'api_path'),
     )
 
     name: str = Field(..., max_length=50, description="权限名称")
-    code: str = Field(..., max_length=50, unique=True, description="权限编码")
+    code: str = Field(..., max_length=50, unique=True, description="权限编码/路由名称")
     type: PermissionType = Field(..., description="权限类型")
     parent_id: int | None = Field(
         default=None,
         foreign_key="sys_permission.id",
         ondelete='RESTRICT',
-        description="父权限ID")
+        description="父权限ID"
+    )
+
+    # 路由相关字段
+    route_path: str | None = Field(default=None, max_length=200, description="前端路由路径")
+    route_component: str | None = Field(default=None, max_length=100, description="前端组件路径")
+    route_redirect: str | None = Field(default=None, max_length=200, description="路由重定向路径")
+    route_name: str | None = Field(default=None, max_length=50, description="路由名称")
+    route_title: str | None = Field(default=None, max_length=50, description="路由标题")
+    route_icon: str | None = Field(default=None, max_length=50, description="路由图标")
+    route_hidden: bool = Field(default=False, description="是否在菜单中隐藏")
+    route_keep_alive: bool = Field(default=True, description="是否缓存该路由")
+    route_always_show: bool = Field(default=False, description="是否总是显示根路由")
+
+    # API相关字段
     api_path: str | None = Field(default=None, max_length=200, description="API路径")
     api_method: str | None = Field(default=None, max_length=10, description="HTTP方法")
-    component: str | None = Field(default=None, max_length=100, description="前端组件")
     perm_code: str | None = Field(default=None, max_length=100, description="权限编码")
-    icon: str | None = Field(default=None, max_length=50, description="图标")
+
     sort_order: int = Field(default=0, description="排序")
-    is_visible: bool = Field(default=True, description="是否可见")
     description: str | None = Field(default=None, max_length=200)
 
 

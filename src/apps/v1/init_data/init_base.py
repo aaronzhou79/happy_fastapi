@@ -21,66 +21,100 @@ from src.database.db_session import AuditAsyncSession, uuid4_str
 async def init_base(session: AuditAsyncSession) -> None:
     """初始化数据"""
     # 批量创建部门
-    depts_in = [
-        DeptCreate(
-            name='研发部',
-            code='dev',
-            notes='研发部',
-            parent_id=None,
-        ),
-        DeptCreate(
-            name='测试部',
-            code='test',
-            notes='测试部',
-            parent_id=None,
-        ),
-        DeptCreate(
-            name='运维部',
-            code='ops',
-            notes='运维部',
-            parent_id=None,
-        ),
-        DeptCreate(
-            name='财务部',
-            code='finance',
-            notes='财务部',
-            parent_id=None,
-        ),
-        DeptCreate(
-            name='人事部',
-            code='hr',
-            notes='人事部',
-            parent_id=None,
-        ),
-        DeptCreate(
-            name='市场部',
-            code='market',
-            notes='市场部',
-            parent_id=None,
-        ),
-        DeptCreate(
-            name='法务部',
-            code='law',
-            notes='法务部',
-            parent_id=None,
-        ),
-        DeptCreate(
-            name='行政部',
-            code='admin',
-            notes='行政部',
-            parent_id=None,
-        ),
-        DeptCreate(
-            name='后勤部',
-            code='logistics',
-            notes='后勤部',
-            parent_id=None,
-        ),
-    ]
     depts = []
-    for dept_in in depts_in:
+    depts_in = [
+        {
+            'name': '研发部',
+            'code': 'dev',
+            'notes': '研发部',
+            'parent_id': None,
+            'children': [
+                {
+                    'name': '研发一部',
+                    'code': 'dev_one',
+                    'notes': '研发一部',
+                    'parent_id': None,
+                    'children': [
+                        {
+                            'name': '研发一部-前端',
+                            'code': 'dev_one_frontend',
+                            'notes': '研发一部-前端',
+                            'parent_id': None,
+                        },
+                        {
+                            'name': '研发一部-后端',
+                            'code': 'dev_one_backend',
+                            'notes': '研发一部-后端',
+                            'parent_id': None,
+                        },
+                    ],
+                },
+                {
+                    'name': '研发二部',
+                    'code': 'dev_two',
+                    'notes': '研发二部',
+                    'parent_id': None,
+                },
+            ],
+        },
+        {
+            'name': '测试部',
+            'code': 'test',
+            'notes': '测试部',
+            'parent_id': None,
+            'children': [
+                {
+                    'name': '测试一部',
+                    'code': 'test_one',
+                    'notes': '测试一部',
+                    'parent_id': None,
+                },
+                {
+                    'name': '测试二部',
+                    'code': 'test_two',
+                    'notes': '测试二部',
+                    'parent_id': None,
+                },
+            ],
+        },
+        {
+            'name': '运维部',
+            'code': 'ops',
+            'notes': '运维部',
+            'parent_id': None,
+            'children': [
+                {
+                    'name': '运维一部',
+                    'code': 'ops_one',
+                    'notes': '运维一部',
+                    'parent_id': None,
+                },
+            ],
+        },
+        {
+            'name': '财务部',
+            'code': 'finance',
+            'notes': '财务部',
+            'parent_id': None,
+        },
+        {
+            'name': '人事部',
+            'code': 'hr',
+            'notes': '人事部',
+            'parent_id': None,
+        },
+    ]
+
+    async def create_dept(dept_in: dict):
         dept = await crud_dept.create(session, obj_in=dept_in)
+        if dept_in.get('children'):
+            for child in dept_in['children']:
+                child['parent_id'] = dept.id
+                await create_dept(child)
         depts.append(dept)
+
+    for dept_in in depts_in:
+        await create_dept(dept_in)
 
     roles = await crud_role.bulk_create(
         session,

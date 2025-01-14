@@ -94,18 +94,13 @@ class TreeCRUD(CRUDBase):
         obj_in: CreateModelType | dict
     ) -> ModelType:
         """创建节点"""
-        if isinstance(obj_in, dict):
-            create_data = obj_in
-        else:
-            create_data = obj_in.model_dump()
-
-        parent_id = create_data.get("parent_id")
+        parent_id = getattr(obj_in, "parent_id", None) if hasattr(obj_in, "parent_id") else obj_in.get("parent_id", None)
         if parent_id:
             parent = await self.get_by_id(session, parent_id)
             if not parent:
                 raise errors.RequestError(data={"父节点不存在"})
 
-        db_obj = await super().create(session, obj_in=create_data)
+        db_obj = await super().create(session, obj_in=obj_in)
         await self._clear_tree_cache(session, db_obj)  # type: ignore[attr-defined]
 
         # 更新路径
