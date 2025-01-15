@@ -12,7 +12,7 @@ import re
 from typing import Sequence
 
 from fastapi import FastAPI
-from sqlalchemy import select
+from sqlalchemy import Column, select
 
 from src.apps.v1.sys.crud.permission import crud_permission
 from src.apps.v1.sys.models.permission import Permission, PermissionCreate
@@ -28,6 +28,7 @@ class SvrPermission(TreeService):
     """
     def __init__(self):
         self.tree_crud = self.crud = crud_permission
+        self.model = Permission
 
     async def get_role_permissions(
         self,
@@ -84,6 +85,80 @@ class SvrPermission(TreeService):
             log.info("🟢 权限规则初始化成功")
         except Exception as e:
             log.error("❌ 权限规则初始化失败: {}", str(e))
+
+    async def init_menu(self, session: AuditAsyncSession, app: FastAPI) -> None:
+        """初始化菜单数据"""
+        menus = [
+            {
+                "name": "系统管理",
+                "code": "sys_manage",
+                "notes": "系统管理",
+                "type": PermissionType.MENU,
+                "parent_id": None,
+                "children": [
+                    {
+                        "name": "权限管理",
+                        "code": "sys_permission",
+                        "notes": "权限管理",
+                        "type": PermissionType.MENU,
+                        "route_path": "/permission",
+                        "route_component": "sys/permission/index",
+                        "route_title": "权限管理",
+                        "route_icon": "icon-setting",
+                        "route_hidden": False,
+                        "route_keep_alive": True,
+                        "route_always_show": False,
+                        "parent_id": None,
+                    },
+                    {
+                        "name": "角色管理",
+                        "code": "sys_role",
+                        "notes": "角色管理",
+                        "type": PermissionType.MENU,
+                        "route_path": "/role",
+                        "route_component": "sys/role/index",
+                        "route_title": "角色管理",
+                        "route_icon": "icon-setting",
+                        "route_hidden": False,
+                        "route_keep_alive": True,
+                        "route_always_show": False,
+                        "parent_id": None,
+                    },
+                    {
+                        "name": "用户管理",
+                        "code": "sys_user",
+                        "notes": "用户管理",
+                        "type": PermissionType.MENU,
+                        "route_path": "/user",
+                        "route_component": "sys/user/index",
+                        "route_title": "用户管理",
+                        "route_icon": "icon-setting",
+                        "route_hidden": False,
+                        "route_keep_alive": True,
+                        "route_always_show": False,
+                        "parent_id": None,
+                    }
+                ]
+            }
+        ]
+
+        stmt = select(self.model).where(self.model.type == PermissionType.MENU)  # type: ignore
+        result = await session.execute(stmt)
+        exists = {(r.code): r for r in result.scalars()}
+
+        async def create_menu(session: AuditAsyncSession, menu: dict) -> None:
+            key = (menu["code"])
+            if key not in exists:
+                menu_obj = await self.crud.create(session, obj_in=menu)
+            else:
+                menu_obj = exists[key]
+            if menu.get("children"):
+                for child in menu["children"]:
+                    child["parent_id"] = menu_obj.id
+                    await create_menu(session, menu=child)
+
+        for menu in menus:
+            await create_menu(session, menu=menu)
 
 
 svr_permission = SvrPermission()

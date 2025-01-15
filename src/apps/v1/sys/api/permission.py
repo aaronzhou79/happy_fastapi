@@ -35,3 +35,10 @@ async def init_permission(request: Request) -> ResponseModel:
         await svr_permission.init_permission(session, request.app)
     return response_base.success(data={"message": "权限数据初始化成功"})
 
+
+@permission_api.router.get("/init_menu")
+async def init_menu(request: Request) -> ResponseModel:
+    """初始化菜单数据"""
+    async with async_audit_session(async_session(), request) as session:
+        await svr_permission.init_menu(session, request.app)
+    return response_base.success(data={"message": "菜单数据初始化成功"})
