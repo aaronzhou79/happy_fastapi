@@ -441,3 +441,18 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
 
         return total, items
 
+    async def has_ids(
+        self,
+        session: AuditAsyncSession,
+        ids: Sequence[int]
+    ) -> Sequence[int] | None:
+        """根据ID列表判断对象是否存在,并返回不存在的ID列表"""
+        statement = select(self.model).where(getattr(self.model, 'id').in_(ids))
+        result = await session.execute(statement)
+        data = result.scalars().all()
+        if not data:
+            return ids
+        exist_ids = {getattr(obj, 'id') for obj in data}
+        # 从ids中移除存在的ID
+        return [id_ for id_ in ids if id_ not in exist_ids]
+

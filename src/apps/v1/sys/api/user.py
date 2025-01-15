@@ -10,7 +10,14 @@ from typing import Annotated
 
 from fastapi import BackgroundTasks, Body, Depends, Request, Response
 
-from src.apps.v1.sys.models.user import AuthLoginParam, GetLoginToken, User, UserCreateWithRoles, UserGetWithRoles, UserUpdate
+from src.apps.v1.sys.models.user import (
+    AuthLoginParam,
+    GetLoginToken,
+    User,
+    UserCreateWithRoles,
+    UserGetWithRoles,
+    UserUpdate,
+)
 from src.apps.v1.sys.service.auth import svr_auth
 from src.apps.v1.sys.service.user import svr_user
 from src.common.base_api import BaseAPI

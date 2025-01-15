@@ -53,9 +53,6 @@ class CrudUser(CRUDBase[User, UserCreate, UserUpdate]):
         if current_user.is_user:
             raise errors.RequestError(data="该员工已设置为系统用户！")
         salt = text_captcha(5)
-        # current_user.password = get_hash_password(f'{password}{salt}')
-        # current_user.username = username
-        # current_user.salt = salt
 
         await self.update(
             session=session,
@@ -68,17 +65,19 @@ class CrudUser(CRUDBase[User, UserCreate, UserUpdate]):
             }
         )
 
-        # 清空现有roles
-        await crud_user_role.delete_by_fields(session, user_id=id)
+        # 清空用户原有角色
+        await crud_user_role.clear_by_user_id(session=session, user_id=id)
 
-        # 添加新roles
+        # 添加新角色
         if roles:
+            # 检查角色ID是否存在
+            not_exist_roles = await crud_role.has_ids(session=session, ids=roles)
+            if not_exist_roles:
+                raise errors.RequestError(data=f"角色ID不存在: {not_exist_roles}")
             for role_id in roles:
-                role = await crud_role.get_by_id(session=session, id=role_id)
-                if role:
-                    await crud_user_role.create(
-                        session=session,
-                        obj_in={
+                await crud_user_role.create(
+                    session=session,
+                    obj_in={
                             "user_id": id,
                             "role_id": role_id
                         }
