@@ -177,6 +177,10 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
             for field, value in filters.items():
                 if hasattr(self.model, field):
                     statement = statement.where(getattr(self.model, field) == value)
+        if hasattr(self.model, "sort_order"):
+            statement = statement.order_by(getattr(self.model, "sort_order").asc())
+        else:
+            statement = statement.order_by(getattr(self.model, "id").desc())
         statement = statement.offset(skip).limit(limit)
         result = await session.execute(statement)
         return result.scalars().all()

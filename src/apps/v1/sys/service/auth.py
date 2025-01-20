@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from asyncio import create_task
+
 from fastapi import Request, Response
 from starlette.background import BackgroundTask, BackgroundTasks
 
@@ -29,7 +30,7 @@ from src.core.security.auth_security import (
     jwt_decode,
 )
 from src.database.db_redis import redis_client
-from src.database.db_session import AuditAsyncSession, async_audit_session, async_session
+from src.database.db_session import async_audit_session, async_session
 from src.utils.encrypt import verify_password
 from src.utils.timezone import TimeZone
 from src.utils.trace_id import get_request_trace_id
@@ -55,33 +56,8 @@ class AuthService(BaseService[User, UserCreate, UserUpdate]):
         request: Request,
         response: Response,
         obj: AuthLoginParam,
-        background_tasks: BackgroundTasks
     ) -> GetLoginToken:
         """登录"""
-        def _record_login_log(
-            request: Request,
-            user_uuid: str,
-            username: str | None,
-            status: LoginLogStatus,
-            msg: str,
-        ) -> LoginLogCreate:
-            return LoginLogCreate(
-                trace_id=get_request_trace_id(request),
-                user_uuid=user_uuid or '-',
-                username=username or '-',
-                status=status,
-                ip=request.state.ip or '-',
-                country=request.state.country or '-',
-                region=request.state.region or '-',
-                city=request.state.city or '-',
-                user_agent=request.state.user_agent or '-',
-                browser=request.state.browser or '-',
-                os=request.state.os or '-',
-                device=request.state.device or '-',
-                login_time=TimeZone.now(),
-                msg=msg,
-            )
-
         # 检查登录失败次数
         fail_count_key = f"{settings.REDIS_PREFIX}:login:fail_count:{obj.username}"
         fail_count = await redis_client.get(fail_count_key)
@@ -111,7 +87,13 @@ class AuthService(BaseService[User, UserCreate, UserUpdate]):
                 create_task(
                     svr_login_log.create_login_log(
                         session=session,
-                        login_log_in=_record_login_log(request, user_uuid, username, LoginLogStatus.FAIL, '用户已被锁定, 请联系统管理员')
+                        login_log_in=self._record_login_log(
+                            request=request,
+                            user_uuid=user_uuid,
+                            username=username,
+                            status=LoginLogStatus.FAIL,
+                            msg='用户已被锁定, 请联系统管理员'
+                        )
                     )
                 )
                 raise errors.AuthorizationError(msg='用户已被锁定, 请联系统管理员')
@@ -123,13 +105,19 @@ class AuthService(BaseService[User, UserCreate, UserUpdate]):
             create_task(
                 svr_login_log.create_login_log(
                     session=session,
-                    login_log_in=_record_login_log(request, user_uuid, username, LoginLogStatus.SUCCESS, '登录成功')
+                    login_log_in=self._record_login_log(
+                        request=request,
+                        user_uuid=user_uuid,
+                        username=username,
+                        status=LoginLogStatus.SUCCESS,
+                        msg='登录成功'
+                    )
                 )
             )
 
             if settings.CAPTCHA_NEED:
                 await redis_client.delete(f'{settings.CAPTCHA_LOGIN_REDIS_PREFIX}:{request.state.ip}')
-            await crud_user.update(
+            await self.crud.update(
                 session=session,
                 obj_in={"id": current_user_id, "last_login_time": TimeZone.now()},
             )
@@ -207,11 +195,43 @@ class AuthService(BaseService[User, UserCreate, UserUpdate]):
             key_prefix = f'{settings.TOKEN_REFRESH_REDIS_PREFIX}:{request.user.user_data.id}:'
             await redis_client.delete_prefix(key_prefix)
 
-    @staticmethod
-    async def set_as_user(*, request: Request, id: int, username: str, password: str, roles: list[int] | None = None) -> None:
+    async def set_as_user(
+        self,
+        *,
+        request: Request,
+        id: int,
+        username: str,
+        password: str,
+        roles: list[int] | None = None,
+    ) -> None:
         """设置为用户"""
         async with async_audit_session(async_session(), request=request) as session:
-            await crud_user.set_as_user(session=session, id=id, username=username, password=password, roles=roles)
+            await self.crud.set_as_user(session=session, id=id, username=username, password=password, roles=roles)
+
+    def _record_login_log(
+        self,
+        request: Request,
+        user_uuid: str,
+        username: str | None,
+        status: LoginLogStatus,
+        msg: str,
+    ) -> LoginLogCreate:
+        return LoginLogCreate(
+            trace_id=get_request_trace_id(request),
+            user_uuid=user_uuid or '-',
+            username=username or '-',
+            status=status,
+            ip=request.state.ip or '-',
+            country=request.state.country or '-',
+            region=request.state.region or '-',
+            city=request.state.city or '-',
+            user_agent=request.state.user_agent or '-',
+            browser=request.state.browser or '-',
+            os=request.state.os or '-',
+            device=request.state.device or '-',
+            login_time=TimeZone.now(),
+            msg=msg,
+        )
 
     async def _handle_login_fail(self, username: str) -> None:
         """处理登录失败"""

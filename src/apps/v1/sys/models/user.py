@@ -26,10 +26,6 @@ class UserBase(SQLModel):
         ..., max_length=32, description="真实姓名")
     username: str | None = Field(
         default=None, max_length=32, unique=True, index=True, description="用户名")
-    password: str | None = Field(
-        default=None, max_length=128, description="密码")
-    salt: str | None = Field(
-        default=None, max_length=16, description="盐")
     avatar: str | None = Field(
         default=None, max_length=256, description="头像")
     status: UserStatus = Field(
@@ -48,6 +44,8 @@ class UserBase(SQLModel):
         default=False, description="是否多端登录")
     last_login: datetime | None = Field(
         default=None, description="最后登录时间")
+    home_path: str | None = Field(
+        default=None, max_length=256, description="首页路径")
     uuid: str = Field(
         default_factory=uuid4_str, description="UUID")
 
@@ -61,6 +59,11 @@ class User(UserBase, DatabaseModel, table=True):
     )
 
     id: id_pk  # type: ignore
+
+    password: str | None = Field(
+        default=None, max_length=128, description="密码")
+    salt: str | None = Field(
+        default=None, max_length=16, description="盐")
 
     # Relationships
     dept: "Dept" = Relationship(
@@ -77,11 +80,19 @@ class User(UserBase, DatabaseModel, table=True):
 
 class UserCreate(UserBase):
     """用户创建模型"""
+    password: str | None = Field(
+        default=None, max_length=128, description="密码")
+    salt: str | None = Field(
+        default=None, max_length=16, description="盐")
 
 
 class UserUpdate(UserBase):
     """用户更新模型"""
     id: int
+    password: str | None = Field(
+        default=None, max_length=128, description="密码")
+    salt: str | None = Field(
+        default=None, max_length=16, description="盐")
 
 
 class UserCreateWithRoles(UserCreate):
@@ -120,15 +131,6 @@ class AuthLoginParam(AuthBase):
                 'password': '123456',
             }
         }
-
-
-class GetSwaggerToken(SQLModel):
-    """
-    获取 Swagger Token
-    """
-    access_token: str
-    token_type: str = 'Bearer'
-    user: UserGetWithRoles  # type: ignore
 
 
 class AccessTokenBase(SQLModel):

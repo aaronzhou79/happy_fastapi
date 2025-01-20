@@ -10,6 +10,7 @@ from typing import Annotated
 
 from fastapi import BackgroundTasks, Body, Depends, Request, Response
 
+from src.apps.v1.sys.models.permission import PermissionGet
 from src.apps.v1.sys.models.user import (
     AuthLoginParam,
     GetLoginToken,
@@ -24,6 +25,7 @@ from src.common.base_api import BaseAPI
 from src.core.responses.response_schema import ResponseModel, response_base
 from src.core.security.auth_security import DependsJwtAuth
 from src.core.security.permission import RequestPermission
+from src.database.db_session import CurrentSession
 
 user_api = BaseAPI(
     module_name="sys",
@@ -42,7 +44,6 @@ async def login(
     request: Request,
     response: Response,
     obj: AuthLoginParam,
-    background_tasks: BackgroundTasks,
 ) -> ResponseModel[GetLoginToken]:
     """
     用户登录
@@ -50,7 +51,7 @@ async def login(
     :param obj: 用户名密码
     :return: 登录成功后的token
     """
-    data = await svr_auth.login(request=request, response=response, obj=obj, background_tasks=background_tasks)
+    data = await svr_auth.login(request=request, response=response, obj=obj)
     return response_base.success(data=data)
 
 
@@ -93,8 +94,10 @@ async def set_as_user(
     dependencies=[
         DependsJwtAuth,
     ])
-async def me(request: Request) -> ResponseModel:
+async def me(request: Request, session: CurrentSession) -> ResponseModel:
     """获取当前用户信息"""
-    data = UserGetWithRoles.model_validate(request.user.user_data.model_dump())
+    user_id = request.user.user_data.id
+    is_superuser = request.user.user_data.is_superuser
+    data = await svr_user.get_permissions(session=session, user_id=user_id, is_superuser=is_superuser)
     return response_base.success(data=data)
 

@@ -70,3 +70,8 @@ class PermissionCreate(PermissionBase):
 class PermissionUpdate(PermissionBase):
     """权限更新模型"""
     id: int
+
+
+class PermissionGet(PermissionBase):
+    """权限获取模型"""
+    id: int

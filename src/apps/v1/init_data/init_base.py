@@ -10,7 +10,6 @@ from src.apps.v1.sys.crud.dept import crud_dept
 from src.apps.v1.sys.crud.role import crud_role
 from src.apps.v1.sys.crud.user import crud_user
 from src.apps.v1.sys.crud.user_role import crud_user_role
-from src.apps.v1.sys.models.dept import DeptCreate
 from src.apps.v1.sys.models.role import RoleCreate
 from src.apps.v1.sys.models.user import UserCreate
 from src.apps.v1.sys.models.user_role import UserRoleCreate
