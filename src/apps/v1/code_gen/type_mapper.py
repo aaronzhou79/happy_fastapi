@@ -1,7 +1,8 @@
 import inspect
 
 from datetime import datetime
-from typing import Annotated, Any, Dict, Type, get_args, get_origin
+from enum import Enum
+from typing import Annotated, Any, Dict, Type, Union, get_args, get_origin
 
 from pydantic import BaseModel
 from sqlmodel import SQLModel
@@ -27,7 +28,6 @@ class TypeMapper:
         # 处理Annotated类型
         origin = get_origin(python_type)
         if origin is Annotated:
-            # 获取Annotated的第一个参数作为实际类型
             actual_type = get_args(python_type)[0]
             return cls.to_typescript(actual_type)
 
@@ -44,8 +44,12 @@ class TypeMapper:
         if python_type in cls.python_to_ts_types:
             return cls.python_to_ts_types[python_type]
 
+        # 处理枚举类型
+        if inspect.isclass(python_type) and issubclass(python_type, Enum):
+            return python_type.__name__
+
         # 处理Pydantic模型
-        if inspect.isclass(python_type) and issubclass(python_type, SQLModel | BaseModel):
+        if inspect.isclass(python_type) and issubclass(python_type, (SQLModel, BaseModel)):
             return python_type.__name__
 
         return "any"
@@ -61,5 +65,19 @@ class TypeMapper:
                 lines.append(f"  {field_name}: {field_type};")
             else:
                 lines.append(f"  {field_name}: any;")
+        lines.append("}")
+        return "\n".join(lines)
+
+    @classmethod
+    def enum_to_definition(cls, enum_class: Type[Enum]) -> str:
+        """将Python Enum转换为TypeScript enum定义"""
+        lines = [f"export enum {enum_class.__name__} {{"]
+
+        for name, member in enum_class.__members__.items():
+            if isinstance(member.value, str):
+                lines.append(f"  {name} = '{member.value}',")
+            else:
+                lines.append(f"  {name} = {member.value},")
+
         lines.append("}")
         return "\n".join(lines)

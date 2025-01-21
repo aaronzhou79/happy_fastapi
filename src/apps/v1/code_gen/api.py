@@ -1,5 +1,6 @@
 import inspect
 
+from enum import Enum
 from typing import Any, Dict, Generic, List, Set, Type, Union, get_args, get_origin
 
 from fastapi import APIRouter, Request
@@ -15,15 +16,8 @@ from .type_mapper import TypeMapper
 router = APIRouter(prefix="/code-gen", tags=["代码生成"])
 
 
-def extract_pydantic_models(type_annotation: Any) -> Set[Type[BaseModel]]:
-    """递归提取类型中的所有Pydantic模型
-
-    Args:
-        type_annotation: 要分析的类型注解
-
-    Returns:
-        包含所有找到的Pydantic模型的集合
-    """
+def extract_pydantic_models(type_annotation: Any) -> Set[Type[Union[BaseModel, Enum]]]:
+    """递归提取类型中的所有Pydantic模型和枚举类型"""
     models = set()
 
     # 处理None类型
@@ -43,6 +37,11 @@ def extract_pydantic_models(type_annotation: Any) -> Set[Type[BaseModel]]:
 
     # 如果是BaseModel子类,直接添加
     if inspect.isclass(type_annotation) and issubclass(type_annotation, BaseModel):
+        models.add(type_annotation)
+        return models
+
+    # 处理枚举类型
+    if inspect.isclass(type_annotation) and issubclass(type_annotation, Enum):
         models.add(type_annotation)
         return models
 
@@ -92,7 +91,10 @@ async def generate_code(request: Request, tag: str) -> Dict[str, Any]:
 
     # 生成类型定义
     for model in models:
-        result["types"].append(TypeMapper.model_to_interface(model))
+        if inspect.isclass(model) and issubclass(model, Enum):
+            result["types"].append(TypeMapper.enum_to_definition(model))
+        else:
+            result["types"].append(TypeMapper.model_to_interface(model))
 
     # 生成API请求代码
     for route in routes:
