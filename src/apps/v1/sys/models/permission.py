@@ -51,7 +51,7 @@ class PermissionBase(SQLModel):
     perm_code: str | None = Field(default=None, max_length=100, description="权限编码")
 
     sort_order: int = Field(default=0, description="排序")
-    description: str | None = Field(default=None, max_length=200)
+    notes: str | None = Field(default=None, max_length=200)
 
 
 class Permission(PermissionBase, TreeModel, DatabaseModel, table=True):

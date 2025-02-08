@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     REDOC_URL: str = f"{API_PATH}/redoc"
 
     # 运行环境
-    APP_ENV: Literal['dev', 'pro'] = "dev"
+    APP_ENV: Literal['dev', 'prod'] = "dev"
     # 运行端口
     APP_PORT: int = 8081
     # 运行地址

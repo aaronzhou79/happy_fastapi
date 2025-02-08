@@ -11,8 +11,10 @@ from fastapi import APIRouter
 
 from src.core.conf import settings
 
+from .healthy import router as healthy_router
 from .v1 import router as v1_router
 
 router = APIRouter(prefix=settings.API_PATH)
 
+router.include_router(healthy_router)
 router.include_router(v1_router)

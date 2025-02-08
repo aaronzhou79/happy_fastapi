@@ -13,7 +13,6 @@ if TYPE_CHECKING:
 
 class DeptBase(SQLModel):
     """部门基础模型"""
-    __tablename__: Literal["sys_dept"] = "sys_dept"
     # Dept 模型
     __table_args__ = (
         sa.Index('idx_dept_parent_id', 'parent_id'),
