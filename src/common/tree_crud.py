@@ -94,7 +94,11 @@ class TreeCRUD(CRUDBase):
         obj_in: CreateModelType | dict
     ) -> ModelType:
         """创建节点"""
-        parent_id = getattr(obj_in, "parent_id", None) if hasattr(obj_in, "parent_id") else obj_in.get("parent_id", None)
+        parent_id = (
+            obj_in.parent_id if hasattr(obj_in, "parent_id")  # type: ignore[attr-defined]
+            else obj_in["parent_id"] if isinstance(obj_in, dict) and "parent_id" in obj_in
+            else None
+        )
         if parent_id:
             parent = await self.get_by_id(session, parent_id)
             if not parent:
@@ -162,7 +166,7 @@ class TreeCRUD(CRUDBase):
 
         # 删除所有子节点
         stmt = select(self.model).where(
-            text(f"path LIKE '{node.tree_path}%'")  # type: ignore[attr-defined]
+            text(f"tree_path LIKE '{node.tree_path}%'")  # type: ignore[attr-defined]
         )
         result = await session.execute(stmt)
         children = result.scalars().all()
@@ -258,7 +262,7 @@ class TreeCRUD(CRUDBase):
             if not root:
                 return []
             stmt = select(self.model).where(
-                text(f"path LIKE '{root.tree_path}%'")  # type: ignore[attr-defined]
+                text(f"tree_path LIKE '{root.tree_path}%'")  # type: ignore[attr-defined]
             )
             if max_depth > 0:
                 stmt = stmt.where(
@@ -417,7 +421,7 @@ class TreeCRUD(CRUDBase):
         await self._clear_tree_cache(session, source_node)
         # 复制节点数据(排除id和路径相关字段)
         node_data = source_node.model_dump(
-            exclude={'id', 'parent_id', 'path', 'level'}
+            exclude={'id', 'parent_id', 'tree_path', 'level'}
         )
         node_data['parent_id'] = new_parent_id
 
