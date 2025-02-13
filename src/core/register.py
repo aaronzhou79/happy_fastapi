@@ -29,7 +29,6 @@ from src.middleware.opera_log_middleware import OperaLogMiddleware
 from src.middleware.profiling_middleware import ProfilingMiddleware
 from src.middleware.state_middleware import StateMiddleware
 from src.utils.health_check import http_limit_callback
-from src.apps.v1.init_data import init_permission
 
 
 async def init_limiter() -> None:
@@ -127,6 +126,8 @@ def register_middleware(app: FastAPI) -> None:
     app.add_middleware(GZipMiddleware, minimum_size=1000)
     # State (required)
     app.add_middleware(StateMiddleware)
+    # Opera log (required)
+    app.add_middleware(OperaLogMiddleware)
     # JWT auth (required)
     app.add_middleware(
         AuthenticationMiddleware,
@@ -135,8 +136,6 @@ def register_middleware(app: FastAPI) -> None:
     )
     # Trace ID (required)
     app.add_middleware(CorrelationIdMiddleware, validator=None)
-    # Opera log (required)
-    app.add_middleware(OperaLogMiddleware)
     # Profiling (optional)
     if settings.APP_DEBUG:
         app.add_middleware(ProfilingMiddleware)

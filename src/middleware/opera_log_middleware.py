@@ -43,8 +43,8 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         # 此信息依赖于 jwt 中间件
-        if hasattr(request.state, 'user') and hasattr(request.state.user, 'username'):
-            username = getattr(request.state.user, 'username', '-')
+        if hasattr(request, 'user') and hasattr(request.user, 'display_name'):
+            username = getattr(request.user, 'display_name', '-')
         else:
             username = '-'
         method = request.method

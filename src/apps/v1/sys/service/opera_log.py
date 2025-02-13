@@ -13,7 +13,7 @@ from src.common.base_service import BaseService
 from src.database.db_session import async_audit_session, async_session
 
 
-class SvrOperaLog(BaseService[OperaLog, OperaLogCreate, OperaLogUpdate]):
+class SvrOperaLog(BaseService[OperaLog, OperaLogCreate, OperaLogUpdate]):  # type: ignore
     """
     操作日志服务
     """

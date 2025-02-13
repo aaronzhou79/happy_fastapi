@@ -14,6 +14,7 @@ from sqlmodel import Field, SQLModel
 
 from src.core.conf import settings
 from src.database.db_session import AuditAsyncSession, async_session
+from src.middleware.state_middleware import UserState
 from src.utils.snowflake import id_worker
 from src.utils.timezone import TimeZone
 
@@ -47,9 +48,17 @@ class DateTimeMixin(SQLModel):
         default_factory=TimeZone.now,
         sa_column_kwargs={"comment": "创建时间"}
     )
+    created_by: int | None = Field(
+        default_factory=UserState.get_current_user_id,
+        sa_column_kwargs={"comment": "创建者"}
+    )
     updated_at: datetime | None = Field(
         default=None,
         sa_column_kwargs={"onupdate": TimeZone.now, "comment": "更新时间"}
+    )
+    updated_by: int | None = Field(
+        default=None,
+        sa_column_kwargs={"onupdate": UserState.get_current_user_id, "comment": "更新者"}
     )
 
 
@@ -72,7 +81,7 @@ class DatabaseModel(AsyncAttrs, DateTimeMixin):
         """表名"""
         return self.__name__.lower()
 
-    async def to_dict(
+    async def to_dict(  # noqa: C901
         self,
         *,
         exclude: list[str] | None = None,
@@ -88,6 +97,7 @@ class DatabaseModel(AsyncAttrs, DateTimeMixin):
             exclude: 排除的字段列表
             include: 包含的字段列表
             max_depth: 最大递归深度
+            limit: 关联的对象数量返回的数量
             _depth: 当前递归深度
             _visited: 已访问对象集合,用于检测循环引用
 
