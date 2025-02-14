@@ -226,21 +226,15 @@ class DatabaseModel(AsyncAttrs, SQLModel):
 
         relation_info = {}
         for rel_name, rel in mapper.relationships.items():
-            secondary_model = None
             if rel.secondary is not None:
-                # 获取中间表对应的模型类
-                for model in DatabaseModel.__subclasses__():
-                    if hasattr(model, '__table__') and getattr(model, '__table__') == rel.secondary:
-                        secondary_model = model
-                        break
+                break
 
             relation_info[rel_name] = {
                 'relation_type': rel.direction.name,
                 'relation_model': rel.mapper.class_,
                 'relation_table': rel.mapper.class_.__tablename__,
                 'relation_column': rel.key,
-                'secondary_model': secondary_model,  # 添加中间表模型信息
-                'secondary_table': getattr(rel.secondary, 'name', None) if rel.secondary is not None else None
+                'remote_column': rel.remote_side,
             }
         return relation_info
 
@@ -286,14 +280,14 @@ class DatabaseModel(AsyncAttrs, SQLModel):
         exclude_fields = {
             "id", "created_at", "updated_at", "deleted_at",
             "created_by", "updated_by", "_sa_instance_state"
-        }
+        } | set(cls.__relation_info__.keys())
 
         if isinstance(obj_in, dict):
             create_data = {k: v for k, v in obj_in.items() if k not in exclude_fields}
         else:
             create_data = obj_in.model_dump(
                 exclude_unset=True,
-                exclude=exclude_fields
+                exclude=exclude_fields,
             )
 
         db_obj = cls(**create_data)

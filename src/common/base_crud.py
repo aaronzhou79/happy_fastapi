@@ -2,7 +2,7 @@ import inspect
 
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any, AsyncGenerator, Callable, Dict, Generic, Sequence, TypeVar
+from typing import Any, AsyncGenerator, Callable, Dict, Generic, Sequence, TypeVar, Union
 
 import sqlalchemy as sa
 
@@ -115,42 +115,56 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         return context.results
 
     # 创建方法
-    async def _create_relation(self, session: AuditAsyncSession, db_obj: ModelType, obj_in: Dict | CreateModelType) -> None:
+    async def _create_relation(
+        self,
+        session: AuditAsyncSession,
+        db_obj: ModelType,
+        obj_in: Dict | CreateModelType) -> None:
         """创建关联对象"""
         if not hasattr(self.model, '__relation_info__'):
             return
 
         for _relation, _relation_info in self.model.__relation_info__.items():
-            if hasattr(obj_in, _relation):
-                print(_relation, _relation_info)
+            relation_model = _relation_info['relation_model']
+            relation_obj = getattr(obj_in, _relation)
+            if isinstance(relation_obj, list):
+                for item in relation_obj:
+                    for _rel_key, _rel_info in relation_model.__foreign_info__.items():
+                        if hasattr(item, _rel_key):
+                            setattr(item, _rel_key, getattr(db_obj, _rel_info["target_column"]))
+                            await relation_model.create(session, obj_in=item)
 
     async def create(self, session: AuditAsyncSession, *, obj_in: Dict | CreateModelType) -> ModelType:
         """创建对象"""
-        # 运行创建前钩子
-        hook_results = await self._run_hooks(
-            HookTypeEnum.before_create,
-            session=session,
-            obj_in=obj_in,
-        )
+        try:
+            # 运行创建前钩子
+            hook_results = await self._run_hooks(
+                HookTypeEnum.before_create,
+                session=session,
+                obj_in=obj_in,
+            )
 
-        # 允许钩子修改创建数据
-        if 'modified_data' in hook_results:
-            obj_in = hook_results['modified_data']
+            # 允许钩子修改创建数据
+            if 'modified_data' in hook_results:
+                obj_in = hook_results['modified_data']
 
-        db_obj = await self.model.create(session, obj_in=obj_in)
+            db_obj = await self.model.create(session, obj_in=obj_in)
 
-        await self._create_relation(session, db_obj, obj_in)
+            await self._create_relation(session, db_obj, obj_in)
 
-        # 运行创建后钩子
-        await self._run_hooks(
-            HookTypeEnum.after_create,
-            session=session,
-            db_obj=db_obj,
-            obj_in=obj_in
-        )
+            # 运行创建后钩子
+            await self._run_hooks(
+                HookTypeEnum.after_create,
+                session=session,
+                db_obj=db_obj,
+                obj_in=obj_in
+            )
 
-        await session.flush()
-        return db_obj
+            await session.flush()
+        except Exception as e:
+            raise errors.RequestError(data=f"创建失败: {e}") from e
+        else:
+            return db_obj
 
     async def get_by_id(self, session: AuditAsyncSession, id: Any) -> ModelType | None:
         """获取单个对象"""

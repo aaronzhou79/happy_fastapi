@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 
 from fastapi import APIRouter, Request, Response
 
+from src.apps.v1.init_data.demo import SALOrderCreate, crud_sal_order, crud_sal_order_item
 from src.apps.v1.init_data.init_base import init_base
 from src.apps.v1.init_data.init_permission import init_permissions
 from src.apps.v1.sys.crud.role_permission import crud_role_permission
@@ -22,14 +23,11 @@ from src.database.db_session import CurrentSession, async_session
 router = APIRouter(tags=['系统管理'])
 
 @router.post('/demo', summary='测试')
-async def demo(db: CurrentSession, user: UserCreateWithRoles) -> ResponseModel:
+async def demo(db: CurrentSession, order: SALOrderCreate) -> ResponseModel:
     """测试"""
-    if user:
-        db_obj = await crud_user.create(db, obj_in=user)
+    if order:
+        db_obj = await crud_sal_order.create(db, obj_in=order)
         return response_base.success(data=db_obj)
-
-    return response_base.fail(data='用户不存在')
-
 
 @router.post('/init_data', summary='初始化数据')
 async def initdata(request: Request) -> Response:
