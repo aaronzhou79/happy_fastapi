@@ -4,14 +4,14 @@ import sqlalchemy as sa
 
 from sqlmodel import Field, Relationship, SQLModel
 
-from src.common.base_model import DatabaseModel, id_pk
+from src.common.base_model import DatabaseModel, DateTimeMixin, id_pk
 from src.common.tree_model import TreeModel
 
 if TYPE_CHECKING:
     from src.apps.v1.sys.models.user import User
 
 
-class DeptBase(SQLModel):
+class DeptBase(DateTimeMixin, SQLModel):
     """部门基础模型"""
     # Dept 模型
     __table_args__ = (
@@ -32,10 +32,9 @@ class DeptBase(SQLModel):
     sort_order: int = Field(default=0, description="排序")
 
 
-class Dept(DeptBase, TreeModel, DatabaseModel, table=True):
+class Dept(DeptBase, TreeModel, table=True):
     """部门表"""
     __tablename__: Literal["sys_dept"] = "sys_dept"
-    id: id_pk  # type: ignore
 
     # Relationships
     users: list["User"] = Relationship(back_populates="dept")

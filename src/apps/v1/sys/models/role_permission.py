@@ -17,7 +17,6 @@ class RolePermissionBase(SQLModel):
 class RolePermission(RolePermissionBase, DatabaseModel, table=True):
     """角色-权限关联表"""
     __table_args__ = (UniqueConstraint('role_id', 'permission_id'),)
-    id: id_pk   # type: ignore
 
 
 class RolePermissionCreate(RolePermissionBase):

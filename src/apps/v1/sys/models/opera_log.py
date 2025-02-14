@@ -33,7 +33,7 @@ class OperaLogBase(SQLModel):
     opera_time: datetime = Field(default_factory=TimeZone.now, index=True)
 
 
-class OperaLog(OperaLogBase, table=True):
+class OperaLog(OperaLogBase, DatabaseModel, table=True):
     """操作日志表"""
     __tablename__: Literal["sys_opera_log"] = "sys_opera_log"
     # OperaLog 模型
@@ -41,7 +41,6 @@ class OperaLog(OperaLogBase, table=True):
         sa.Index('idx_opera_log_status', 'status'),
         sa.Index('idx_opera_log_composite', 'username', 'status', 'opera_time'),
     )
-    id: id_pk  # type: ignore
 
 
 class OperaLogCreate(OperaLogBase):

@@ -104,7 +104,7 @@ class TreeCRUD(CRUDBase):
             if not parent:
                 raise errors.RequestError(data={"父节点不存在"})
 
-        db_obj = await super().create(session, obj_in=obj_in)
+        db_obj = await self.model.create(session, obj_in=obj_in)
         await self._clear_tree_cache(session, db_obj)  # type: ignore[attr-defined]
 
         # 更新路径

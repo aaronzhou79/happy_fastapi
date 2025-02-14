@@ -1,18 +1,14 @@
-from typing import Sequence
+from typing import Any, Dict, Sequence
 
 from sqlmodel import Field, SQLModel, asc, select
 
+from src.common.base_model import CreateModelType, DatabaseModel, ModelType
 from src.database.db_session import AuditAsyncSession
 
 
-class TreeModel(SQLModel):
+class TreeModel(DatabaseModel, SQLModel):
     """树形结构基础模型"""
     __abstract__ = True
-
-    class Config:
-        from_attributes = True
-        extra = "allow"
-        arbitrary_types_allowed = True
 
     parent_id: int | None = Field(
         default=None,
@@ -91,3 +87,29 @@ class TreeModel(SQLModel):
             stmt = stmt.where(self.__class__.id != self.id)  # type: ignore
         result = await session.execute(stmt)
         return result.scalars().all()
+
+    @classmethod
+    async def create(
+        cls,
+        db: AuditAsyncSession,
+        obj_in: CreateModelType | ModelType | Dict[str, Any]) -> Any:
+        """创建对象"""
+        exclude_fields = {
+            "id", "created_at", "updated_at", "deleted_at",
+            "created_by", "updated_by", "_sa_instance_state"
+        }
+
+        if isinstance(obj_in, dict):
+            children = obj_in.pop('children', None)
+            create_data = {k: v for k, v in obj_in.items() if k not in exclude_fields}
+        else:
+            children = getattr(obj_in, 'children', None)
+            create_data = obj_in.model_dump(
+                exclude_unset=True,
+                exclude=exclude_fields | {'children'}
+            )
+
+        db_obj = cls(**create_data)
+        db.add(db_obj)
+        await db.flush()
+        return db_obj

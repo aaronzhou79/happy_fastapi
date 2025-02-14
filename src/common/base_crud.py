@@ -8,16 +8,13 @@ import sqlalchemy as sa
 
 from sqlmodel import SQLModel, insert, select
 
-from src.common.base_model import DatabaseModel
+from src.common.base_model import CreateModelType, DatabaseModel, ModelType, UpdateModelType
 from src.common.enums import HookTypeEnum
 from src.common.query_fields import QueryOptions, SortOrder
 from src.common.tree_model import TreeModel
 from src.core.exceptions import errors
 from src.database.db_session import AuditAsyncSession
 
-ModelType = TypeVar("ModelType", bound=DatabaseModel | TreeModel)
-CreateModelType = TypeVar("CreateModelType", bound=SQLModel)
-UpdateModelType = TypeVar("UpdateModelType", bound=SQLModel)
 
 # 定义钩子上下文类型
 @dataclass
@@ -117,7 +114,16 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         await self.hook_manager.execute_hooks(hook_type, context)
         return context.results
 
-    # 创建方法示例
+    # 创建方法
+    async def _create_relation(self, session: AuditAsyncSession, db_obj: ModelType, obj_in: Dict | CreateModelType) -> None:
+        """创建关联对象"""
+        if not hasattr(self.model, '__relation_info__'):
+            return
+
+        for _relation, _relation_info in self.model.__relation_info__.items():
+            if hasattr(obj_in, _relation):
+                print(_relation, _relation_info)
+
     async def create(self, session: AuditAsyncSession, *, obj_in: Dict | CreateModelType) -> ModelType:
         """创建对象"""
         # 运行创建前钩子
@@ -131,14 +137,9 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         if 'modified_data' in hook_results:
             obj_in = hook_results['modified_data']
 
-        if isinstance(obj_in, dict):
-            create_data = obj_in
-        else:
-            create_data = obj_in.model_dump()
+        db_obj = await self.model.create(session, obj_in=obj_in)
 
-        db_obj = self.model.model_validate(create_data)
-        session.add(db_obj)
-        await session.flush()
+        await self._create_relation(session, db_obj, obj_in)
 
         # 运行创建后钩子
         await self._run_hooks(

@@ -3,22 +3,25 @@
 import asyncio
 
 from datetime import datetime
-from typing import Annotated, Any, TypeVar
+from typing import Annotated, Any, Dict, TypeVar
 
 import sqlalchemy as sa
 
 from sqlalchemy import inspect
 from sqlalchemy.ext.asyncio import AsyncAttrs
+from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import RelationshipProperty
 from sqlmodel import Field, SQLModel
 
 from src.core.conf import settings
-from src.database.db_session import AuditAsyncSession, async_session
+from src.database.db_session import AuditAsyncSession
 from src.middleware.state_middleware import UserState
 from src.utils.snowflake import id_worker
 from src.utils.timezone import TimeZone
 
-T = TypeVar('T', bound='DatabaseModel')
+ModelType = TypeVar("ModelType", bound='DatabaseModel')
+CreateModelType = TypeVar("CreateModelType", bound=SQLModel)
+UpdateModelType = TypeVar("UpdateModelType", bound=SQLModel)
 
 if settings.APP_ENV == 'dev':
     id_pk = Annotated[int | None, Field(
@@ -62,24 +65,15 @@ class DateTimeMixin(SQLModel):
     )
 
 
-class DatabaseModel(AsyncAttrs, DateTimeMixin):
+class DatabaseModel(AsyncAttrs, SQLModel):
     """数据库模型基类"""
     __abstract__ = True
-
+    id: id_pk  # type: ignore
     class Config:
         from_attributes = True
         use_enum_values = True
         validate_assignment = True
         arbitrary_types_allowed = True
-
-    @classmethod
-    def query_session(cls) -> AuditAsyncSession:
-        """查询会话"""
-        return async_session()
-
-    def __tablename__(self) -> str:
-        """表名"""
-        return self.__name__.lower()
 
     async def to_dict(  # noqa: C901
         self,
@@ -197,7 +191,115 @@ class DatabaseModel(AsyncAttrs, DateTimeMixin):
 
     def __repr__(self) -> str:
         """字符串表示"""
-        return f"<{self.__class__.__name__} id={getattr(self, 'id', None)}, name={getattr(self, 'name', None)}, code={getattr(self, 'code', None)}>"
+        return f"<{self.__class__.__name__} id={getattr(self, 'id', None)}, name={getattr(self, 'name', None)}, code={getattr(self, 'code', None)}>"  # noqa: E501
+
+    @declared_attr.directive
+    def __tablename__(self) -> str:
+        """表名"""
+        return self.__name__.lower()
+
+    @declared_attr.directive
+    def __foreign_info__(self) -> dict[str, dict]:
+        """获取外键信息"""
+        try:
+            mapper = inspect(self)
+            if not mapper:
+                return {}
+
+            foreign_keys_info = {}
+            for table in mapper.persist_selectable.foreign_keys:
+                foreign_keys_info[table.parent.name] = {
+                    'target_table': table.column.table.name,
+                    'target_column': table.column.name
+                }
+        except Exception:
+            return {}
+
+        return foreign_keys_info
+
+    @declared_attr.directive
+    def __relation_info__(self) -> dict[str, dict]:
+        """获取关系信息"""
+        mapper = inspect(self)
+        if not mapper:
+            return {}
+
+        relation_info = {}
+        for rel_name, rel in mapper.relationships.items():
+            secondary_model = None
+            if rel.secondary is not None:
+                # 获取中间表对应的模型类
+                for model in DatabaseModel.__subclasses__():
+                    if hasattr(model, '__table__') and getattr(model, '__table__') == rel.secondary:
+                        secondary_model = model
+                        break
+
+            relation_info[rel_name] = {
+                'relation_type': rel.direction.name,
+                'relation_model': rel.mapper.class_,
+                'relation_table': rel.mapper.class_.__tablename__,
+                'relation_column': rel.key,
+                'secondary_model': secondary_model,  # 添加中间表模型信息
+                'secondary_table': getattr(rel.secondary, 'name', None) if rel.secondary is not None else None
+            }
+        return relation_info
+
+    @declared_attr.directive
+    def __field_info__(self) -> dict[str, dict]:
+        """获取基础字段信息"""
+        try:
+            mapper = inspect(self)
+            if not mapper:
+                return {}
+
+            field_info = {}
+            for column in mapper.persist_selectable.columns:
+                field_info[column.name] = {
+                    'type': str(column.type),
+                    'nullable': column.nullable,
+                    'primary_key': column.primary_key,
+                    'default': str(column.default.arg) if column.default else None,
+                    'comment': column.comment,
+                    'unique': column.unique,
+                    'index': column.index,
+                }
+        except Exception:
+            return {}
+        return field_info
+
+    @declared_attr.directive
+    def __nested_field_info__(self) -> dict[str, dict]:
+        """获取嵌套字段信息"""
+        return {
+            "foreign_info": self.__foreign_info__,
+            "relation_info": self.__relation_info__,
+            "field_info": self.__field_info__
+        }
+
+    @classmethod
+    async def create(
+        cls,
+        db: AuditAsyncSession,
+        obj_in: CreateModelType | ModelType | Dict[str, Any]
+    ) -> Any:
+        """创建对象"""
+        exclude_fields = {
+            "id", "created_at", "updated_at", "deleted_at",
+            "created_by", "updated_by", "_sa_instance_state"
+        }
+
+        if isinstance(obj_in, dict):
+            create_data = {k: v for k, v in obj_in.items() if k not in exclude_fields}
+        else:
+            create_data = obj_in.model_dump(
+                exclude_unset=True,
+                exclude=exclude_fields
+            )
+
+        db_obj = cls(**create_data)
+        db.add(db_obj)
+        await db.flush()
+        return db_obj
 
 
 async def create_table() -> None:

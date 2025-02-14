@@ -54,7 +54,7 @@ class PermissionBase(SQLModel):
     notes: str | None = Field(default=None, max_length=200)
 
 
-class Permission(PermissionBase, TreeModel, DatabaseModel, table=True):
+class Permission(PermissionBase, TreeModel, table=True):
     """权限表"""
     id: id_pk   # type: ignore
     roles: list["Role"] = Relationship(

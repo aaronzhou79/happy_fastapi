@@ -34,7 +34,6 @@ class PermissionRuleBase(SQLModel):
 class PermissionRule(PermissionRuleBase, DatabaseModel, table=True):
     """权限规则表"""
     __tablename__: Literal["sys_permission_rule"] = "sys_permission_rule"
-    id: id_pk  # type: ignore
 
 
 class PermissionRuleCreate(PermissionRuleBase):

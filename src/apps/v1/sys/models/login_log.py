@@ -34,7 +34,6 @@ class LoginLog(LoginLogBase, DatabaseModel, table=True):
     __table_args__ = (
         sa.Index('idx_login_log_user_uuid', 'user_uuid'),
     )
-    id: id_pk  # type: ignore
 
 
 class LoginLogCreate(LoginLogBase):

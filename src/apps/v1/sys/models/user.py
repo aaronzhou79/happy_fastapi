@@ -7,7 +7,7 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from src.apps.v1.sys.models.role import Role
 from src.apps.v1.sys.models.user_role import UserRole
-from src.common.base_model import DatabaseModel, id_pk
+from src.common.base_model import DatabaseModel, DateTimeMixin, id_pk
 from src.common.enums import UserEmpType, UserStatus
 from src.core.conf import settings
 from src.database.db_session import uuid4_str
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from src.apps.v1.sys.models.dept import Dept
 
 
-class UserBase(SQLModel):
+class UserBase(DateTimeMixin, SQLModel):
     """用户基础模型"""
     __tablename__: Literal["sys_user"] = "sys_user"
 
@@ -57,8 +57,6 @@ class User(UserBase, DatabaseModel, table=True):
         sa.Index('idx_user_dept_id', 'dept_id'),
         sa.Index('idx_user_uuid', 'uuid'),
     )
-
-    id: id_pk  # type: ignore
 
     password: str | None = Field(
         default=None, max_length=128, description="密码")
