@@ -1,0 +1,105 @@
+line-length = 120
+cache-dir = ".ruff_cache"
+target-version = "py313"
+unsafe-fixes = true
+show-fixes = true
+
+[lint]
+select = [
+    # 错误检查
+    "E",   # pycodestyle 错误
+    "F",   # Pyflakes
+    "B",   # flake8-bugbear
+    # 导入检查
+    "I",   # isort
+    # 复杂度检查
+    "C90", # mccabe
+    # 命名规范
+    "N",   # pep8-naming
+    # 类型检查
+    "ANN", # flake8-annotations
+    # 文档字符串
+    "D",   # pydocstyle
+    # 其他检查
+    "TCH", # flake8-type-checking
+    "W505",# 文档字符串长度
+    "PT018", # pytest 风格
+    "SIM101", # 简化逻辑
+    "SIM114",
+    "PGH004", # 泛型提示
+    "PLE1142", # 异常处理
+    "RUF100", # 未使用的noqa
+    "UP007",  # 类型提示语法
+    # 安全检查
+    "S",    # flake8-bandit 安全检查
+    "ASYNC", # 异步代码检查
+    # 代码质量
+    "PIE",  # 不必要的表达式
+    "RET",  # return语句检查
+    "TRY",  # try-except检查
+    # 代码风格
+    "RSE",  # 提高异常信息可读性
+    "ISC",  # 隐式字符串连接
+    "ICN",  # import命名约定
+    # 类型相关
+    "ARG",  # 未使用参数检查
+    "FIX",  # TODO/FIXME检查
+    # FastAPI特定
+    "FA"    # FastAPI规则(实验性)
+]
+preview = true
+ignore = [
+    "FURB101",
+    "ANN101", # 允许缺少self类型注解,
+    "ANN401", # 允许使用Any类型
+    "D107",   # 允许缺少__init__文档
+    "B008",   # 允许在函数调用中使用默认参数
+    "S101",   # 允许assert语句
+    "TRY003", # 允许长异常信息
+    "ARG002", # 允许未使用的参数(有时在路由函数中需要)
+    "D106",   # 允许公共嵌套类中缺少文档字符串
+    "D415",   # 允许docstring不以句号结尾
+    "D200",
+    "D212"
+]
+
+[lint.flake8-pytest-style]
+mark-parentheses = false
+parametrize-names-type = "list"
+parametrize-values-row-type = "list"
+parametrize-values-type = "tuple"
+
+[lint.flake8-unused-arguments]
+ignore-variadic-names = true
+
+[lint.isort]
+lines-between-types = 1
+order-by-type = true
+
+[lint.pydocstyle]
+convention = "google"  # 使用Google风格的文档字符串
+
+[lint.per-file-ignores]
+"**/api/v1/*.py" = ["TCH", "B008", "D"] # 允许路由装饰器和简化文档要求
+"**/model/*.py" = ["TCH003", "N805"] # 允许Pydantic模型语法
+"**/model/__init__.py" = ["F401"]
+"**/tests/*.py" = ["E402", "ANN", "D"] # 测试文件可以更宽松
+"**/*.py" = [
+    "D100",    # 允许模块级docstring缺失
+    "D400",    # 允许首字母不大写
+    "D403",    # 允许首行不是完整句子
+    "D404",    # 允许首行不以句号结尾
+    "ANN002",  # 允许*agrs缺少类型注解
+    "ANN003",  # 允许**kwargs缺少类型注解
+    "ANN204",  # 允许缺少特殊方法的返回类型注释
+    "ANN206",  # 允许未使用参数
+    "ANN401",  # 允许使用Any类型
+    "B009",    # 允许使用getattr语句
+    "B010",    # 允许使用setattr语句
+]
+
+[format]
+preview = true
+quote-style = "single"
+docstring-code-format = true
+skip-magic-trailing-comma = false
