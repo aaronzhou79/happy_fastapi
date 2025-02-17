@@ -105,19 +105,13 @@ class DatabaseModel(AsyncAttrs, SQLModel):
         # 检查是否已访问过该对象,避免循环引用
         obj_id = id(self)
         if obj_id in _visited:
-            return {
-                "id": getattr(self, "id", None),
-                "name": getattr(self, "name", None),
-                "code": getattr(self, "code", None)}
+            return self._parse_repr_to_dict(repr(self))
 
         _visited.add(obj_id)
 
         # 如果超过最大深度, 只返回基础对象
         if _depth > max_depth:
-            return {
-                "id": getattr(self, "id", None),
-                "name": getattr(self, "name", None),
-                "code": getattr(self, "code", None)}
+            return self._parse_repr_to_dict(repr(self))
 
         # 获取基础字段数据
         data = self.model_dump(exclude_none=True)
@@ -191,8 +185,37 @@ class DatabaseModel(AsyncAttrs, SQLModel):
 
     def __repr__(self) -> str:
         """字符串表示"""
-        return f"<{self.__class__.__name__} id={getattr(self, 'id', None)}, name={getattr(self, 'name', None)}, code={getattr(self, 'code', None)}>"  # noqa: E501
+        attrs = []
+        for field in ["id", "name", "code"]:
+            value = getattr(self, field, None)
+            if value is not None:
+                attrs.append(f"{field}={value}")
 
+        return f"<{self.__class__.__name__}({', '.join(attrs)})>"
+
+    def _parse_repr_to_dict(self, repr_str: str) -> dict:
+        """将 __repr__ 字符串转换为字典
+
+        Example:
+            >>> parse_repr_to_dict("SALOrderItem(id=1, product_name=string, order_id=1)")
+            {'id': 1, 'product_name': 'string', 'order_id': 1}
+        """
+        # 提取括号内的内容
+        content = repr_str[repr_str.find("(") + 1:repr_str.rfind(")")]
+
+        # 分割并转换为字典
+        result = {}
+        for item in content.split(", "):
+            key, value = item.split("=")
+            # 处理字符串值
+            if value.startswith(("'", '"')):
+                value = value.strip('"\'')
+            # 处理数字值
+            elif value.isdigit():
+                value = int(value)
+            result[key] = value
+
+        return result
     @declared_attr.directive
     def __tablename__(self) -> str:
         """表名"""

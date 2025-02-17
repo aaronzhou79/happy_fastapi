@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import sqlalchemy as sa
 
@@ -57,6 +57,15 @@ class SALOrderItem(SALOrderItemBase, DateTimeMixin, DatabaseModel, table=True):
 
     # Relationships
     order: SALOrder = Relationship(back_populates="order_items")
+
+    def __repr__(self) -> str:
+        attrs = []
+        for field in ["id", "product_name", "order_id"]:
+            value = getattr(self, field, None)
+            if value is not None:
+                attrs.append(f"{field}={value}")
+
+        return f"<{self.__class__.__name__}({', '.join(attrs)})>"
 
 
 class SALOrderItemCreate(SALOrderItemBase):
