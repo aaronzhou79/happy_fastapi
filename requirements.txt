@@ -1,6 +1,7 @@
 aiocache==0.12.3
 asgi_correlation_id==4.3.4
 asgiref==3.8.1
+asyncpg==0.30.0
 cryptography==41.0.7
 fast_captcha==0.3.2
 fastapi==0.115.8
@@ -24,3 +25,5 @@ typing_extensions==4.12.2
 user_agents==2.2.0
 uvicorn==0.34.0
 XdbSearchIP==1.0.2
+bcrypt==4.2.1
+greenlet==3.0.3
