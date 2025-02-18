@@ -11,7 +11,7 @@ from sqlalchemy import inspect
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import RelationshipProperty
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, SQLModel, DateTime
 
 from src.core.conf import settings
 from src.database.db_session import AuditAsyncSession
@@ -42,22 +42,28 @@ else:
 
 class SoftDeleteMixin(SQLModel):
     """软删除混入类"""
-    deleted_at: datetime | None = Field(default=None, sa_column_kwargs={"comment": "删除时间"})
+    deleted_at: datetime | None = Field(
+        default=None,
+        sa_type=sa.TIMESTAMP(timezone=True),  # type: ignore
+        sa_column_kwargs={"comment": "删除时间"}
+    )
 
 
 class DateTimeMixin(SQLModel):
     """时间戳混入类"""
     created_at: datetime = Field(
         default_factory=TimeZone.now,
+        sa_type=sa.TIMESTAMP(timezone=True),  # type: ignore
         sa_column_kwargs={"comment": "创建时间"}
+    )
+    updated_at: datetime | None = Field(
+        default=None,
+        sa_type=sa.TIMESTAMP(timezone=True),  # type: ignore
+        sa_column_kwargs={"onupdate": TimeZone.now, "comment": "更新时间"}
     )
     created_by: int | None = Field(
         default_factory=UserState.get_current_user_id,
         sa_column_kwargs={"comment": "创建者"}
-    )
-    updated_at: datetime | None = Field(
-        default=None,
-        sa_column_kwargs={"onupdate": TimeZone.now, "comment": "更新时间"}
     )
     updated_by: int | None = Field(
         default=None,

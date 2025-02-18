@@ -25,7 +25,9 @@ class LoginLogBase(SQLModel):
     browser: str | None = Field(default=None, description='浏览器')
     device: str | None = Field(default=None, description='设备')
     msg: str = Field(default=None, description='提示消息', sa_type=sa.Text)
-    login_time: datetime = Field(default_factory=TimeZone.now, description='登录时间')
+    login_time: datetime = Field(
+        sa_type=sa.TIMESTAMP(timezone=True),  # type: ignore
+        default_factory=TimeZone.now, description='登录时间')
 
 
 class LoginLog(LoginLogBase, DatabaseModel, table=True):

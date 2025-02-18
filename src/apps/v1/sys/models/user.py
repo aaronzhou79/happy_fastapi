@@ -43,6 +43,7 @@ class UserBase(DateTimeMixin, SQLModel):
     is_multi_login: bool = Field(
         default=False, description="是否多端登录")
     last_login: datetime | None = Field(
+        sa_type=sa.TIMESTAMP(timezone=True),  # type: ignore
         default=None, description="最后登录时间")
     home_path: str | None = Field(
         default=None, max_length=256, description="首页路径")

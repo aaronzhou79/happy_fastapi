@@ -30,7 +30,11 @@ class OperaLogBase(SQLModel):
     code: str = Field(max_length=20)
     msg: str | None = Field(default=None, max_length=2000, sa_type=sa.Text)
     cost_time: float = Field(ge=0)  # 添加非负数验证
-    opera_time: datetime = Field(default_factory=TimeZone.now, index=True)
+    opera_time: datetime = Field(
+        default_factory=TimeZone.now,
+        sa_type=sa.TIMESTAMP(timezone=True),  # type: ignore
+        index=True
+    )
 
 
 class OperaLog(OperaLogBase, DatabaseModel, table=True):
