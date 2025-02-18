@@ -1,17 +1,19 @@
 from typing import Literal
 
+import sqlalchemy as sa
+
 from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, SQLModel
 
-from src.common.base_model import DatabaseModel, id_pk
+from src.common.base_model import DatabaseModel
 
 
 class RolePermissionBase(SQLModel):
     """角色-权限关联基础模型"""
     __tablename__: Literal["sys_role_permission"] = "sys_role_permission"
 
-    role_id: int = Field(..., foreign_key="sys_role.id", ondelete='CASCADE')
-    permission_id: int = Field(..., foreign_key="sys_permission.id", ondelete='CASCADE')
+    role_id: int = Field(..., foreign_key="sys_role.id", sa_type=sa.BIGINT, ondelete='CASCADE')
+    permission_id: int = Field(..., foreign_key="sys_permission.id", sa_type=sa.BIGINT, ondelete='CASCADE')
 
 
 class RolePermission(RolePermissionBase, DatabaseModel, table=True):

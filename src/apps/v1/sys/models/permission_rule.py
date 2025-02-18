@@ -1,10 +1,11 @@
-from datetime import datetime
 from typing import Any, List, Literal
+
+import sqlalchemy as sa
 
 from pydantic import BaseModel
 from sqlmodel import JSON, Column, Field, SQLModel
 
-from src.common.base_model import DatabaseModel, id_pk
+from src.common.base_model import DatabaseModel
 from src.common.enums import PermissionRuleStatus
 
 
@@ -25,7 +26,7 @@ class Rule(BaseModel):
 
 class PermissionRuleBase(SQLModel):
     """权限规则基础模型"""
-    permission_id: int = Field(..., foreign_key="sys_permission.id", ondelete='CASCADE')
+    permission_id: int = Field(..., foreign_key="sys_permission.id", sa_type=sa.BIGINT, ondelete='CASCADE')
     rule: Rule = Field(..., sa_column=Column(JSON), description="权限规则")
     status: PermissionRuleStatus = Field(default=PermissionRuleStatus.ENABLE, description="规则状态")
     description: str | None = Field(default=None, description="规则描述")

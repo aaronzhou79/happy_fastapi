@@ -44,7 +44,7 @@ class SALOrderItemBase(SQLModel):
         sa.Index('idx_sal_order_item_order_id', 'order_id'),
     )
 
-    order_id: int = Field(..., foreign_key="sal_order.id", description="订单ID")
+    order_id: int = Field(..., foreign_key="sal_order.id", sa_type=sa.BIGINT, description="订单ID")
     product_name: str = Field(..., max_length=32, description="商品名称")
     quantity: int = Field(..., description="数量")
     unit_price: float = Field(..., description="单价")

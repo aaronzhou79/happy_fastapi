@@ -26,6 +26,7 @@ class DeptBase(DateTimeMixin, SQLModel):
         None, max_length=255, description="备注")
     parent_id: int | None = Field(
         default=None,
+        sa_type=sa.BIGINT,
         foreign_key="sys_dept.id",
         ondelete='RESTRICT',
         description="父部门ID")

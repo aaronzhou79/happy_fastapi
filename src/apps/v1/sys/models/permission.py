@@ -29,6 +29,7 @@ class PermissionBase(SQLModel):
     type: PermissionType = Field(..., description="权限类型")
     parent_id: int | None = Field(
         default=None,
+        sa_type=sa.BIGINT,
         foreign_key="sys_permission.id",
         ondelete='RESTRICT',
         description="父权限ID"

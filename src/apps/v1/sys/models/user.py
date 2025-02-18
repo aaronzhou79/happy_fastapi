@@ -21,7 +21,7 @@ class UserBase(DateTimeMixin, SQLModel):
     __tablename__: Literal["sys_user"] = "sys_user"
 
     dept_id: int | None = Field(
-        default=None, foreign_key="sys_dept.id", ondelete='RESTRICT', description="部门ID")
+        default=None, foreign_key="sys_dept.id", ondelete='RESTRICT', sa_type=sa.BIGINT, description="部门ID")
     name: str = Field(
         ..., max_length=32, description="真实姓名")
     username: str | None = Field(

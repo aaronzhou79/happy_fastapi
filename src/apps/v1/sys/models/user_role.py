@@ -8,16 +8,18 @@
 # @Description: 系统管理模块数据模型
 from typing import Literal
 
+import sqlalchemy as sa
+
 from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, SQLModel
 
-from src.common.base_model import DatabaseModel, DateTimeMixin, id_pk
+from src.common.base_model import DatabaseModel, DateTimeMixin
 
 
 class UserRoleBase(DateTimeMixin, SQLModel):
     """用户-角色关联基础模型"""
-    user_id: int = Field(default=None, foreign_key="sys_user.id", ondelete='CASCADE')
-    role_id: int = Field(default=None, foreign_key="sys_role.id", ondelete='CASCADE')
+    user_id: int = Field(default=None, foreign_key="sys_user.id", sa_type=sa.BIGINT, ondelete='CASCADE')
+    role_id: int = Field(default=None, foreign_key="sys_role.id", sa_type=sa.BIGINT, ondelete='CASCADE')
 
 
 class UserRole(UserRoleBase, DatabaseModel, table=True):
