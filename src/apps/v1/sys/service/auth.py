@@ -86,7 +86,7 @@ class AuthService(BaseService[User, UserCreate, UserUpdate]):
             if not current_user.status and current_user.status != UserStatus.ACTIVE:
                 create_task(
                     svr_login_log.create_login_log(
-                        session=session,
+                        request=request,
                         login_log_in=self._record_login_log(
                             request=request,
                             user_uuid=user_uuid,
@@ -104,7 +104,7 @@ class AuthService(BaseService[User, UserCreate, UserUpdate]):
 
             create_task(
                 svr_login_log.create_login_log(
-                    session=session,
+                        request=request,
                     login_log_in=self._record_login_log(
                         request=request,
                         user_uuid=user_uuid,

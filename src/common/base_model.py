@@ -323,6 +323,7 @@ class DatabaseModel(AsyncAttrs, SQLModel):
         db_obj = cls(**create_data)
         db.add(db_obj)
         await db.flush()
+
         return db_obj
 
 

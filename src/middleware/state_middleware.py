@@ -70,4 +70,5 @@ class StateMiddleware(BaseHTTPMiddleware):
             token = _request_ctx_var.set(request)
             return await call_next(request)
         finally:
-            _request_ctx_var.reset(token)
+            if token:
+                _request_ctx_var.reset(token)

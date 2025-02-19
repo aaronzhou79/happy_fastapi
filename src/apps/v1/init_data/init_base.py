@@ -105,12 +105,14 @@ async def init_base(session: AuditAsyncSession) -> None:
     ]
 
     async def create_dept(dept_in: dict):
-        dept = await crud_dept.create(session, obj_in=dept_in)
+        dept = await crud_dept.create(session, obj_in=dept_in.copy())
         if dept_in.get('children'):
             for child in dept_in['children']:
                 child['parent_id'] = dept.id
                 await create_dept(child)
         depts.append(dept)
+
+    print(depts_in)
 
     for dept_in in depts_in:
         await create_dept(dept_in)

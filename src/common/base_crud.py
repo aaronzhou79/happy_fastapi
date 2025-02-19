@@ -146,9 +146,11 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
 
             # 允许钩子修改创建数据
             if 'modified_data' in hook_results:
-                obj_in = hook_results['modified_data']
+                create_data = hook_results['modified_data']
+            else:
+                create_data = obj_in
 
-            db_obj = await self.model.create(session, obj_in=obj_in)
+            db_obj = await self.model.create(session, obj_in=create_data)
 
             await self._create_relation(session, db_obj, obj_in)
 
@@ -157,7 +159,7 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
                 HookTypeEnum.after_create,
                 session=session,
                 db_obj=db_obj,
-                obj_in=obj_in
+                obj_in=create_data
             )
 
             await session.flush()
