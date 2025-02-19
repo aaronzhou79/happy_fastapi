@@ -11,8 +11,9 @@ from sqlalchemy import inspect
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import RelationshipProperty
-from sqlmodel import Field, SQLModel, DateTime
+from sqlmodel import Field, SQLModel
 
+from src.common.logger import log
 from src.core.conf import settings
 from src.database.db_session import AuditAsyncSession
 from src.middleware.state_middleware import UserState
@@ -327,6 +328,10 @@ class DatabaseModel(AsyncAttrs, SQLModel):
 
 async def create_table() -> None:
     """创建表"""
-    from src.database.db_session import async_engine
-    async with async_engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.create_all)
+    try:
+        from src.database.db_session import async_engine
+        async with async_engine.begin() as conn:
+            await conn.run_sync(SQLModel.metadata.create_all)
+    except Exception as e:
+        log.error("❌ 数据库连接失败: {}", e)
+        raise e from e
