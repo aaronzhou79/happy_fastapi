@@ -3,6 +3,7 @@
 import asyncio
 
 from datetime import datetime
+from functools import lru_cache
 from typing import Annotated, Any, Dict, TypeVar
 
 import sqlalchemy as sa
@@ -82,6 +83,17 @@ class DatabaseModel(AsyncAttrs, SQLModel):
         validate_assignment = True
         arbitrary_types_allowed = True
 
+    # @lru_cache(maxsize=1000)  # 本地缓存
+    async def _get_relationship_info(self):
+        """缓存类的关系信息"""
+        mapper = inspect(self.__class__)
+        if not mapper:
+            return []
+        return [
+            attr for attr in mapper.attrs
+            if isinstance(attr, RelationshipProperty)
+        ]
+
     async def to_dict(  # noqa: C901
         self,
         *,
@@ -105,6 +117,7 @@ class DatabaseModel(AsyncAttrs, SQLModel):
         Returns:
             dict: 转换后的字典
         """
+        relationships = await self._get_relationship_info()
         # 初始化已访问集合
         if _visited is None:
             _visited = set()

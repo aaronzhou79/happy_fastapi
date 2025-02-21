@@ -134,8 +134,23 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
                             setattr(item, _rel_key, getattr(db_obj, _rel_info["target_column"]))
                             await relation_model.create(session, obj_in=item)
 
-    async def create(self, session: AuditAsyncSession, *, obj_in: Dict | CreateModelType) -> ModelType:
-        """创建对象"""
+    async def create(
+        self,
+        session: AuditAsyncSession,
+        *, obj_in: Dict | CreateModelType,
+        create_relation: bool = True
+    ) -> ModelType:
+        """
+        创建对象
+
+        Args:
+            session: 数据库会话
+            obj_in: 创建对象的数据
+            create_relation: 是否创建关联对象,默认True
+
+        Returns:
+            创建的对象
+        """
         try:
             # 运行创建前钩子
             hook_results = await self._run_hooks(
@@ -152,7 +167,8 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
 
             db_obj = await self.model.create(session, obj_in=create_data)
 
-            await self._create_relation(session, db_obj, obj_in)
+            if create_relation:
+                await self._create_relation(session, db_obj, obj_in)
 
             # 运行创建后钩子
             await self._run_hooks(
