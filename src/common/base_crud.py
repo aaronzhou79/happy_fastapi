@@ -2,16 +2,16 @@ import inspect
 
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any, AsyncGenerator, Callable, Dict, Generic, Sequence, TypeVar, Union
+from typing import Any, AsyncGenerator, Callable, Dict, Generic, Sequence
 
 import sqlalchemy as sa
 
-from sqlmodel import SQLModel, insert, select
+from sqlalchemy.orm import selectinload
+from sqlmodel import insert, select
 
-from src.common.base_model import CreateModelType, DatabaseModel, ModelType, UpdateModelType
+from src.common.base_model import CreateModelType, ModelType, UpdateModelType
 from src.common.enums import HookTypeEnum
 from src.common.query_fields import QueryOptions, SortOrder
-from src.common.tree_model import TreeModel
 from src.core.exceptions import errors
 from src.database.db_session import AuditAsyncSession
 
@@ -446,11 +446,16 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
             (total, items) 元组,包含总数和对象列表
         """
         # 构建基础查询
-        statement = select(self.model)
+        stmt = select(self.model)
+
+        for relation in self.model.__relation_info__.values():
+            stmt = stmt.options(
+                selectinload(relation['relation_model'])
+            )
 
         # 添加过滤条件
         if options.filters:
-            statement = statement.where(options.filters.build_query(self.model))
+            stmt = stmt.where(options.filters.build_query(self.model))
 
         # 添加排序
         if options.sort:
@@ -460,20 +465,20 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
                 if sort_field.order == SortOrder.DESC:
                     field = field.desc()
                 order_by_clauses.append(field)
-            statement = statement.order_by(*order_by_clauses)
+            stmt = stmt.order_by(*order_by_clauses)
         else:
             if hasattr(self.model, 'sort_order'):
-                statement = statement.order_by(getattr(self.model, 'sort_order').asc())
+                stmt = stmt.order_by(getattr(self.model, 'sort_order').asc())
             else:
-                statement = statement.order_by(getattr(self.model, 'id').desc())
+                stmt = stmt.order_by(getattr(self.model, 'id').desc())
 
         # 查询总数
-        count_stmt = select(sa.func.count()).select_from(statement.alias())
+        count_stmt = select(sa.func.count()).select_from(stmt.alias())
         total = await session.scalar(count_stmt) or 0
 
         # 添加分页并获取结果
-        statement = statement.offset(options.offset).limit(options.limit)
-        result = await session.execute(statement)
+        stmt = stmt.offset(options.offset).limit(options.limit)
+        result = await session.execute(stmt)
         items = result.scalars().all()
 
         return total, items

@@ -30,6 +30,7 @@ if settings.APP_ENV == 'dev':
         default=None,
         primary_key=True,
         description="主键ID",
+        sa_type=sa.BIGINT,
         sa_column_kwargs={"autoincrement": True}
     )]
 else:

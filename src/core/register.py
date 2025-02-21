@@ -89,6 +89,15 @@ def register_app() -> FastAPI:
         openapi_url=settings.OPENAPI_URL,
         default_response_class=MsgSpecJSONResponse,
         lifespan=register_init,
+        swagger_ui_parameters={
+            "docExpansion": "none",  # 设置为 "none": 完全折叠（推荐）| "list": 显示接口标题 | "full": 完全展开
+            "defaultModelsExpandDepth": 0,  # -1: 完全隐藏Models | 0: 折叠Models | 1: 展开一级 | 2: 展开两级
+            "persistAuthorization": True,  # 保持认证信息
+            "displayRequestDuration": True,  # 显示请求持续时间
+            "filter": True,  # 启用过滤功能
+            "tryItOutEnabled": True,  # 启用Try it out
+            "syntaxHighlight.theme": "monokai",  # 代码高亮主题
+        }
     )
 
     register_middleware(app)
