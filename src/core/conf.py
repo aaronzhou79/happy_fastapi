@@ -48,7 +48,7 @@ class Settings(BaseSettings):
     DATETIME_FORMAT: str = "%Y-%m-%d %H:%M:%S"
 
     # 数据库配置
-    DB_TYPE: Literal['sqlite', 'mysql', 'postgresql', 'dm', 'kingbase', 'oscar', 'gbase'] = "sqlite"
+    DB_TYPE: Literal['sqlite', 'postgresql', 'dm', 'kingbase', 'oscar', 'gbase'] = "sqlite"
     DB_NAME: str = "test.db"
     DB_USER: str = "root"
     DB_PASSWORD: str = "root"
@@ -59,11 +59,6 @@ class Settings(BaseSettings):
     DB_FEATURES: dict[str, dict[str, bool]] = {
         'sqlite': {
             'supports_window_functions': False,
-            'supports_cte': True,
-            'supports_ilike': False
-        },
-        'mysql': {
-            'supports_window_functions': True,
             'supports_cte': True,
             'supports_ilike': False
         },

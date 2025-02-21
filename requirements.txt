@@ -2,6 +2,7 @@ aiocache==0.12.3
 asgi_correlation_id==4.3.4
 asgiref==3.8.1
 asyncpg==0.30.0
+aiomysql
 cryptography==41.0.7
 fast_captcha==0.3.2
 fastapi==0.115.8
@@ -17,8 +18,9 @@ pytest==8.3.4
 pytest_asyncio==0.25.1
 python-dotenv==1.0.1
 python_jose==3.3.0
+python_multipart==0.0.12
 redis==5.0.1
-SQLAlchemy==2.0.30
+SQLAlchemy==2.0.38
 sqlmodel==0.0.22
 starlette==0.45.3
 typing_extensions==4.12.2

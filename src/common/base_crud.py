@@ -335,13 +335,9 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         for i in range(0, len(values), batch_size):
             batch = values[i:i + batch_size]
 
-            # 使用insert().values()进行批量插入
-            if tuple_cols:
-                stmt = insert(self.model).values(batch).returning(*tuple_cols)
-            else:
-                stmt = insert(self.model).values(batch)
+            # 使用RETURNING子句
+            stmt = insert(self.model).values(batch).returning(*tuple_cols)
             result = await session.execute(stmt)
-
             created_objects.extend(result.all())
 
         await session.flush()

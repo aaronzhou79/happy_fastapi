@@ -5,7 +5,9 @@
     "dictionaries": [],
     "words": [
         "fastapi",
+        "gbase",
         "ILIKE",
+        "kingbase",
         "selectinload",
         "sqlalchemy",
         "sqlmodel"

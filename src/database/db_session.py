@@ -65,10 +65,9 @@ async_engine = create_async_engine(
     pool_size=20,
     max_overflow=10,
     connect_args={
-        "command_timeout": 60,
-        "options": "-c timezone=Asia/Shanghai"  # 对于PostgreSQL
-    } if "postgresql" in SQLALCHEMY_DATABASE_URL else {
-        "init_command": "SET time_zone = '+08:00'"  # 对于MySQL
+        "server_settings": {
+            "timezone": "Asia/Shanghai"
+        }
     },
 )
 
