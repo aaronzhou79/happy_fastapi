@@ -1,5 +1,6 @@
 import inspect
 
+from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, AsyncGenerator, Callable, Dict, Generic, Sequence
@@ -134,6 +135,7 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
                             setattr(item, _rel_key, getattr(db_obj, _rel_info["target_column"]))
                             await relation_model.create(session, obj_in=item)
 
+    @abstractmethod
     async def create(
         self,
         session: AuditAsyncSession,
@@ -184,18 +186,21 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         else:
             return db_obj
 
+    @abstractmethod
     async def get_by_id(self, session: AuditAsyncSession, id: Any) -> ModelType | None:
         """获取单个对象"""
         statement = select(self.model).filter_by(id=id)
         result = await session.execute(statement)
         return result.scalar_one_or_none()
 
+    @abstractmethod
     async def get_by_fields(self, session: AuditAsyncSession, **kwargs) -> Sequence[ModelType]:
         """根据字段获取单个对象"""
         statement = select(self.model).filter_by(**kwargs)
         result = await session.execute(statement)
         return result.scalars().all()
 
+    @abstractmethod
     async def get_multi(
         self,
         session: AuditAsyncSession,
@@ -218,6 +223,8 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         result = await session.execute(statement)
         return result.scalars().all()
 
+
+    @abstractmethod
     async def update(self, session: AuditAsyncSession, *, obj_in: Dict | UpdateModelType) -> ModelType:
         """更新对象"""
         if isinstance(obj_in, dict):
@@ -254,6 +261,7 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
 
         return db_obj
 
+    @abstractmethod
     async def delete(self, session: AuditAsyncSession, id: int) -> None:
         """删除对象"""
         obj = await self.get_by_id(session=session, id=id)
@@ -269,6 +277,7 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         # 运行删除后钩子
         await self._run_hooks(HookTypeEnum.after_delete, session=session, db_obj=obj)
 
+    @abstractmethod
     async def delete_by_fields(self, session: AuditAsyncSession, **kwargs) -> bool:
         """根据字段删除对象"""
         statement = select(self.model).filter_by(**kwargs)
@@ -284,6 +293,7 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         else:
             return True
 
+    @abstractmethod
     async def bulk_create(
         self,
         session: AuditAsyncSession,
@@ -343,6 +353,7 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         await session.flush()
         return created_objects
 
+    @abstractmethod
     async def bulk_create_iterator(
         self,
         session: AuditAsyncSession,
@@ -395,6 +406,7 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
                     await session.flush()
                     yield created_batch
 
+    @abstractmethod
     async def bulk_delete(self, session: AuditAsyncSession, ids: Sequence[int]) -> list[int]:
         """批量删除对象
 
@@ -427,6 +439,7 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         await session.flush()
         return failed_ids
 
+    @abstractmethod
     async def get_by_options(
         self,
         session: AuditAsyncSession,
