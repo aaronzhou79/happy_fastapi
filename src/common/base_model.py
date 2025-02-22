@@ -30,8 +30,11 @@ if settings.APP_ENV == 'dev':
         default=None,
         primary_key=True,
         description="主键ID",
-        sa_type=sa.BIGINT,
-        sa_column_kwargs={"autoincrement": True}
+        sa_column_kwargs={
+            "autoincrement": True,
+            "nullable": False,
+            "index": True
+        }
     )]
 else:
     id_pk = Annotated[int, Field(
@@ -40,6 +43,10 @@ else:
         default_factory=id_worker.get_id,
         description='主键ID',
         sa_type=sa.BIGINT,
+        sa_column_kwargs={
+            "nullable": False,
+            "index": True
+        }
     )]
 
 

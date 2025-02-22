@@ -109,10 +109,8 @@ async def init_base(session: AuditAsyncSession) -> None:
         if dept_in.get('children'):
             for child in dept_in['children']:
                 child['parent_id'] = dept.id
-                await create_dept(child)
+                await create_dept(child.copy())
         depts.append(dept)
-
-    print(depts_in)
 
     for dept_in in depts_in:
         await create_dept(dept_in)
