@@ -126,7 +126,7 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
 
         for _relation, _relation_info in self.model.__relation_info__.items():
             relation_model = _relation_info['relation_model']
-            relation_obj = getattr(obj_in, _relation)
+            relation_obj = getattr(obj_in, _relation, None)
             if isinstance(relation_obj, list):
                 for item in relation_obj:
                     for _rel_key, _rel_info in relation_model.__foreign_info__.items():

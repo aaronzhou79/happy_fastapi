@@ -198,10 +198,12 @@ class DatabaseModel(AsyncAttrs, SQLModel):
 
     async def to_api_dict(
         self,
-        max_depth: int = 1
+        max_depth: int = 1,
+        exclude_fields: list[str] | None = None
     ) -> dict[str, Any]:
         """转换为API响应格式的字典"""
-        exclude_fields = ['password']
+        exclude_fields = exclude_fields or []
+        exclude_fields.extend(['password'])
         return await self.to_dict(exclude=exclude_fields, max_depth=max_depth)
 
     def __repr__(self) -> str:

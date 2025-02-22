@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from typing import Annotated, Any, Callable, Dict, Generic, Sequence
 
 from sqlmodel import Field
@@ -41,6 +42,7 @@ class BaseService(Generic[ModelType, CreateModelType, UpdateModelType]):
         """根据字段获取对象"""
         return await self.crud.get_by_fields(session=session, **kwargs)
 
+    @abstractmethod
     async def create(
         self,
         session: AuditAsyncSession,
@@ -49,6 +51,7 @@ class BaseService(Generic[ModelType, CreateModelType, UpdateModelType]):
         """创建对象"""
         return await self.crud.create(session=session, obj_in=obj_in)
 
+    @abstractmethod
     async def bulk_create(
         self,
         session: AuditAsyncSession,
@@ -59,18 +62,38 @@ class BaseService(Generic[ModelType, CreateModelType, UpdateModelType]):
         """批量创建对象"""
         return await self.crud.bulk_create(session=session, objects=objects, batch_size=batch_size)
 
-    async def update(self, session: AuditAsyncSession, obj_in: UpdateModelType) -> ModelType:
+    @abstractmethod
+    async def update(
+        self,
+        session: AuditAsyncSession,
+        obj_in: UpdateModelType
+    ) -> ModelType:
         """更新对象"""
         return await self.crud.update(session=session, obj_in=obj_in)
 
-    async def delete(self, session: AuditAsyncSession, id: int) -> None:
+    @abstractmethod
+    async def delete(
+        self,
+        session: AuditAsyncSession,
+        id: int
+    ) -> None:
         """删除对象"""
         return await self.crud.delete(session=session, id=id)
 
-    async def bulk_delete(self, session: AuditAsyncSession, ids: Sequence[int]) -> list[int]:
+    @abstractmethod
+    async def bulk_delete(
+        self,
+        session: AuditAsyncSession,
+        ids: Sequence[int]
+    ) -> list[int]:
         """批量删除对象"""
         return await self.crud.bulk_delete(session=session, ids=ids)
 
-    async def get_by_options(self, session: AuditAsyncSession, options: QueryOptions) -> tuple[int, Sequence[ModelType]]:
+    @abstractmethod
+    async def get_by_options(
+        self,
+        session: AuditAsyncSession,
+        options: QueryOptions
+    ) -> tuple[int, Sequence[ModelType]]:
         """根据查询选项获取对象列表和总数"""
         return await self.crud.get_by_options(session=session, options=options)
