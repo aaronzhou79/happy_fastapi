@@ -1,11 +1,13 @@
-from typing import TYPE_CHECKING, Any, Literal
+from typing import Literal
 
 import sqlalchemy as sa
 
 from sqlmodel import Field, Relationship, SQLModel
 
 from src.common.base_crud import CRUDBase
-from src.common.base_model import DatabaseModel, DateTimeMixin
+from src.common.base_models.database_mixin import DatabaseModel
+from src.common.base_models.datetime_mixin import DateTimeMixin
+from src.common.base_service import BaseService
 
 
 class SALOrderBase(SQLModel):
@@ -102,3 +104,26 @@ class CrudSALOrderItem(CRUDBase[SALOrderItem, SALOrderItemCreate, SALOrderItemUp
 
 
 crud_sal_order_item = CrudSALOrderItem()
+# =========================服务=========================
+
+
+class SvrSALOrder(BaseService[SALOrder, SALOrderCreate, SALOrderUpdate]):
+    """
+    销售订单服务
+    """
+    def __init__(self):
+        self.crud = crud_sal_order
+
+
+svr_sal_order = SvrSALOrder()
+
+
+class SvrSALOrderItem(BaseService[SALOrderItem, SALOrderItemCreate, SALOrderItemUpdate]):
+    """
+    销售订单服务
+    """
+    def __init__(self):
+        self.crud = crud_sal_order_item
+
+
+svr_sal_order_item = SvrSALOrderItem()

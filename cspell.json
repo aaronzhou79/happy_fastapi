@@ -5,13 +5,16 @@
     "dictionaries": [],
     "words": [
         "aiocache",
+        "asgi",
         "fastapi",
         "gbase",
         "ILIKE",
+        "initdata",
         "kingbase",
         "selectinload",
         "sqlalchemy",
-        "sqlmodel"
+        "sqlmodel",
+        "treemodel"
     ],
     "ignoreWords": [
         "ondelete"

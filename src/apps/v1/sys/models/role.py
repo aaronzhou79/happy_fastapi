@@ -14,7 +14,8 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from src.apps.v1.sys.models.role_permission import RolePermission
 from src.apps.v1.sys.models.user_role import UserRole
-from src.common.base_model import DatabaseModel, DateTimeMixin, id_pk
+from src.common.base_models.database_mixin import DatabaseModel
+from src.common.base_models.datetime_mixin import DateTimeMixin
 from src.common.enums import RoleStatus
 
 if TYPE_CHECKING:

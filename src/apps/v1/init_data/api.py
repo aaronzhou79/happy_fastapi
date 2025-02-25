@@ -9,23 +9,14 @@
 
 from fastapi import APIRouter, Request, Response
 
-from src.apps.v1.init_data.demo import SALOrderCreate, crud_sal_order
 from src.apps.v1.init_data.init_base import init_base
 from src.apps.v1.init_data.init_permission import init_permissions
 from src.apps.v1.sys.crud.role_permission import crud_role_permission
 from src.apps.v1.sys.models.role_permission import RolePermissionCreate
-from src.core.responses.response_schema import ResponseModel, response_base
-from src.database.db_session import CurrentSession, async_session
+from src.core.responses.response_schema import response_base
+from src.database.db_session import async_session
 
-router = APIRouter(tags=['系统管理'])
-
-@router.post('/demo', summary='测试')
-async def demo(db: CurrentSession, order: SALOrderCreate) -> ResponseModel:
-    """测试"""
-    db_obj = await crud_sal_order.create(db, obj_in=order)
-    data = await db_obj.to_dict()
-    return response_base.success(data=data)
-
+router = APIRouter(tags=['系统管理/初始化'])
 
 @router.post('/init_data', summary='初始化数据')
 async def initdata(request: Request) -> Response:

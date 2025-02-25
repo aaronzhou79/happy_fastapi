@@ -1,9 +1,6 @@
-# src/common/data_model/base_model.py
 
 import asyncio
 
-from datetime import datetime
-from functools import lru_cache
 from typing import Annotated, Any, Dict, TypeVar
 
 import sqlalchemy as sa
@@ -14,12 +11,9 @@ from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import RelationshipProperty
 from sqlmodel import Field, SQLModel
 
-from src.common.logger import log
 from src.core.conf import settings
 from src.database.db_session import AuditAsyncSession
-from src.middleware.state_middleware import UserState
 from src.utils.snowflake import id_worker
-from src.utils.timezone import TimeZone
 
 ModelType = TypeVar("ModelType", bound='DatabaseModel')
 CreateModelType = TypeVar("CreateModelType", bound=SQLModel)
@@ -50,37 +44,6 @@ else:
     )]
 
 
-class SoftDeleteMixin(SQLModel):
-    """软删除混入类"""
-    deleted_at: datetime | None = Field(
-        default=None,
-        sa_type=sa.TIMESTAMP(timezone=True),  # type: ignore
-        sa_column_kwargs={"comment": "删除时间"}
-    )
-
-
-class DateTimeMixin(SQLModel):
-    """时间戳混入类"""
-    created_at: datetime = Field(
-        default_factory=TimeZone.now,
-        sa_type=sa.TIMESTAMP(timezone=True),  # type: ignore
-        sa_column_kwargs={"comment": "创建时间"}
-    )
-    updated_at: datetime | None = Field(
-        default=None,
-        sa_type=sa.TIMESTAMP(timezone=True),  # type: ignore
-        sa_column_kwargs={"onupdate": TimeZone.now, "comment": "更新时间"}
-    )
-    created_by: int | None = Field(
-        default_factory=UserState.get_current_user_id,
-        sa_column_kwargs={"comment": "创建者"}
-    )
-    updated_by: int | None = Field(
-        default=None,
-        sa_column_kwargs={"onupdate": UserState.get_current_user_id, "comment": "更新者"}
-    )
-
-
 class DatabaseModel(AsyncAttrs, SQLModel):
     """数据库模型基类"""
     __abstract__ = True
@@ -92,7 +55,7 @@ class DatabaseModel(AsyncAttrs, SQLModel):
         arbitrary_types_allowed = True
 
     # @lru_cache(maxsize=1000)  # 本地缓存
-    async def _get_relationship_info(self):
+    async def _get_relationship_info(self) -> list[RelationshipProperty]:
         """缓存类的关系信息"""
         mapper = inspect(self.__class__)
         if not mapper:
@@ -279,15 +242,13 @@ class DatabaseModel(AsyncAttrs, SQLModel):
 
         relation_info = {}
         for rel_name, rel in mapper.relationships.items():
-            if rel.secondary is not None:
-                break
-
             relation_info[rel_name] = {
                 'relation_type': rel.direction.name,
                 'relation_model': rel.mapper.class_,
                 'relation_table': rel.mapper.class_.__tablename__,
                 'relation_column': rel.key,
                 'remote_column': rel.remote_side,
+                'secondary': rel.secondary,
             }
         return relation_info
 
@@ -348,14 +309,3 @@ class DatabaseModel(AsyncAttrs, SQLModel):
         await db.flush()
 
         return db_obj
-
-
-async def create_table() -> None:
-    """创建表"""
-    try:
-        from src.database.db_session import async_engine
-        async with async_engine.begin() as conn:
-            await conn.run_sync(SQLModel.metadata.create_all)
-    except Exception as e:
-        log.error("❌ 数据库连接失败: {}", e)
-        raise e from e

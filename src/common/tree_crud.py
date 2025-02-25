@@ -6,7 +6,7 @@ from typing import Any, Sequence
 from sqlalchemy import select, text
 
 from src.common.base_crud import CreateModelType, CRUDBase, ModelType, UpdateModelType
-from src.common.tree_model import TreeModel
+from src.common.base_models.treemodel_mixin import TreeModel
 from src.core.conf import settings
 from src.core.exceptions import errors
 from src.database.db_redis import redis_client

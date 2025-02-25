@@ -5,9 +5,10 @@ import sqlalchemy as sa
 
 from sqlmodel import Field, Relationship, SQLModel
 
-from src.apps.v1.sys.models.role import Role, RoleCreate
+from src.apps.v1.sys.models.role import Role
 from src.apps.v1.sys.models.user_role import UserRole
-from src.common.base_model import DatabaseModel, DateTimeMixin, id_pk
+from src.common.base_models.database_mixin import DatabaseModel
+from src.common.base_models.datetime_mixin import DateTimeMixin
 from src.common.enums import UserEmpType, UserStatus
 from src.core.conf import settings
 from src.database.db_session import uuid4_str

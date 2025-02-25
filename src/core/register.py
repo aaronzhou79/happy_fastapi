@@ -18,7 +18,7 @@ from fastapi_limiter import FastAPILimiter
 from starlette.middleware.authentication import AuthenticationMiddleware
 
 from src.apps import router as apps_router
-from src.common.base_model import create_table
+from src.common.base_models import create_table
 from src.common.logger import log, set_customize_logfile, setup_logging
 from src.core.conf import settings
 from src.core.exceptions.exception_handler import register_exception
@@ -70,7 +70,7 @@ async def register_init(app: FastAPI) -> AsyncIterator[None]:
         yield
     except Exception as e:
         log.error("❌ 注册初始化失败: {}", e)
-        log.error("==请检查环境后重试！")
+        log.error("❌ 请检查环境后重试！")
     finally:
         await close_limiter()
         await redis_client.close()

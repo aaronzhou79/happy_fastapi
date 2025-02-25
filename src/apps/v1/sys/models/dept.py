@@ -4,8 +4,8 @@ import sqlalchemy as sa
 
 from sqlmodel import Field, Relationship, SQLModel
 
-from src.common.base_model import DatabaseModel, DateTimeMixin, id_pk
-from src.common.tree_model import TreeModel
+from src.common.base_models.datetime_mixin import DateTimeMixin
+from src.common.base_models.treemodel_mixin import TreeModel
 
 if TYPE_CHECKING:
     from src.apps.v1.sys.models.user import User

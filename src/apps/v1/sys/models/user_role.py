@@ -13,7 +13,8 @@ import sqlalchemy as sa
 from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, SQLModel
 
-from src.common.base_model import DatabaseModel, DateTimeMixin
+from src.common.base_models.database_mixin import DatabaseModel
+from src.common.base_models.datetime_mixin import DateTimeMixin
 
 
 class UserRoleBase(DateTimeMixin, SQLModel):

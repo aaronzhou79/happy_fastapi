@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from datetime import timedelta
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 from fastapi import Depends, Request
 from fastapi.security import HTTPBearer
@@ -9,13 +9,15 @@ from fastapi.security.utils import get_authorization_scheme_param
 from jose import ExpiredSignatureError, JWTError, jwt
 from passlib.context import CryptContext
 
-from src.apps.v1.sys.models.user import UserGetWithRoles
 from src.common.dataclasses import AccessToken, NewToken, RefreshToken
 from src.core.conf import settings
 from src.database.db_redis import redis_client
 from src.utils.timezone import TimeZone
 
 from ..exceptions.errors import AuthorizationError, TokenError
+
+if TYPE_CHECKING:
+    from src.apps.v1.sys.models.user import UserGetWithRoles
 
 pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 
@@ -185,10 +187,11 @@ async def superuser_verify(request: Request) -> bool:
     return superuser
 
 
-async def get_current_user(request: Request) -> UserGetWithRoles:
+async def get_current_user(request: Request) -> "UserGetWithRoles":
     """
     获取当前用户
     """
+    from src.apps.v1.sys.models.user import UserGetWithRoles
     token = request.headers.get('Authorization')
     if not token:
         raise AuthorizationError(msg="用户未登录")
@@ -199,4 +202,4 @@ async def get_current_user(request: Request) -> UserGetWithRoles:
     return UserGetWithRoles(**user)
 
 
-CurrentUser = Annotated[UserGetWithRoles, Depends(get_current_user)]
+CurrentUser = Annotated["UserGetWithRoles", Depends(get_current_user)]

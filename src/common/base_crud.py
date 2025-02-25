@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.orm import selectinload
 from sqlmodel import insert, select
 
-from src.common.base_model import CreateModelType, ModelType, UpdateModelType
+from src.common.base_models.database_mixin import CreateModelType, ModelType, UpdateModelType
 from src.common.enums import HookTypeEnum
 from src.common.query_fields import QueryOptions, SortOrder
 from src.core.exceptions import errors
@@ -457,10 +457,12 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         # 构建基础查询
         stmt = select(self.model)
 
-        for relation in self.model.__relation_info__.values():
-            stmt = stmt.options(
-                selectinload(relation['relation_model'])
-            )
+        if hasattr(self.model, '__relation_info__'):
+            for relation_name, _ in self.model.__relation_info__.items():
+                # 使用 getattr 获取关系属性
+                relation_attr = getattr(self.model, relation_name, None)
+                if relation_attr is not None:
+                    stmt = stmt.options(selectinload(relation_attr))
 
         # 添加过滤条件
         if options.filters:

@@ -4,9 +4,8 @@ import sqlalchemy as sa
 
 from sqlmodel import Field, Relationship, SQLModel
 
-from src.common.base_model import DatabaseModel, id_pk
+from src.common.base_models.treemodel_mixin import TreeModel
 from src.common.enums import PermissionType
-from src.common.tree_model import TreeModel
 
 from .role_permission import RolePermission
 
@@ -57,7 +56,6 @@ class PermissionBase(SQLModel):
 
 class Permission(PermissionBase, TreeModel, table=True):
     """权限表"""
-    id: id_pk   # type: ignore
     roles: list["Role"] = Relationship(
         back_populates="permissions",
         link_model=RolePermission

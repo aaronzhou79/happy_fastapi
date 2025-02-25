@@ -1,8 +1,10 @@
-from typing import Any, Dict, Sequence
+
+
+from typing import Any, Dict, Sequence, override
 
 from sqlmodel import Field, SQLModel, asc, select
 
-from src.common.base_model import CreateModelType, DatabaseModel, ModelType
+from src.common.base_models.database_mixin import CreateModelType, DatabaseModel, ModelType
 from src.database.db_session import AuditAsyncSession
 
 
@@ -89,6 +91,7 @@ class TreeModel(DatabaseModel, SQLModel):
         return result.scalars().all()
 
     @classmethod
+    @override
     async def create(
         cls,
         db: AuditAsyncSession,
@@ -96,17 +99,16 @@ class TreeModel(DatabaseModel, SQLModel):
         """创建对象"""
         exclude_fields = {
             "id", "created_at", "updated_at", "deleted_at",
-            "created_by", "updated_by", "_sa_instance_state"
+            "created_by", "updated_by", "_sa_instance_state",
+            "children"
         }
 
         if isinstance(obj_in, dict):
-            children = obj_in.pop('children', None)
             create_data = {k: v for k, v in obj_in.items() if k not in exclude_fields}
         else:
-            children = getattr(obj_in, 'children', None)
             create_data = obj_in.model_dump(
                 exclude_unset=True,
-                exclude=exclude_fields | {'children'}
+                exclude=exclude_fields
             )
 
         db_obj = cls(**create_data)

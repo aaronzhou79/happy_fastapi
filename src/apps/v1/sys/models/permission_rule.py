@@ -5,7 +5,7 @@ import sqlalchemy as sa
 from pydantic import BaseModel
 from sqlmodel import JSON, Column, Field, SQLModel
 
-from src.common.base_model import DatabaseModel
+from src.common.base_models.database_mixin import DatabaseModel
 from src.common.enums import PermissionRuleStatus
 
 

@@ -6,35 +6,13 @@
 # @File    : state_middleware.py
 # @Software: Cursor
 # @Description: 请求 state 中间件
-
-from contextvars import ContextVar
-
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
+from src.core.user_state import _request_ctx_var
 from src.utils.request_parse import parse_ip_info, parse_user_agent_info
 
-_request_ctx_var: ContextVar[Request] = ContextVar("_request_ctx_var")
-__all__ = ["StateMiddleware", "UserState", "_request_ctx_var"]
-
-
-class UserState():
-    """用户状态"""
-
-    """
-    获取审计用户类
-    """
-    @classmethod
-    def get_current_user_id(cls) -> int:
-        """获取当前请求用户ID"""
-        try:
-            request = _request_ctx_var.get()
-
-            if request and hasattr(request, 'user'):
-                return getattr(request.user, "identity", 0)
-        except Exception as e:
-            print(f"获取当前请求用户ID失败: {str(e)}")
-        return 0
+__all__ = ["StateMiddleware"]
 
 
 class StateMiddleware(BaseHTTPMiddleware):
