@@ -31,7 +31,7 @@ if settings.APP_ENV == 'dev':
         }
     )]
 else:
-    id_pk = Annotated[int, Field(
+    id_pk = Annotated[int | None, Field(
         primary_key=True,
         index=True,
         default_factory=id_worker.get_id,
@@ -47,7 +47,7 @@ else:
 class DatabaseModel(AsyncAttrs, SQLModel):
     """数据库模型基类"""
     __abstract__ = True
-    id: id_pk  # type: ignore
+    id: id_pk = None  # type: ignore
     class Config:
         from_attributes = True
         use_enum_values = True

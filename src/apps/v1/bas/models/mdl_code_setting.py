@@ -9,7 +9,7 @@ from src.common.enums import CodeGenerationRule, CodeResetFrequency, DocumentTyp
 
 class CodeSettingBase(SQLModel):
     """单据编号设置基础模型"""
-    document_type: DocumentType = Field(..., description="单据类型")
+    doc_type: DocumentType = Field(..., unique=True, description="单据类型")
     date_rule: CodeGenerationRule = Field(..., description="日期生成规则")
     reset_frequency: CodeResetFrequency = Field(..., description="序号重置频率")
     prefix: str = Field(..., description="前缀代码")
