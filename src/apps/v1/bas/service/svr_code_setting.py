@@ -1,6 +1,6 @@
 
-from src.apps.v1.bas.crud.code_setting import crud_code_setting
-from src.apps.v1.bas.models.code_setting import CodeSetting, CodeSettingCreate, CodeSettingUpdate
+from src.apps.v1.bas.crud.crud_code_setting import crud_code_setting
+from src.apps.v1.bas.models.mdl_code_setting import CodeSetting, CodeSettingCreate, CodeSettingUpdate
 from src.common.base_service import BaseService
 
 

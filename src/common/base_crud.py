@@ -132,7 +132,7 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
                 for item in relation_obj:
                     for _rel_key, _rel_info in relation_model.__foreign_info__.items():
                         if hasattr(item, _rel_key):
-                            setattr(item, _rel_key, getattr(db_obj, _rel_info["target_column"]))
+                            setattr(item, _rel_key, getattr(db_obj, _rel_info["target_column"]))  # type: ignore
                             await relation_model.create(session, obj_in=item)
 
     @abstractmethod

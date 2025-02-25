@@ -7,7 +7,7 @@
 # @Software: Cursor
 # @Description: 应用注册初始化
 
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager  # noqa: I001
 from typing import AsyncIterator
 
 from asgi_correlation_id import CorrelationIdMiddleware
@@ -31,7 +31,7 @@ from src.middleware.state_middleware import StateMiddleware
 from src.utils.health_check import http_limit_callback
 
 
-async def init_limiter() -> None:
+async def init_limiter() -> None:  # noqa: E302
     """初始化限流器"""
     try:
 

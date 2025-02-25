@@ -423,7 +423,7 @@ class TreeCRUD(CRUDBase):
         node_data = source_node.model_dump(
             exclude={'id', 'parent_id', 'tree_path', 'level'}
         )
-        node_data['parent_id'] = new_parent_id
+        node_data['parent_id'] = new_parent_id  # type: ignore[attr-defined]
 
         # 创建新节点
         new_node = await self.create(session, obj_in=node_data)

@@ -1,5 +1,5 @@
 
-from src.apps.v1.bas.models.code_setting import CodeSetting, CodeSettingCreate, CodeSettingUpdate
+from src.apps.v1.bas.models.mdl_code_setting import CodeSetting, CodeSettingCreate, CodeSettingUpdate
 from src.common.base_crud import CRUDBase
 
 
