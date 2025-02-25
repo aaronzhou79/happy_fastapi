@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from src.apps.v1.sys.service.permission import svr_permission
+from src.apps.v1.sys.service.svr_permission import svr_permission
 from src.database.db_session import AuditAsyncSession
 
 

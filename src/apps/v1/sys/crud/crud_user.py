@@ -8,9 +8,9 @@
 # @Description: 用户相关CRUD类
 from fast_captcha import text_captcha
 
-from src.apps.v1.sys.crud.role import crud_role
-from src.apps.v1.sys.crud.user_role import crud_user_role
-from src.apps.v1.sys.models.user import User, UserCreate, UserUpdate
+from src.apps.v1.sys.crud.crud_role import crud_role
+from src.apps.v1.sys.crud.crud_user_role import crud_user_role
+from src.apps.v1.sys.models.mdl_user import User, UserCreate, UserUpdate
 from src.common.base_crud import CRUDBase
 from src.core.exceptions import errors
 from src.core.security.auth_security import get_hash_password

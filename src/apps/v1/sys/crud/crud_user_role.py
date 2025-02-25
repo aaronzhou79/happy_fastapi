@@ -10,7 +10,7 @@ from typing import Sequence
 from sqlalchemy import delete
 from sqlmodel import select
 
-from src.apps.v1.sys.models.user_role import UserRole, UserRoleCreate, UserRoleUpdate
+from src.apps.v1.sys.models.mdl_user_role import UserRole, UserRoleCreate, UserRoleUpdate
 from src.common.base_crud import CRUDBase
 from src.database.db_session import AuditAsyncSession
 

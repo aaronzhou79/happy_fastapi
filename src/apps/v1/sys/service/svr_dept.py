@@ -8,7 +8,7 @@
 # @Description: 部门服务
 
 
-from src.apps.v1.sys.crud.dept import crud_dept
+from src.apps.v1.sys.crud.crud_dept import crud_dept
 from src.common.tree_service import TreeService
 
 

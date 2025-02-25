@@ -8,7 +8,7 @@ from src.common.base_models.datetime_mixin import DateTimeMixin
 from src.common.base_models.treemodel_mixin import TreeModel
 
 if TYPE_CHECKING:
-    from src.apps.v1.sys.models.user import User
+    from src.apps.v1.sys.models.mdl_user import User
 
 
 class DeptBase(DateTimeMixin, SQLModel):

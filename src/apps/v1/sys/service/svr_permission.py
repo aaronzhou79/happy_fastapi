@@ -14,8 +14,8 @@ from typing import Sequence
 from fastapi import FastAPI
 from sqlalchemy import Column, select
 
-from src.apps.v1.sys.crud.permission import crud_permission
-from src.apps.v1.sys.models.permission import Permission, PermissionCreate
+from src.apps.v1.sys.crud.crud_permission import crud_permission
+from src.apps.v1.sys.models.mdl_permission import Permission, PermissionCreate
 from src.common.enums import PermissionType
 from src.common.logger import log
 from src.common.tree_service import TreeService

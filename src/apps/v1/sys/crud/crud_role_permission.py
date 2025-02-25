@@ -10,7 +10,7 @@ from typing import Sequence
 
 from sqlmodel import select
 
-from src.apps.v1.sys.models.role_permission import RolePermission, RolePermissionCreate, RolePermissionUpdate
+from src.apps.v1.sys.models.mdl_role_permission import RolePermission, RolePermissionCreate, RolePermissionUpdate
 from src.common.base_crud import CRUDBase
 from src.database.db_session import AuditAsyncSession
 

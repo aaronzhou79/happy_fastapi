@@ -6,9 +6,9 @@ from asyncio import create_task
 from fastapi import Request, Response
 from starlette.background import BackgroundTask, BackgroundTasks
 
-from src.apps.v1.sys.crud.user import crud_user
-from src.apps.v1.sys.models.login_log import LoginLogCreate
-from src.apps.v1.sys.models.user import (
+from src.apps.v1.sys.crud.crud_user import crud_user
+from src.apps.v1.sys.models.mdl_login_log import LoginLogCreate
+from src.apps.v1.sys.models.mdl_user import (
     AuthLoginParam,
     GetLoginToken,
     GetNewToken,
@@ -17,7 +17,7 @@ from src.apps.v1.sys.models.user import (
     UserGetWithRoles,
     UserUpdate,
 )
-from src.apps.v1.sys.service.login_log import svr_login_log
+from src.apps.v1.sys.service.svr_login_log import svr_login_log
 from src.common.base_service import BaseService
 from src.common.enums import LoginLogStatus, UserStatus
 from src.core.conf import settings

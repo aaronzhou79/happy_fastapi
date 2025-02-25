@@ -17,7 +17,7 @@ from src.utils.timezone import TimeZone
 from ..exceptions.errors import AuthorizationError, TokenError
 
 if TYPE_CHECKING:
-    from src.apps.v1.sys.models.user import UserGetWithRoles
+    from src.apps.v1.sys.models.mdl_user import UserGetWithRoles
 
 pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 
@@ -191,7 +191,7 @@ async def get_current_user(request: Request) -> "UserGetWithRoles":
     """
     获取当前用户
     """
-    from src.apps.v1.sys.models.user import UserGetWithRoles
+    from src.apps.v1.sys.models.mdl_user import UserGetWithRoles
     token = request.headers.get('Authorization')
     if not token:
         raise AuthorizationError(msg="用户未登录")

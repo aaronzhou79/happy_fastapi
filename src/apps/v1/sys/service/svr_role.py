@@ -8,8 +8,8 @@
 # @Description: 角色服务
 
 
-from src.apps.v1.sys.crud.role import crud_role
-from src.apps.v1.sys.models.role import Role, RoleCreate, RoleUpdate
+from src.apps.v1.sys.crud.crud_role import crud_role
+from src.apps.v1.sys.models.mdl_role import Role, RoleCreate, RoleUpdate
 from src.common.base_service import BaseService
 
 

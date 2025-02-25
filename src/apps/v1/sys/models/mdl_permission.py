@@ -7,10 +7,10 @@ from sqlmodel import Field, Relationship, SQLModel
 from src.common.base_models.treemodel_mixin import TreeModel
 from src.common.enums import PermissionType
 
-from .role_permission import RolePermission
+from .mdl_role_permission import RolePermission
 
 if TYPE_CHECKING:
-    from .role import Role
+    from .mdl_role import Role
 
 
 class PermissionBase(SQLModel):

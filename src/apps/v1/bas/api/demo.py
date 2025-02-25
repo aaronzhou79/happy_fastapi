@@ -1,7 +1,6 @@
 from fastapi import APIRouter
 
 from src.apps.v1.bas.models.demo import SALOrderCreate, crud_sal_order
-from src.common.base_api import BaseAPI
 from src.core.responses.response_schema import ResponseModel, response_base
 from src.database.db_session import CurrentSession
 

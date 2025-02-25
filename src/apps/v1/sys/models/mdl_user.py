@@ -5,8 +5,8 @@ import sqlalchemy as sa
 
 from sqlmodel import Field, Relationship, SQLModel
 
-from src.apps.v1.sys.models.role import Role
-from src.apps.v1.sys.models.user_role import UserRole
+from src.apps.v1.sys.models.mdl_role import Role
+from src.apps.v1.sys.models.mdl_user_role import UserRole
 from src.common.base_models.database_mixin import DatabaseModel
 from src.common.base_models.datetime_mixin import DateTimeMixin
 from src.common.enums import UserEmpType, UserStatus
@@ -14,7 +14,7 @@ from src.core.conf import settings
 from src.database.db_session import uuid4_str
 
 if TYPE_CHECKING:
-    from src.apps.v1.sys.models.dept import Dept
+    from src.apps.v1.sys.models.mdl_dept import Dept
 
 
 class UserBase(DateTimeMixin, SQLModel):

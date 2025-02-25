@@ -10,9 +10,9 @@ from typing import Sequence
 
 from sqlmodel import select
 
-from src.apps.v1.sys.models.permission import Permission, PermissionCreate, PermissionUpdate
-from src.apps.v1.sys.models.role_permission import RolePermission
-from src.apps.v1.sys.models.user_role import UserRole
+from src.apps.v1.sys.models.mdl_permission import Permission, PermissionCreate, PermissionUpdate
+from src.apps.v1.sys.models.mdl_role_permission import RolePermission
+from src.apps.v1.sys.models.mdl_user_role import UserRole
 from src.common.tree_crud import TreeCRUD
 from src.database.db_session import AuditAsyncSession
 

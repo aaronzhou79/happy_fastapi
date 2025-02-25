@@ -6,7 +6,7 @@
 # @File    : login_log.py
 # @Software: Cursor
 # @Description: 登录日志相关CRUD类
-from src.apps.v1.sys.models.login_log import LoginLog, LoginLogCreate, LoginLogUpdate
+from src.apps.v1.sys.models.mdl_login_log import LoginLog, LoginLogCreate, LoginLogUpdate
 from src.common.base_crud import CRUDBase
 
 

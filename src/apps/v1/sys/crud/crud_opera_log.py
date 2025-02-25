@@ -6,7 +6,7 @@
 # @File    : opera_log.py
 # @Software: Cursor
 # @Description: 操作日志相关CRUD类
-from src.apps.v1.sys.models.opera_log import OperaLog, OperaLogCreate, OperaLogUpdate
+from src.apps.v1.sys.models.mdl_opera_log import OperaLog, OperaLogCreate, OperaLogUpdate
 from src.common.base_crud import CRUDBase
 
 

@@ -12,15 +12,15 @@ import sqlalchemy as sa
 
 from sqlmodel import Field, Relationship, SQLModel
 
-from src.apps.v1.sys.models.role_permission import RolePermission
-from src.apps.v1.sys.models.user_role import UserRole
+from src.apps.v1.sys.models.mdl_role_permission import RolePermission
+from src.apps.v1.sys.models.mdl_user_role import UserRole
 from src.common.base_models.database_mixin import DatabaseModel
 from src.common.base_models.datetime_mixin import DateTimeMixin
 from src.common.enums import RoleStatus
 
 if TYPE_CHECKING:
-    from src.apps.v1.sys.models.permission import Permission
-    from src.apps.v1.sys.models.user import User
+    from src.apps.v1.sys.models.mdl_permission import Permission
+    from src.apps.v1.sys.models.mdl_user import User
 
 
 class RoleBase(DateTimeMixin, SQLModel):

@@ -11,8 +11,8 @@ from fastapi import APIRouter, Request, Response
 
 from src.apps.v1.init_data.init_base import init_base
 from src.apps.v1.init_data.init_permission import init_permissions
-from src.apps.v1.sys.crud.role_permission import crud_role_permission
-from src.apps.v1.sys.models.role_permission import RolePermissionCreate
+from src.apps.v1.sys.crud.crud_role_permission import crud_role_permission
+from src.apps.v1.sys.models.mdl_role_permission import RolePermissionCreate
 from src.core.responses.response_schema import response_base
 from src.database.db_session import async_session
 

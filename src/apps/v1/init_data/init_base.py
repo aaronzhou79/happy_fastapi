@@ -6,13 +6,13 @@
 # @File    : init_base.py
 # @Software: Cursor
 # @Description: 数据初始化
-from src.apps.v1.sys.crud.dept import crud_dept
-from src.apps.v1.sys.crud.role import crud_role
-from src.apps.v1.sys.crud.user import crud_user
-from src.apps.v1.sys.crud.user_role import crud_user_role
-from src.apps.v1.sys.models.role import RoleCreate
-from src.apps.v1.sys.models.user import UserCreate
-from src.apps.v1.sys.models.user_role import UserRoleCreate
+from src.apps.v1.sys.crud.crud_dept import crud_dept
+from src.apps.v1.sys.crud.crud_role import crud_role
+from src.apps.v1.sys.crud.crud_user import crud_user
+from src.apps.v1.sys.crud.crud_user_role import crud_user_role
+from src.apps.v1.sys.models.mdl_role import RoleCreate
+from src.apps.v1.sys.models.mdl_user import UserCreate
+from src.apps.v1.sys.models.mdl_user_role import UserRoleCreate
 from src.common.enums import RoleStatus, UserEmpType
 from src.database.db_session import AuditAsyncSession, uuid4_str
 

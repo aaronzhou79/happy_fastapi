@@ -6,7 +6,7 @@
 # @File    : dept.py
 # @Software: Cursor
 # @Description: 部门相关CRUD类
-from src.apps.v1.sys.models.dept import Dept, DeptCreate, DeptUpdate
+from src.apps.v1.sys.models.mdl_dept import Dept, DeptCreate, DeptUpdate
 from src.common.tree_crud import TreeCRUD
 
 
