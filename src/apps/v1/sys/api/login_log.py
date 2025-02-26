@@ -1,5 +1,5 @@
-from src.apps.v1.sys.models.login_log import LoginLog, LoginLogCreate
-from src.apps.v1.sys.service.login_log import svr_login_log
+from src.apps.v1.sys.models.mdl_login_log import LoginLog, LoginLogCreate
+from src.apps.v1.sys.service.svr_login_log import svr_login_log
 from src.common.base_api import BaseAPI
 
 login_log_api = BaseAPI(

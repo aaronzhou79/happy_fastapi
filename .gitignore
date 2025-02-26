@@ -49,3 +49,6 @@ log/*
 # FastAPI
 *.env
 openapi.json
+
+# Data
+data/

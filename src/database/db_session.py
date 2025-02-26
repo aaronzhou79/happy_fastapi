@@ -64,6 +64,11 @@ async_engine = create_async_engine(
     pool_recycle=3600,
     pool_size=20,
     max_overflow=10,
+    connect_args={
+        "server_settings": {
+            "timezone": "Asia/Shanghai"
+        }
+    },
 )
 
 async_session = async_sessionmaker(

@@ -6,15 +6,15 @@
 # @File    : svr_user.py
 # @Software: Cursor
 # @Description: 用户服务
-from typing import Sequence
+from typing import Sequence, override
 
-from src.apps.v1.sys.crud.permission import crud_permission
-from src.apps.v1.sys.crud.role import crud_role
-from src.apps.v1.sys.crud.user import crud_user
-from src.apps.v1.sys.crud.user_role import crud_user_role
-from src.apps.v1.sys.models.permission import Permission
-from src.apps.v1.sys.models.user import User, UserCreate, UserUpdate
-from src.apps.v1.sys.models.user_role import UserRoleCreate
+from src.apps.v1.sys.crud.crud_permission import crud_permission
+from src.apps.v1.sys.crud.crud_role import crud_role
+from src.apps.v1.sys.crud.crud_user import crud_user
+from src.apps.v1.sys.crud.crud_user_role import crud_user_role
+from src.apps.v1.sys.models.mdl_permission import Permission
+from src.apps.v1.sys.models.mdl_user import User, UserCreate, UserUpdate
+from src.apps.v1.sys.models.mdl_user_role import UserRoleCreate
 from src.common.base_crud import HookContext
 from src.common.base_service import BaseService
 from src.common.enums import HookTypeEnum

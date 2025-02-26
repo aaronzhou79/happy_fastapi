@@ -3,8 +3,8 @@ from typing import Sequence
 from fastapi import Request
 from jose import jwt
 
-from src.apps.v1.sys.models.user import UserGetWithRoles
-from src.apps.v1.sys.service.permission import svr_permission
+from src.apps.v1.sys.models.mdl_user import UserGetWithRoles
+from src.apps.v1.sys.service.svr_permission import svr_permission
 from src.core.conf import settings
 from src.core.exceptions.errors import AuthorizationError
 from src.core.security import auth_security
@@ -62,7 +62,7 @@ class RequestPermission:
 
 async def get_permission_id(perm: str) -> int | None:
     """根据权限标识获取权限ID"""
-    from src.apps.v1.sys.crud.permission import crud_permission
+    from src.apps.v1.sys.crud.crud_permission import crud_permission
     async with async_audit_session(async_session()) as session:
         permission = await crud_permission.get_by_fields(
             session=session,

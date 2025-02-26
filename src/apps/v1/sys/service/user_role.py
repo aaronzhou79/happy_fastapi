@@ -6,8 +6,8 @@
 # @File    : user_role.py
 # @Software: Cursor
 # @Description: 用户角色服务
-from src.apps.v1.sys.crud.user_role import crud_user_role
-from src.apps.v1.sys.models.user_role import UserRole, UserRoleCreate, UserRoleUpdate
+from src.apps.v1.sys.crud.crud_user_role import crud_user_role
+from src.apps.v1.sys.models.mdl_user_role import UserRole, UserRoleCreate, UserRoleUpdate
 from src.common.base_service import BaseService
 
 

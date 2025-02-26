@@ -1,17 +1,18 @@
 import inspect
 
+from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any, AsyncGenerator, Callable, Dict, Generic, Sequence, TypeVar, Union
+from typing import Any, AsyncGenerator, Callable, Dict, Generic, Sequence
 
 import sqlalchemy as sa
 
-from sqlmodel import SQLModel, insert, select
+from sqlalchemy.orm import selectinload
+from sqlmodel import insert, select
 
-from src.common.base_model import CreateModelType, DatabaseModel, ModelType, UpdateModelType
+from src.common.base_models.database_mixin import CreateModelType, ModelType, UpdateModelType
 from src.common.enums import HookTypeEnum
 from src.common.query_fields import QueryOptions, SortOrder
-from src.common.tree_model import TreeModel
 from src.core.exceptions import errors
 from src.database.db_session import AuditAsyncSession
 
@@ -126,16 +127,32 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
 
         for _relation, _relation_info in self.model.__relation_info__.items():
             relation_model = _relation_info['relation_model']
-            relation_obj = getattr(obj_in, _relation)
+            relation_obj = getattr(obj_in, _relation, None)
             if isinstance(relation_obj, list):
                 for item in relation_obj:
                     for _rel_key, _rel_info in relation_model.__foreign_info__.items():
                         if hasattr(item, _rel_key):
-                            setattr(item, _rel_key, getattr(db_obj, _rel_info["target_column"]))
+                            setattr(item, _rel_key, getattr(db_obj, _rel_info["target_column"]))  # type: ignore
                             await relation_model.create(session, obj_in=item)
 
-    async def create(self, session: AuditAsyncSession, *, obj_in: Dict | CreateModelType) -> ModelType:
-        """创建对象"""
+    @abstractmethod
+    async def create(
+        self,
+        session: AuditAsyncSession,
+        *, obj_in: Dict | CreateModelType,
+        create_relation: bool = True
+    ) -> ModelType:
+        """
+        创建对象
+
+        Args:
+            session: 数据库会话
+            obj_in: 创建对象的数据
+            create_relation: 是否创建关联对象,默认True
+
+        Returns:
+            创建的对象
+        """
         try:
             # 运行创建前钩子
             hook_results = await self._run_hooks(
@@ -146,18 +163,21 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
 
             # 允许钩子修改创建数据
             if 'modified_data' in hook_results:
-                obj_in = hook_results['modified_data']
+                create_data = hook_results['modified_data']
+            else:
+                create_data = obj_in
 
-            db_obj = await self.model.create(session, obj_in=obj_in)
+            db_obj = await self.model.create(session, obj_in=create_data)
 
-            await self._create_relation(session, db_obj, obj_in)
+            if create_relation:
+                await self._create_relation(session, db_obj, obj_in)
 
             # 运行创建后钩子
             await self._run_hooks(
                 HookTypeEnum.after_create,
                 session=session,
                 db_obj=db_obj,
-                obj_in=obj_in
+                obj_in=create_data
             )
 
             await session.flush()
@@ -166,18 +186,21 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         else:
             return db_obj
 
+    @abstractmethod
     async def get_by_id(self, session: AuditAsyncSession, id: Any) -> ModelType | None:
         """获取单个对象"""
         statement = select(self.model).filter_by(id=id)
         result = await session.execute(statement)
         return result.scalar_one_or_none()
 
+    @abstractmethod
     async def get_by_fields(self, session: AuditAsyncSession, **kwargs) -> Sequence[ModelType]:
         """根据字段获取单个对象"""
         statement = select(self.model).filter_by(**kwargs)
         result = await session.execute(statement)
         return result.scalars().all()
 
+    @abstractmethod
     async def get_multi(
         self,
         session: AuditAsyncSession,
@@ -200,6 +223,8 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         result = await session.execute(statement)
         return result.scalars().all()
 
+
+    @abstractmethod
     async def update(self, session: AuditAsyncSession, *, obj_in: Dict | UpdateModelType) -> ModelType:
         """更新对象"""
         if isinstance(obj_in, dict):
@@ -236,6 +261,7 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
 
         return db_obj
 
+    @abstractmethod
     async def delete(self, session: AuditAsyncSession, id: int) -> None:
         """删除对象"""
         obj = await self.get_by_id(session=session, id=id)
@@ -251,6 +277,7 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         # 运行删除后钩子
         await self._run_hooks(HookTypeEnum.after_delete, session=session, db_obj=obj)
 
+    @abstractmethod
     async def delete_by_fields(self, session: AuditAsyncSession, **kwargs) -> bool:
         """根据字段删除对象"""
         statement = select(self.model).filter_by(**kwargs)
@@ -266,6 +293,7 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         else:
             return True
 
+    @abstractmethod
     async def bulk_create(
         self,
         session: AuditAsyncSession,
@@ -317,18 +345,15 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         for i in range(0, len(values), batch_size):
             batch = values[i:i + batch_size]
 
-            # 使用insert().values()进行批量插入
-            if tuple_cols:
-                stmt = insert(self.model).values(batch).returning(*tuple_cols)
-            else:
-                stmt = insert(self.model).values(batch)
+            # 使用RETURNING子句
+            stmt = insert(self.model).values(batch).returning(*tuple_cols)
             result = await session.execute(stmt)
-
             created_objects.extend(result.all())
 
         await session.flush()
         return created_objects
 
+    @abstractmethod
     async def bulk_create_iterator(
         self,
         session: AuditAsyncSession,
@@ -381,6 +406,7 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
                     await session.flush()
                     yield created_batch
 
+    @abstractmethod
     async def bulk_delete(self, session: AuditAsyncSession, ids: Sequence[int]) -> list[int]:
         """批量删除对象
 
@@ -413,6 +439,7 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         await session.flush()
         return failed_ids
 
+    @abstractmethod
     async def get_by_options(
         self,
         session: AuditAsyncSession,
@@ -428,11 +455,18 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
             (total, items) 元组,包含总数和对象列表
         """
         # 构建基础查询
-        statement = select(self.model)
+        stmt = select(self.model)
+
+        if hasattr(self.model, '__relation_info__'):
+            for relation_name, _ in self.model.__relation_info__.items():
+                # 使用 getattr 获取关系属性
+                relation_attr = getattr(self.model, relation_name, None)
+                if relation_attr is not None:
+                    stmt = stmt.options(selectinload(relation_attr))
 
         # 添加过滤条件
         if options.filters:
-            statement = statement.where(options.filters.build_query(self.model))
+            stmt = stmt.where(options.filters.build_query(self.model))
 
         # 添加排序
         if options.sort:
@@ -442,20 +476,20 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
                 if sort_field.order == SortOrder.DESC:
                     field = field.desc()
                 order_by_clauses.append(field)
-            statement = statement.order_by(*order_by_clauses)
+            stmt = stmt.order_by(*order_by_clauses)
         else:
             if hasattr(self.model, 'sort_order'):
-                statement = statement.order_by(getattr(self.model, 'sort_order').asc())
+                stmt = stmt.order_by(getattr(self.model, 'sort_order').asc())
             else:
-                statement = statement.order_by(getattr(self.model, 'id').desc())
+                stmt = stmt.order_by(getattr(self.model, 'id').desc())
 
         # 查询总数
-        count_stmt = select(sa.func.count()).select_from(statement.alias())
+        count_stmt = select(sa.func.count()).select_from(stmt.alias())
         total = await session.scalar(count_stmt) or 0
 
         # 添加分页并获取结果
-        statement = statement.offset(options.offset).limit(options.limit)
-        result = await session.execute(statement)
+        stmt = stmt.offset(options.offset).limit(options.limit)
+        result = await session.execute(stmt)
         items = result.scalars().all()
 
         return total, items

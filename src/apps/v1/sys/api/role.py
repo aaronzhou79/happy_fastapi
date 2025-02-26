@@ -6,8 +6,8 @@
 # @File    : role.py
 # @Software: Cursor
 # @Description: 角色管理API
-from src.apps.v1.sys.models.role import Role, RoleBase, RoleCreate, RoleUpdate
-from src.apps.v1.sys.service.role import svr_role
+from src.apps.v1.sys.models.mdl_role import Role, RoleBase, RoleCreate, RoleUpdate
+from src.apps.v1.sys.service.svr_role import svr_role
 from src.common.base_api import BaseAPI
 
 role_api = BaseAPI(

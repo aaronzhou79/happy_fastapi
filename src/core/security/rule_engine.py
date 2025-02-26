@@ -3,8 +3,8 @@ import ipaddress
 from datetime import datetime
 from typing import Any, Dict, List
 
-from src.apps.v1.sys.crud.permission_rule import crud_permission_rule
-from src.apps.v1.sys.models.permission_rule import Rule, RuleCondition
+from src.apps.v1.sys.crud.crud_permission_rule import crud_permission_rule
+from src.apps.v1.sys.models.mdl_permission_rule import Rule, RuleCondition
 from src.core.conf import settings
 from src.core.exceptions import errors
 from src.database.db_redis import redis_client

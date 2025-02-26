@@ -14,9 +14,9 @@ from fastapi.security.utils import get_authorization_scheme_param
 from starlette.authentication import AuthCredentials, AuthenticationBackend, AuthenticationError, BaseUser
 from starlette.requests import HTTPConnection
 
-from src.apps.v1.sys.crud.user import crud_user
-from src.apps.v1.sys.models.role import Role
-from src.apps.v1.sys.models.user import UserGetWithRoles
+from src.apps.v1.sys.crud.crud_user import crud_user
+from src.apps.v1.sys.models.mdl_role import Role
+from src.apps.v1.sys.models.mdl_user import UserGetWithRoles
 from src.common.logger import log
 from src.core.conf import settings
 from src.core.exceptions.errors import TokenError

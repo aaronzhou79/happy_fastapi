@@ -1,9 +1,9 @@
 from typing import Sequence
 
+from src.common.base_models.treemodel_mixin import TreeModel
 from src.common.base_service import BaseService
 from src.common.enums import HookTypeEnum
 from src.common.tree_crud import TreeCRUD
-from src.common.tree_model import TreeModel
 from src.core.exceptions import errors
 from src.database.db_session import AuditAsyncSession
 

@@ -6,13 +6,13 @@
 # @File    : init_base.py
 # @Software: Cursor
 # @Description: 数据初始化
-from src.apps.v1.sys.crud.dept import crud_dept
-from src.apps.v1.sys.crud.role import crud_role
-from src.apps.v1.sys.crud.user import crud_user
-from src.apps.v1.sys.crud.user_role import crud_user_role
-from src.apps.v1.sys.models.role import RoleCreate
-from src.apps.v1.sys.models.user import UserCreate
-from src.apps.v1.sys.models.user_role import UserRoleCreate
+from src.apps.v1.sys.crud.crud_dept import crud_dept
+from src.apps.v1.sys.crud.crud_role import crud_role
+from src.apps.v1.sys.crud.crud_user import crud_user
+from src.apps.v1.sys.crud.crud_user_role import crud_user_role
+from src.apps.v1.sys.models.mdl_role import RoleCreate
+from src.apps.v1.sys.models.mdl_user import UserCreate
+from src.apps.v1.sys.models.mdl_user_role import UserRoleCreate
 from src.common.enums import RoleStatus, UserEmpType
 from src.database.db_session import AuditAsyncSession, uuid4_str
 
@@ -105,11 +105,11 @@ async def init_base(session: AuditAsyncSession) -> None:
     ]
 
     async def create_dept(dept_in: dict):
-        dept = await crud_dept.create(session, obj_in=dept_in)
+        dept = await crud_dept.create(session, obj_in=dept_in.copy())
         if dept_in.get('children'):
             for child in dept_in['children']:
                 child['parent_id'] = dept.id
-                await create_dept(child)
+                await create_dept(child.copy())
         depts.append(dept)
 
     for dept_in in depts_in:

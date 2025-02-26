@@ -10,8 +10,8 @@ from typing import Annotated
 
 from fastapi import BackgroundTasks, Body, Depends, Request, Response
 
-from src.apps.v1.sys.models.permission import PermissionGet
-from src.apps.v1.sys.models.user import (
+from src.apps.v1.sys.models.mdl_permission import PermissionGet
+from src.apps.v1.sys.models.mdl_user import (
     AuthLoginParam,
     GetLoginToken,
     User,
@@ -19,7 +19,7 @@ from src.apps.v1.sys.models.user import (
     UserGetWithRoles,
     UserUpdate,
 )
-from src.apps.v1.sys.service.auth import svr_auth
+from src.apps.v1.sys.service.svr_auth import svr_auth
 from src.apps.v1.sys.service.user import svr_user
 from src.common.base_api import BaseAPI
 from src.core.responses.response_schema import ResponseModel, response_base

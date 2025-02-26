@@ -96,3 +96,48 @@ class UserStatus(StrEnum):
     ACTIVE = "已激活"
     INACTIVE = "未激活"
     SUSPENDED = "已禁用"
+
+
+class DocumentType(StrEnum):
+    """单据类型"""
+
+    SALE_ORDER = "销售订单"
+    SALE_QUOTATION = "销售报价"
+    SALE_CONTRACT = "销售合同"
+
+    PURCHASE_ORDER = "采购订单"
+    PURCHASE_RETURN = "采购退货"
+    PURCHASE_CONTRACT = "采购合同"
+
+    INBOUND = "入库"
+    OUTBOUND = "出库"
+    ADJUSTMENT = "调拨"
+    RETURN = "退货"
+
+    FIN_RECEIVABLE = "应收账单"
+    FIN_COLLECTION = "收款单"
+    FIN_PAYABLE = "应付账单"
+    FIN_PAYMENT = "付款单"
+
+    FIN_VOUCHER = "财务凭证"
+    FIN_ANALYSIS = "财务分析"
+    FIN_BUDGET = "财务预算"
+    FIN_FORECAST = "财务预测"
+
+    OTHER = "其他"
+
+
+class CodeGenerationRule(StrEnum):
+    """单据编号生成规则"""
+    YYYYMMDD = '年月日'
+    YYYYMM = '年月'
+    YYYY = '年'
+    NONE = '不使用日期'
+
+
+class CodeResetFrequency(StrEnum):
+    """序号重置频率"""
+    DAILY = '每天'
+    MONTHLY = '每月'
+    YEARLY = '每年'
+    NEVER = '从不'

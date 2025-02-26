@@ -7,7 +7,7 @@
 # @Software: Cursor
 # @Description: 应用注册初始化
 
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager  # noqa: I001
 from typing import AsyncIterator
 
 from asgi_correlation_id import CorrelationIdMiddleware
@@ -18,7 +18,7 @@ from fastapi_limiter import FastAPILimiter
 from starlette.middleware.authentication import AuthenticationMiddleware
 
 from src.apps import router as apps_router
-from src.common.base_model import create_table
+from src.common.base_models import create_table
 from src.common.logger import log, set_customize_logfile, setup_logging
 from src.core.conf import settings
 from src.core.exceptions.exception_handler import register_exception
@@ -31,7 +31,7 @@ from src.middleware.state_middleware import StateMiddleware
 from src.utils.health_check import http_limit_callback
 
 
-async def init_limiter() -> None:
+async def init_limiter() -> None:  # noqa: E302
     """初始化限流器"""
     try:
 
@@ -68,6 +68,9 @@ async def register_init(app: FastAPI) -> AsyncIterator[None]:
         await init_limiter()
 
         yield
+    except Exception as e:
+        log.error("❌ 注册初始化失败: {}", e)
+        log.error("❌ 请检查环境后重试！")
     finally:
         await close_limiter()
         await redis_client.close()
@@ -86,6 +89,15 @@ def register_app() -> FastAPI:
         openapi_url=settings.OPENAPI_URL,
         default_response_class=MsgSpecJSONResponse,
         lifespan=register_init,
+        swagger_ui_parameters={
+            "docExpansion": "none",  # 设置为 "none": 完全折叠（推荐）| "list": 显示接口标题 | "full": 完全展开
+            "defaultModelsExpandDepth": 0,  # -1: 完全隐藏Models | 0: 折叠Models | 1: 展开一级 | 2: 展开两级
+            "persistAuthorization": True,  # 保持认证信息
+            "displayRequestDuration": True,  # 显示请求持续时间
+            "filter": True,  # 启用过滤功能
+            "tryItOutEnabled": True,  # 启用Try it out
+            "syntaxHighlight.theme": "monokai",  # 代码高亮主题
+        }
     )
 
     register_middleware(app)

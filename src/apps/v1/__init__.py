@@ -7,14 +7,15 @@
 # @Software: Cursor
 # @Description: apps/v1/ 总路由
 
-from fastapi import APIRouter
+from fastapi import APIRouter  # noqa: I001
 
-from .code_gen.api import router as code_gen_router
 from .init_data.api import router as init_data_router
 from .sys import router as sys_router
+from .bas import router as bas_router
 
 router = APIRouter(prefix="/v1")
 
-router.include_router(code_gen_router)
-router.include_router(init_data_router)
+# router.include_router(code_gen_router)
+router.include_router(bas_router)
 router.include_router(sys_router)
+router.include_router(init_data_router)

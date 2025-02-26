@@ -8,8 +8,8 @@
 # @Description: 权限管理API
 from fastapi import Request
 
-from src.apps.v1.sys.models.permission import Permission, PermissionCreate, PermissionUpdate
-from src.apps.v1.sys.service.permission import svr_permission
+from src.apps.v1.sys.models.mdl_permission import Permission, PermissionCreate, PermissionUpdate
+from src.apps.v1.sys.service.svr_permission import svr_permission
 from src.common.tree_api import TreeAPI
 from src.core.responses.response_schema import ResponseModel, response_base
 from src.database.db_session import async_audit_session, async_session

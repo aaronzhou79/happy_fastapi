@@ -1,5 +1,5 @@
-from src.apps.v1.sys.models.opera_log import OperaLog, OperaLogCreate
-from src.apps.v1.sys.service.opera_log import svr_opera_log
+from src.apps.v1.sys.models.mdl_opera_log import OperaLog, OperaLogCreate
+from src.apps.v1.sys.service.svr_opera_log import svr_opera_log
 from src.common.base_api import BaseAPI
 
 opera_log_api = BaseAPI(

@@ -4,7 +4,7 @@
 
 from fastapi import APIRouter
 
-router = APIRouter(prefix="/healthy")
+router = APIRouter(prefix="/healthy", tags=["健康检查"])
 
 @router.get("/")
 async def healthy() -> dict:
