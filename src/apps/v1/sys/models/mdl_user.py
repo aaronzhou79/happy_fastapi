@@ -12,9 +12,12 @@ from src.common.base_models.datetime_mixin import DateTimeMixin
 from src.common.enums import UserEmpType, UserStatus
 from src.core.conf import settings
 from src.database.db_session import uuid4_str
+from src.apps.v1.sys.models.mdl_factory import Factory
+from src.apps.v1.sys.models.mdl_factory_user import FactoryUser
 
 if TYPE_CHECKING:
     from src.apps.v1.sys.models.mdl_dept import Dept
+
 
 
 class UserBase(DateTimeMixin, SQLModel):
@@ -76,6 +79,8 @@ class User(UserBase, DatabaseModel, table=True):
             "cascade": "save-update"
         }
     )
+
+    factorys: list['Factory'] = Relationship(back_populates="users", link_model=FactoryUser)
 
 
 class UserCreate(UserBase):
