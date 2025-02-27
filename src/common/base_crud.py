@@ -13,6 +13,7 @@ from sqlmodel import insert, select
 from src.common.base_models.database_mixin import CreateModelType, ModelType, UpdateModelType
 from src.common.enums import HookTypeEnum
 from src.common.query_fields import QueryOptions, SortOrder
+from src.core.context import get_tenant_id
 from src.core.exceptions import errors
 from src.database.db_session import AuditAsyncSession
 
@@ -190,6 +191,9 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
     async def get_by_id(self, session: AuditAsyncSession, id: Any) -> ModelType | None:
         """获取单个对象"""
         statement = select(self.model).filter_by(id=id)
+        if hasattr(self.model, 'tenant_id'):
+            statement = statement.where(getattr(self.model, 'tenant_id') == get_tenant_id())
+
         result = await session.execute(statement)
         return result.scalar_one_or_none()
 
@@ -197,6 +201,8 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
     async def get_by_fields(self, session: AuditAsyncSession, **kwargs) -> Sequence[ModelType]:
         """根据字段获取单个对象"""
         statement = select(self.model).filter_by(**kwargs)
+        if hasattr(self.model, 'tenant_id'):
+            statement = statement.where(getattr(self.model, 'tenant_id') == get_tenant_id())
         result = await session.execute(statement)
         return result.scalars().all()
 
@@ -215,6 +221,10 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
             for field, value in filters.items():
                 if hasattr(self.model, field):
                     statement = statement.where(getattr(self.model, field) == value)
+
+        if hasattr(self.model, 'tenant_id'):
+            statement = statement.where(getattr(self.model, 'tenant_id') == get_tenant_id())
+
         if hasattr(self.model, "sort_order"):
             statement = statement.order_by(getattr(self.model, "sort_order").asc())
         else:
@@ -456,6 +466,8 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         """
         # 构建基础查询
         stmt = select(self.model)
+        if hasattr(self.model, 'tenant_id'):
+            stmt = stmt.where(getattr(self.model, 'tenant_id') == get_tenant_id())
 
         if hasattr(self.model, '__relation_info__'):
             for relation_name, _ in self.model.__relation_info__.items():

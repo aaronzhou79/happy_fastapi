@@ -6,6 +6,7 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from src.common.base_models.database_mixin import DatabaseModel
 from src.common.base_models.datetime_mixin import DateTimeMixin
+from src.common.base_models.tenant_mixin import TenantMixin
 
 
 class DemoBase(SQLModel):
@@ -20,7 +21,7 @@ class DemoBase(SQLModel):
     status: str = Field(..., max_length=32, description="状态")
 
 
-class Demo(DemoBase, DateTimeMixin, DatabaseModel, table=True):
+class Demo(DemoBase, TenantMixin, DateTimeMixin, DatabaseModel, table=True):
     """DEMO表"""
     __tablename__: Literal["demo"] = "demo"
 

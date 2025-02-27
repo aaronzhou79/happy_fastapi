@@ -12,6 +12,7 @@ from src.common.base_crud import CreateModelType, ModelType, UpdateModelType
 from src.common.base_service import BaseService
 from src.common.query_fields import QueryOptions
 from src.core.conf import settings
+from src.core.context import get_tenant_id
 from src.core.responses.response_schema import ResponseModel, response_base
 from src.core.security.auth_security import DependsJwtAuth
 from src.core.security.permission import RequestPermission
@@ -228,6 +229,7 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
             plugins=[CacheLogPlugin()],
             key_builder=lambda *args, **kwargs: generate_cache_key(
                 f"{self.cache_prefix}:{self.model.__name__}",
+                f"tenant_id_{get_tenant_id()}",
                 f"id_{kwargs.get('id')}",
                 f"depth_{kwargs.get('max_depth')}"
             ),
