@@ -141,11 +141,3 @@ class CodeResetFrequency(StrEnum):
     MONTHLY = '每月'
     YEARLY = '每年'
     NEVER = '从不'
-
-
-class ProductBomType(StrEnum):
-    """产品Bom类型"""
-    FP = '成品层'
-    SMG = '半成品层'
-    Hollow = '中空层'
-    PVB = '夹胶层'
