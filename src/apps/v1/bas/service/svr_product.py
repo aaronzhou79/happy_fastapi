@@ -13,7 +13,8 @@ from src.apps.v1.bas.crud.crud_product import crud_product
 from src.apps.v1.bas.crud.crud_product_bom import crud_bom
 from src.apps.v1.bas.crud.crud_product_bom_wip import crud_wip
 from src.apps.v1.bas.models.mdl_product import Product, ProductCreate, ProductUpdate
-from src.apps.v1.bas.models.mdl_product_bom import ProductBom
+from src.apps.v1.bas.models.mdl_product_bom import ProductBom, ProductBomCreate
+from src.apps.v1.bas.models.mdl_product_bom_wip import ProductBomWipCreate
 from src.common.base_crud import HookContext
 from src.common.base_service import BaseService
 from src.common.enums import HookTypeEnum
@@ -35,29 +36,6 @@ class SvrProduct(BaseService[Product, ProductCreate, ProductUpdate]):
         self.crud = crud_product
 
         # Register hook
-        self.add_hook(HookTypeEnum.before_create, self._handle_code)
-        self.add_hook(HookTypeEnum.before_update, self._handle_code)
-
-    async def _handle_code(self, context: HookContext) -> HookContext:
-        """编码赋值"""
-        obj_in = context.params['obj_in']
-        session = context.session
-        product_id = 0
-
-        if obj_in.code:
-            pass  # 如果有编号则保持不变
-        else:
-            obj_in.code = "自动生成"
-
-        if hasattr(obj_in, "id"):
-            product_id = obj_in.id
-
-        product = await crud_product.get_product(session, obj_in.code, product_id)
-
-        if product:
-            raise errors.RequestError(data=f"产品 [{product.name}] 已使用编码 {product.code}")
-
-        return context
 
     async def get_product(self, session: AuditAsyncSession, product_code: str) -> Product:
         """
@@ -67,23 +45,6 @@ class SvrProduct(BaseService[Product, ProductCreate, ProductUpdate]):
         :return: 相同编码的产品
         """
         return await crud_product.get_product(session, product_code)
-
-    async def get_product_boms(self, session: AuditAsyncSession, product_id: int) -> Sequence[ProductBom]:
-        """
-        根据产品Id获取产品Boms
-
-        :param product_id: 产品Id
-        :return: 产品Boms
-        """
-        boms = list(await crud_product.get_product_boms(session, product_id))
-        wips = list(await crud_product.get_product_wips(session, product_id))
-
-        for bom in boms:
-            for wip in wips:
-                if bom.id == wip.bom_id:
-                    bom.wips.append(wip)
-
-        return boms
 
     def set_root_bom(self, product: Product, root_bom: ProductBom) -> Product:
         """设置根BOM信息"""
@@ -118,9 +79,9 @@ class SvrProduct(BaseService[Product, ProductCreate, ProductUpdate]):
             product.rm_deep = sum(bom.material_deep for bom in product.boms
                                 if bom.type == BomType.SMG and not bom.composite)
             product.film_deep = sum(bom.material_deep for bom in product.boms
-                                  if bom.type == BomType.JJ)
+                                  if bom.type == BomType.PVB)
             product.al_bar_deep = sum(bom.material_deep for bom in product.boms
-                                    if bom.type == BomType.ZK)
+                                    if bom.type == BomType.Hollow)
             # 获取所有SMG类型的子BOM
             smg_boms = [bom for bom in root_bom.children if bom.type == BomType.SMG]
             # 递归设置片标记（复合玻璃才需要）
@@ -154,7 +115,7 @@ class SvrProduct(BaseService[Product, ProductCreate, ProductUpdate]):
                 wip.bom_id = item.id  # 关联BomID
                 wip.seq_no = wip_seq_no
 
-                product.boms.append(item)
+                product.wips.append(wip)
 
             item.level = bom.level + 1
             item.composite = len(item.children) > 0
@@ -210,9 +171,9 @@ class SvrProduct(BaseService[Product, ProductCreate, ProductUpdate]):
         product.rm_deep = sum(bom.material_deep for bom in product.boms
                             if bom.type == BomType.SMG and not bom.composite)
         product.al_bar_deep = sum(bom.material_deep for bom in product.boms
-                                if bom.type == BomType.ZK)
+                                if bom.type == BomType.Hollow)
         product.film_deep = sum(bom.material_deep for bom in product.boms
-                              if bom.type == BomType.JJ)
+                              if bom.type == BomType.PVB)
 
     def sync_product_name(self, product: Product) -> None:
         """同步计算产品名称"""
@@ -233,7 +194,7 @@ class SvrProduct(BaseService[Product, ProductCreate, ProductUpdate]):
             root_bom.material_code = product.code
         product.name = root_bom.material_name if root_bom else ""
 
-    def validate(self, product: Product) -> None:
+    async def validate(self, session: AuditAsyncSession, product: Product) -> None:
         """验证产品数据"""
         if not product.boms:
             raise errors.RequestError(message="请求参数错误！")
@@ -244,38 +205,61 @@ class SvrProduct(BaseService[Product, ProductCreate, ProductUpdate]):
         if len(product.boms) == 1 and product.composite:
             raise errors.RequestError(message="当前产品BOM不符合复合产品规范！")
 
-    # @override
-    # async def create(self, session: AuditAsyncSession, obj_in: ProductCreate) -> Product:
-    #     """
-    #     自定义新增
+        product_id = 0
 
-    #     :param obj_in: 创建模型（参数名换成其它的，钩子里面也要同步处理，建议就使用该参数名称）
-    #     """
-    #     obj_in.id = id_worker.get_id()
-    #     root_bom = obj_in.boms[0]  # 提取根BOM
-    #     obj_in.boms.clear()
-    #     obj_in.wips.clear()
+        if product.code:
+            pass  # 如果有编号则保持不变
+        else:
+            product.code = "自动生成"
 
-    #     self.set_root_bom(obj_in, root_bom)
-    #     self.validate(obj_in)
+        if hasattr(product, "id"):
+            product_id = product.id
 
-    #     return await self.crud.cust_create(session, obj_in, obj_in.boms, obj_in.wips)
+        product = await crud_product.get_product(session, product.code, product_id)
 
-    # @override
-    # async def update(self, session: AuditAsyncSession, obj_in: ProductUpdate) -> Product:
-    #     """
-    #     自定义修改
+        if product:
+            raise errors.RequestError(data=f"产品 [{product.name}] 已使用编码 {product.code}")
 
-    #     :param obj_in: 创建模型（参数名换成其它的，钩子里面也要同步处理，建议就使用该参数名称）
-    #     """
-    #     root_bom = obj_in.boms[0]  # 提取根BOM
-    #     obj_in.boms.clear()
-    #     obj_in.wips.clear()
+    @override
+    async def create(self, session: AuditAsyncSession, obj_in: ProductCreate) -> Product:
+        """
+        自定义新增
 
-    #     self.set_root_bom(obj_in, root_bom)
-    #     self.validate(obj_in)
+        :param obj_in: 创建模型（参数名换成其它的，钩子里面也要同步处理，建议就使用该参数名称）
+        """
+        obj_in.id = id_worker.get_id()
+        root_bom = obj_in.boms[0]  # 提取根BOM
+        obj_in.boms.clear()
+        obj_in.wips.clear()
 
-    #     return await self.crud.cust_update(session, obj_in, obj_in.boms, obj_in.wips)
+        self.set_root_bom(obj_in, root_bom)
+        await self.validate(session, obj_in)
+
+        # 同步BOM和WIP
+        await crud_bom.sync_product_boms(session, obj_in.id, obj_in.boms)
+        await crud_wip.sync_product_boms_wip(session, obj_in.id, obj_in.wips)
+
+        return await self.crud.cust_create(session, obj_in)
+
+    @override
+    async def update(self, session: AuditAsyncSession, obj_in: ProductUpdate) -> Product:
+        """
+        自定义修改
+
+        :param obj_in: 创建模型（参数名换成其它的，钩子里面也要同步处理，建议就使用该参数名称）
+        """
+        root_bom = obj_in.boms[0]  # 提取根BOM
+        obj_in.boms.clear()
+        obj_in.wips.clear()
+
+        self.set_root_bom(obj_in, root_bom)
+        await self.validate(session, obj_in)
+
+        # 同步BOM和WIP
+        await crud_bom.sync_product_boms(session, obj_in.id, obj_in.boms)
+        await crud_wip.sync_product_boms_wip(session, obj_in.id, obj_in.wips)
+
+        return await self.crud.cust_update(session, obj_in)
 
 
 svr_product = SvrProduct()

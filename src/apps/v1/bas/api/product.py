@@ -47,17 +47,6 @@ product_api = BaseAPI(
 #         data = await svr_product.cust_create(session, product)
 #         return response_base.success(data=data)
 
-@product_api.router.get(
-    "/get_boms",
-    dependencies=[
-        DependsJwtAuth
-    ]
-)
-async def get_boms(session: CurrentSession, product_id: int) -> ResponseModel:
-    """根据产品Id获取Boms"""
-    data = await svr_product.get_product_boms(session, product_id)
-    return response_base.success(data=data)
-
 
 @product_api.router.get(
     "/get_by_code",
@@ -68,4 +57,4 @@ async def get_boms(session: CurrentSession, product_id: int) -> ResponseModel:
 async def get_by_code(session: CurrentSession, code: str) -> ResponseModel:
     """根据产品Code获取Boms"""
     data = await svr_product.get_product(session, code)
-    return response_base.success(data=data.to_tree_dict())
+    return response_base.success(data=data)

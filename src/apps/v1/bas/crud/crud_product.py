@@ -9,11 +9,11 @@
 
 from typing import Sequence
 
-from sqlmodel import delete, select
+from sqlmodel import select
 
 from src.apps.v1.bas.models.mdl_product import Product, ProductCreate, ProductUpdate
-from src.apps.v1.bas.models.mdl_product_bom import ProductBom, ProductBomCreate
-from src.apps.v1.bas.models.mdl_product_bom_wip import ProductBomWip, ProductBomWipCreate
+from src.apps.v1.bas.models.mdl_product_bom import ProductBom
+from src.apps.v1.bas.models.mdl_product_bom_wip import ProductBomWip
 from src.common.base_crud import CRUDBase
 from src.database.db_session import AuditAsyncSession, CurrentSession
 
@@ -44,61 +44,21 @@ class CrudProduct(CRUDBase):
 
         return result.scalars().first()
 
-    async def get_product_boms(self, session: CurrentSession, product_id: int) -> Sequence[ProductBom]:
-        """
-        根据产品编码获取产品boms
-
-        :param product_id: 产品Id
-        :return: 产品Bom集合
-        """
-        statement = select(ProductBom).filter_by(product_id=product_id)
-        result = await session.execute(statement)
-        return result.scalars().all()
-
-    async def get_product_wips(self, session: CurrentSession, product_id: int) -> Sequence[ProductBomWip]:
-        """
-        根据产品编码获取产品wips
-
-        :param product_id: 产品Id
-        :return: 产品Bom集合
-        """
-        statement = select(ProductBomWip).filter_by(product_id=product_id)
-        result = await session.execute(statement)
-        return result.scalars().all()
-
-    async def cust_create(self, session: AuditAsyncSession,
-                          product: ProductCreate,
-                          boms: Sequence[ProductBomCreate],
-                          wips: Sequence[ProductBomWipCreate]) -> Product:
+    async def cust_create(self, session: AuditAsyncSession, product: ProductCreate) -> Product:
         """
         自定义新增
         """
-        obj_in = await Product.create(session, product, True)
+        await self.bulk_create(session=session, objects=[product])
 
-        await ProductBom.list_create(session, boms, True)
+        return product
 
-        await ProductBomWip.list_create(session, wips, True)
-
-        return obj_in
-
-    async def cust_update(self, session: AuditAsyncSession,
-                          product: ProductUpdate,
-                          boms: Sequence[ProductBomCreate],
-                          wips: Sequence[ProductBomWipCreate]) -> Product:
+    async def cust_update(self, session: AuditAsyncSession, product: ProductUpdate) -> Product:
         """
         自定义修改
         """
-        obj_in = await self.update(session=session, obj_in=product)
+        await self.update(session=session, obj_in=product)
 
-        result = delete(ProductBom).where(ProductBom.product_id == product.id)
-        await session.execute(result)
-        await session.flush()
-
-        await ProductBom.list_create(session, boms, True)
-
-        await ProductBomWip.list_create(session, wips, True)
-
-        return obj_in
+        return product
 
 
 crud_product = CrudProduct()

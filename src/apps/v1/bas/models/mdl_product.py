@@ -69,6 +69,14 @@ class ProductCreate(ProductBase):
     boms: list[ProductBomCreate]
     wips: list[ProductBomWipCreate]
 
+    def model_dump(self, **kwargs) -> dict[str, Any]:
+        """自定义序列化方法，排除字段"""
+        exclude = kwargs.get('exclude', set())
+        exclude.add('boms')
+        exclude.add('wips')
+        kwargs['exclude'] = exclude
+        return super().model_dump(**kwargs)
+
 
 class ProductUpdate(ProductBase):
     """产品信息更新模型"""

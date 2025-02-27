@@ -7,7 +7,7 @@
 # @Software: Cursor
 # @Description: 产品Bom模型
 
-from typing import Literal
+from typing import Any, Literal
 
 import sqlalchemy as sa
 
@@ -58,6 +58,14 @@ class ProductBomCreate(ProductBomBase):
     id: int
     wips: list[ProductBomWipCreate]
     children: list["ProductBomCreate"]
+
+    def model_dump(self, **kwargs) -> dict[str, Any]:
+        """自定义序列化方法，排除字段"""
+        exclude = kwargs.get('exclude', set())
+        exclude.add('wips')
+        exclude.add('children')
+        kwargs['exclude'] = exclude
+        return super().model_dump(**kwargs)
 
 
 class ProductBomUpdate(ProductBomBase):
