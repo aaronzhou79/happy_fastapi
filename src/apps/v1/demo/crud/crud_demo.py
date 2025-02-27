@@ -1,37 +1,37 @@
 
 # =========================CRUD 操作=========================
 from src.apps.v1.demo.models.mdl_demo import (
-    SALOrder,
-    SALOrderCreate,
-    SALOrderItem,
-    SALOrderItemCreate,
-    SALOrderItemUpdate,
-    SALOrderUpdate,
+    Demo,
+    DemoCreate,
+    DemoItem,
+    DemoItemCreate,
+    DemoItemUpdate,
+    DemoUpdate,
 )
 from src.common.base_crud import CRUDBase
 
 
-class CrudSALOrder(CRUDBase[SALOrder, SALOrderCreate, SALOrderUpdate]):
-    """销售订单CRUD操作"""
+class CrudDemo(CRUDBase[Demo, DemoCreate, DemoUpdate]):
+    """DEMO CRUD操作"""
     def __init__(self) -> None:
         super().__init__(
-            model=SALOrder,
-            create_model=SALOrderCreate,
-            update_model=SALOrderUpdate,
+            model=Demo,
+            create_model=DemoCreate,
+            update_model=DemoUpdate,
         )
 
 
-crud_sal_order = CrudSALOrder()
+crud_demo = CrudDemo()
 
 
-class CrudSALOrderItem(CRUDBase[SALOrderItem, SALOrderItemCreate, SALOrderItemUpdate]):
-    """销售订单明细CRUD操作"""
+class CrudDemoItem(CRUDBase[DemoItem, DemoItemCreate, DemoItemUpdate]):
+    """DEMO明细CRUD操作"""
     def __init__(self) -> None:
         super().__init__(
-            model=SALOrderItem,
-            create_model=SALOrderItemCreate,
-            update_model=SALOrderItemUpdate,
+            model=DemoItem,
+            create_model=DemoItemCreate,
+            update_model=DemoItemUpdate,
         )
 
 
-crud_sal_order_item = CrudSALOrderItem()
+crud_demo_item = CrudDemoItem()

@@ -8,10 +8,10 @@ from src.common.base_models.database_mixin import DatabaseModel
 from src.common.base_models.datetime_mixin import DateTimeMixin
 
 
-class SALOrderBase(SQLModel):
-    """销售订单基础模型"""
+class DemoBase(SQLModel):
+    """DEMO基础模型"""
     __table_args__ = (
-        sa.Index('idx_sal_order_order_no', 'order_no'),
+        sa.Index('idx_demo_order_no', 'order_no'),
     )
 
     order_no: str = Field(..., max_length=32, unique=True, description="订单编号")
@@ -20,47 +20,47 @@ class SALOrderBase(SQLModel):
     status: str = Field(..., max_length=32, description="状态")
 
 
-class SALOrder(SALOrderBase, DateTimeMixin, DatabaseModel, table=True):
-    """销售订单表"""
-    __tablename__: Literal["sal_order"] = "sal_order"
+class Demo(DemoBase, DateTimeMixin, DatabaseModel, table=True):
+    """DEMO表"""
+    __tablename__: Literal["demo"] = "demo"
 
     # Relationships
-    order_items: list["SALOrderItem"] = Relationship(back_populates="order")
+    demo_items: list["DemoItem"] = Relationship(back_populates="demo")
 
 
-class SALOrderCreate(SALOrderBase):
-    """销售订单创建模型"""
-    order_items: list["SALOrderItemCreate"]
+class DemoCreate(DemoBase):
+    """DEMO创建模型"""
+    demo_items: list["DemoItemCreate"]
 
 
-class SALOrderUpdate(SALOrderCreate):
-    """销售订单更新模型"""
+class DemoUpdate(DemoCreate):
+    """DEMO更新模型"""
     id: int
 
 
-class SALOrderItemBase(SQLModel):
-    """销售订单明细基础模型"""
+class DemoItemBase(SQLModel):
+    """DEMO明细基础模型"""
     __table_args__ = (
-        sa.Index('idx_sal_order_item_order_id', 'order_id'),
+        sa.Index('idx_demo_item_demo_id', 'demo_id'),
     )
 
-    order_id: int = Field(..., foreign_key="sal_order.id", sa_type=sa.BIGINT, description="订单ID")
+    demo_id: int = Field(..., foreign_key="demo.id", sa_type=sa.BIGINT, description="订单ID")
     product_name: str = Field(..., max_length=32, description="商品名称")
     quantity: int = Field(..., description="数量")
     unit_price: float = Field(..., description="单价")
     total_price: float = Field(..., description="总价")
 
 
-class SALOrderItem(SALOrderItemBase, DateTimeMixin, DatabaseModel, table=True):
-    """销售订单明细表"""
-    __tablename__: Literal["sal_order_item"] = "sal_order_item"
+class DemoItem(DemoItemBase, DateTimeMixin, DatabaseModel, table=True):
+    """DEMO明细表"""
+    __tablename__: Literal["demo_item"] = "demo_item"
 
     # Relationships
-    order: SALOrder = Relationship(back_populates="order_items")
+    demo: Demo = Relationship(back_populates="demo_items")
 
     def __repr__(self) -> str:
         attrs = []
-        for field in ["id", "product_name", "order_id"]:
+        for field in ["id", "product_name", "demo_id"]:
             value = getattr(self, field, None)
             if value is not None:
                 attrs.append(f"{field}={value}")
@@ -68,11 +68,11 @@ class SALOrderItem(SALOrderItemBase, DateTimeMixin, DatabaseModel, table=True):
         return f"<{self.__class__.__name__}({', '.join(attrs)})>"
 
 
-class SALOrderItemCreate(SALOrderItemBase):
-    """销售订单明细创建模型"""
+class DemoItemCreate(DemoItemBase):
+    """DEMO明细创建模型"""
 
 
-class SALOrderItemUpdate(SALOrderItemCreate):
-    """销售订单明细更新模型"""
+class DemoItemUpdate(DemoItemCreate):
+    """DEMO明细更新模型"""
     id: int
 

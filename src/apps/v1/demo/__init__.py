@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
-from .api.demo import router as demo_router
+from .api.demo import demo_api
 
-router = APIRouter(prefix="/bas")
+router = APIRouter(prefix="/demo")
 
-router.include_router(demo_router)
+router.include_router(demo_api.router)

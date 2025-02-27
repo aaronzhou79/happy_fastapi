@@ -1,16 +1,18 @@
-from fastapi import APIRouter
 
-from src.apps.v1.demo.models.mdl_demo import SALOrderCreate
-from src.apps.v1.demo.service.svr_demo import svr_sal_order
-from src.core.responses.response_schema import ResponseModel, response_base
-from src.database.db_session import CurrentSession
+from src.apps.v1.demo.models.mdl_demo import Demo, DemoBase, DemoCreate, DemoUpdate
+from src.apps.v1.demo.service.svr_demo import svr_demo
+from src.common.base_api import BaseAPI
 
-router = APIRouter(prefix="/demo", tags=["功能调试"])
-
-@router.post('/demo', summary='测试')
-async def demo(db: CurrentSession, order: SALOrderCreate) -> ResponseModel:
-    """测试"""
-    db_obj = await svr_sal_order.create(db, obj_in=order)
-    data = await db_obj.to_dict()
-    return response_base.success(data=data)
-
+demo_api = BaseAPI(
+    module_name="demo",
+    model=Demo,
+    service=svr_demo,
+    create_schema=DemoCreate,
+    update_schema=DemoUpdate,
+    base_schema=DemoBase,
+    prefix="/demo",
+    gen_bulk_create=True,
+    gen_bulk_delete=True,
+    gen_delete=True,
+    tags=["功能调试"],
+)
