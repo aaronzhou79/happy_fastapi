@@ -9,6 +9,8 @@
 
 from fastapi import APIRouter
 
+from .api.code_setting import code_setting_api
+from .api.code_trace import code_trace_api
 from .api.dept import dept_api
 from .api.login_log import login_log_api
 from .api.opera_log import opera_log_api
@@ -30,3 +32,5 @@ router.include_router(permission_rule_api.router)
 router.include_router(role_permission_api.router)
 router.include_router(opera_log_api.router)
 router.include_router(login_log_api.router)
+router.include_router(code_setting_api.router)
+router.include_router(code_trace_api.router)

@@ -4,10 +4,8 @@ import sqlalchemy as sa
 
 from sqlmodel import Field, Relationship, SQLModel
 
-from src.common.base_crud import CRUDBase
 from src.common.base_models.database_mixin import DatabaseModel
 from src.common.base_models.datetime_mixin import DateTimeMixin
-from src.common.base_service import BaseService
 
 
 class SALOrderBase(SQLModel):
@@ -78,52 +76,3 @@ class SALOrderItemUpdate(SALOrderItemCreate):
     """销售订单明细更新模型"""
     id: int
 
-
-# =========================CRUD 操作=========================
-class CrudSALOrder(CRUDBase[SALOrder, SALOrderCreate, SALOrderUpdate]):
-    """销售订单CRUD操作"""
-    def __init__(self) -> None:
-        super().__init__(
-            model=SALOrder,
-            create_model=SALOrderCreate,
-            update_model=SALOrderUpdate,
-        )
-
-
-crud_sal_order = CrudSALOrder()
-
-
-class CrudSALOrderItem(CRUDBase[SALOrderItem, SALOrderItemCreate, SALOrderItemUpdate]):
-    """销售订单明细CRUD操作"""
-    def __init__(self) -> None:
-        super().__init__(
-            model=SALOrderItem,
-            create_model=SALOrderItemCreate,
-            update_model=SALOrderItemUpdate,
-        )
-
-
-crud_sal_order_item = CrudSALOrderItem()
-# =========================服务=========================
-
-
-class SvrSALOrder(BaseService[SALOrder, SALOrderCreate, SALOrderUpdate]):
-    """
-    销售订单服务
-    """
-    def __init__(self):
-        self.crud = crud_sal_order
-
-
-svr_sal_order = SvrSALOrder()
-
-
-class SvrSALOrderItem(BaseService[SALOrderItem, SALOrderItemCreate, SALOrderItemUpdate]):
-    """
-    销售订单服务
-    """
-    def __init__(self):
-        self.crud = crud_sal_order_item
-
-
-svr_sal_order_item = SvrSALOrderItem()

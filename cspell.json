@@ -11,10 +11,13 @@
         "ILIKE",
         "initdata",
         "kingbase",
+        "passlib",
+        "pydantic",
         "selectinload",
         "sqlalchemy",
         "sqlmodel",
-        "treemodel"
+        "treemodel",
+        "uvicorn"
     ],
     "ignoreWords": [
         "ondelete"

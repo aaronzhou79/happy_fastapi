@@ -14,6 +14,7 @@ from asgi_correlation_id import CorrelationIdMiddleware
 from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.routing import APIRoute
+from fastapi.security import APIKeyHeader
 from fastapi_limiter import FastAPILimiter
 from starlette.middleware.authentication import AuthenticationMiddleware
 
@@ -28,8 +29,8 @@ from src.middleware.jwt_auth_middleware import JwtAuthMiddleware
 from src.middleware.opera_log_middleware import OperaLogMiddleware
 from src.middleware.profiling_middleware import ProfilingMiddleware
 from src.middleware.state_middleware import StateMiddleware
+from src.middleware.tenant_middleware import TenantMiddleware
 from src.utils.health_check import http_limit_callback
-
 
 async def init_limiter() -> None:  # noqa: E302
     """初始化限流器"""
@@ -90,14 +91,14 @@ def register_app() -> FastAPI:
         default_response_class=MsgSpecJSONResponse,
         lifespan=register_init,
         swagger_ui_parameters={
-            "docExpansion": "none",  # 设置为 "none": 完全折叠（推荐）| "list": 显示接口标题 | "full": 完全展开
-            "defaultModelsExpandDepth": 0,  # -1: 完全隐藏Models | 0: 折叠Models | 1: 展开一级 | 2: 展开两级
-            "persistAuthorization": True,  # 保持认证信息
-            "displayRequestDuration": True,  # 显示请求持续时间
-            "filter": True,  # 启用过滤功能
-            "tryItOutEnabled": True,  # 启用Try it out
-            "syntaxHighlight.theme": "monokai",  # 代码高亮主题
-        }
+            "docExpansion": "none",
+            "defaultModelsExpandDepth": 0,
+            "persistAuthorization": True,
+            "displayRequestDuration": True,
+            "filter": True,
+            "tryItOutEnabled": True,
+            "syntaxHighlight.theme": "monokai",
+        },
     )
 
     register_middleware(app)
@@ -136,6 +137,13 @@ def register_middleware(app: FastAPI) -> None:
     """
     # GZip
     app.add_middleware(GZipMiddleware, minimum_size=1000)
+    # Tenant (required)
+    app.add_middleware(
+        TenantMiddleware,
+        tenant_header=settings.TENANT_HEADER,
+        tenant_query_param=settings.TENANT_QUERY_PARAM,
+        default_tenant=settings.DEFAULT_TENANT_ID
+    )
     # State (required)
     app.add_middleware(StateMiddleware)
     # Opera log (required)
