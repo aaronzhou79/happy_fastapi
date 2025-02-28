@@ -12,6 +12,8 @@ from fastapi import APIRouter
 from .api.code_setting import code_setting_api
 from .api.code_trace import code_trace_api
 from .api.dept import dept_api
+from .api.factory import factory_api
+from .api.factory_user import factory_user_api
 from .api.login_log import login_log_api
 from .api.notification import notification_api
 from .api.opera_log import opera_log_api
@@ -22,9 +24,6 @@ from .api.role_permission import role_permission_api
 from .api.tenant import tenant_api
 from .api.user import user_api
 from .api.user_role import user_role_api
-from .api.factory import factory_api
-from .api.factory_user import factory_user_api
-from .api.layout import layout_api
 
 router = APIRouter(prefix="/sys")
 
@@ -43,4 +42,3 @@ router.include_router(code_trace_api.router)
 router.include_router(notification_api.router)
 router.include_router(factory_api.router)
 router.include_router(factory_user_api.router)
-router.include_router(layout_api.router)
