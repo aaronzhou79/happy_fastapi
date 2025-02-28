@@ -19,7 +19,7 @@ from src.core.conf import settings
 from src.database.db_session import uuid4_str
 
 
-class UserBase(DateTimeMixin, SQLModel):
+class UserBase(SQLModel):
     """用户基础模型"""
     __tablename__: Literal["sys_user"] = "sys_user"
 
@@ -54,7 +54,7 @@ class UserBase(DateTimeMixin, SQLModel):
         default_factory=uuid4_str, description="UUID")
 
 
-class User(UserBase, DatabaseModel, table=True):
+class User(UserBase, DateTimeMixin, DatabaseModel, table=True):
     """用户表"""
     __tablename__: Literal["sys_user"] = "sys_user"
     __table_args__ = (

@@ -104,7 +104,7 @@ class OperaLogMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
             code, msg = self.request_exception_handler(request, code, msg)
         except Exception as e:
-            log.error(f'请求异常: {e}')
+            log.error(f'请求异常: {str(getattr(e, 'data', e))}')
             # code 处理包含 SQLAlchemy 和 Pydantic
             code = getattr(e, 'code', None) or code
             msg = getattr(e, 'msg', None) or msg

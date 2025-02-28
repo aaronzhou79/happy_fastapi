@@ -54,7 +54,7 @@ async def get_location_online(ip: str, user_agent: str) -> dict | None:
             if response.status_code == 200:
                 return response.json()
         except Exception as e:
-            log.error(f'在线获取 ip 地址属地失败，错误信息：{e}')
+            log.error(f'在线获取 ip 地址属地失败，错误信息：{str(getattr(e, 'data', e))}')
             return None
         return None
 
@@ -79,7 +79,7 @@ def get_location_offline(ip: str) -> dict | None:
             'city': data[3] if data[3] != '0' else None,
         }
     except Exception as e:
-        log.error(f'离线获取 ip 地址属地失败，错误信息：{e}')
+        log.error(f'离线获取 ip 地址属地失败，错误信息：{str(getattr(e, 'data', e))}')
         return None
 
 

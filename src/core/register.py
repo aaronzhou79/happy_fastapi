@@ -26,6 +26,7 @@ from src.core.exceptions.exception_handler import register_exception
 from src.core.responses.response_schema import MsgSpecJSONResponse
 from src.database.db_redis import redis_client
 from src.middleware.jwt_auth_middleware import JwtAuthMiddleware
+from src.middleware.notification_middleware import NotificationMiddleware
 from src.middleware.opera_log_middleware import OperaLogMiddleware
 from src.middleware.profiling_middleware import ProfilingMiddleware
 from src.middleware.state_middleware import StateMiddleware
@@ -135,6 +136,18 @@ def register_middleware(app: FastAPI) -> None:
     :param app:
     :return:
     """
+    app.add_middleware(
+       NotificationMiddleware,
+       notification_routes={
+           "/user/create": {
+               "method": "POST",
+               "type": "SYSTEM",
+               "title_template": "用户创建通知",
+               "content_template": "新用户已创建",
+               "condition": "success"
+           },
+       }
+   )
     # GZip
     app.add_middleware(GZipMiddleware, minimum_size=1000)
     # Tenant (required)

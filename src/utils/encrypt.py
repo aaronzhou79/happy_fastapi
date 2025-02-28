@@ -101,7 +101,7 @@ class ItsDCipher:
         try:
             ciphertext = serializer.dumps(plaintext)
         except Exception as e:
-            log.error(f'ItsDangerous encrypt failed: {e}')
+            log.error(f'ItsDangerous encrypt failed: {str(getattr(e, 'data', e))}')
             ciphertext = Md5Cipher.encrypt(plaintext)
         return str(ciphertext)
 
@@ -116,7 +116,7 @@ class ItsDCipher:
         try:
             plaintext = serializer.loads(ciphertext)
         except Exception as e:
-            log.error(f'ItsDangerous decrypt failed: {e}')
+            log.error(f'ItsDangerous decrypt failed: {str(getattr(e, 'data', e))}')
             plaintext = ciphertext
         return plaintext
 

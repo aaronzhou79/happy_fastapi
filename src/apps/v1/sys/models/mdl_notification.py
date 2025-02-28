@@ -44,7 +44,7 @@ class NotificationBase(SQLModel):
 
 class Notification(NotificationBase, DateTimeMixin, DatabaseModel, table=True):
     """通知模型"""
-    __tablename__: Literal["notification"] = "notification"
+    __tablename__: Literal["sys_notification"] = "sys_notification"
 
 
 class NotificationCreate(NotificationBase):

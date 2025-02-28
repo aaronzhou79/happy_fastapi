@@ -183,7 +183,7 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
 
             await session.flush()
         except Exception as e:
-            raise errors.RequestError(data=f"创建失败: {e}") from e
+            raise errors.RequestError(data=f"创建失败: {str(getattr(e, 'data', e))}") from e
         else:
             return db_obj
 
@@ -304,7 +304,7 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
             await session.delete(obj)
             await session.flush()
         except Exception as e:
-            raise errors.RequestError(data=f"删除失败: {e}") from e
+            raise errors.RequestError(data=f"删除失败: {str(getattr(e, 'data', e))}") from e
         else:
             return True
 
