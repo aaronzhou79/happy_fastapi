@@ -33,6 +33,16 @@ class FactoryBase(SQLModel):
     standard_money: str = Field(default='RMB', max_length=32, description='本位币')
     address: str | None = Field(default=None, max_length=512, description='工厂地址')
 
+    def __repr__(self) -> str:
+        """返回对象的字符串表示，包含id、工厂名称和别名"""
+        attrs = []
+        for field in ["id", "factory_name", "factory_alias"]:
+            value = getattr(self, field, None)
+            if value is not None:
+                attrs.append(f"{field}={value}")
+
+        return f"<{self.__class__.__name__}({', '.join(attrs)})>"
+
 
 class Factory(FactoryBase, DateTimeMixin, DatabaseModel, table=True):
     """工厂信息表"""
@@ -49,4 +59,9 @@ class FactoryCreate(FactoryBase):
 
 class FactoryUpdate(FactoryBase):
     """工厂信息更新模型"""
+    id: int
+
+
+class FactoryGet(FactoryBase):
+    """工厂信息创建模型"""
     id: int

@@ -5,8 +5,11 @@ import sqlalchemy as sa
 
 from sqlmodel import Field, Relationship, SQLModel
 
+from src.apps.v1.sys.models.mdl_dept import Dept
+from src.apps.v1.sys.models.mdl_factory import Factory, FactoryGet
 from src.apps.v1.sys.models.mdl_factory_user import FactoryUser
 from src.apps.v1.sys.models.mdl_role import Role
+from src.apps.v1.sys.models.mdl_tenant import Tenant, TenantGet
 from src.apps.v1.sys.models.mdl_user_role import UserRole
 from src.apps.v1.sys.models.mdl_user_tenant import UserTenant
 from src.common.base_models.database_mixin import DatabaseModel
@@ -14,10 +17,6 @@ from src.common.base_models.datetime_mixin import DateTimeMixin
 from src.common.enums import UserEmpType, UserStatus
 from src.core.conf import settings
 from src.database.db_session import uuid4_str
-from src.apps.v1.sys.models.mdl_factory import Factory
-from src.apps.v1.sys.models.mdl_tenant import Tenant
-
-from src.apps.v1.sys.models.mdl_dept import Dept
 
 
 class UserBase(DateTimeMixin, SQLModel):
@@ -117,8 +116,8 @@ class UserGetWithRelations(UserBase):
     """用户获取模型"""
     id: int
     roles: list[Role]
-    factories: list[Factory]
-    tenants: list[Tenant]
+    factories: list[FactoryGet]
+    tenants: list[TenantGet]
 
 
 class AuthBase(SQLModel):

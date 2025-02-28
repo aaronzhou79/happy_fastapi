@@ -37,3 +37,8 @@ class TenantCreate(TenantBase):
 class TenantUpdate(TenantBase):
     """账套更新"""
     id: int = Field(..., description="账套ID")
+
+
+class TenantGet(TenantBase):
+    """数据获取模型"""
+    id: int = Field(..., description="账套ID")

@@ -15,7 +15,9 @@ from starlette.authentication import AuthCredentials, AuthenticationBackend, Aut
 from starlette.requests import HTTPConnection
 
 from src.apps.v1.sys.crud.crud_user import crud_user
-from src.apps.v1.sys.models.mdl_role import Role
+from src.apps.v1.sys.models.mdl_factory import FactoryGet
+from src.apps.v1.sys.models.mdl_role import RoleGet
+from src.apps.v1.sys.models.mdl_tenant import TenantGet
 from src.apps.v1.sys.models.mdl_user import UserGetWithRelations
 from src.common.logger import log
 from src.core.conf import settings
@@ -98,7 +100,15 @@ class JwtAuthMiddleware(AuthenticationBackend):
                         # 确保关系对象也被正确转换
                         if 'roles' in user_dict:
                             user_dict['roles'] = [
-                                Role.model_validate(role) for role in user_dict['roles']
+                                RoleGet.model_validate(role) for role in user_dict['roles']
+                            ]
+                        if 'factories' in user_dict:
+                            user_dict['factories'] = [
+                                FactoryGet.model_validate(factory) for factory in user_dict['factories']
+                            ]
+                        if 'tenants' in user_dict:
+                            user_dict['tenants'] = [
+                                TenantGet.model_validate(tenant) for tenant in user_dict['tenants']
                             ]
                         user = UserGetWithRelations.model_validate(user_dict)
                         await redis_client.setex(

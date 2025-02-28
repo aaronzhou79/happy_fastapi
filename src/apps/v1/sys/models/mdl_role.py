@@ -53,3 +53,8 @@ class RoleCreate(RoleBase):
 class RoleUpdate(RoleBase):
     """角色更新模型"""
     id: int
+
+
+class RoleGet(RoleBase):
+    """角色获取模型"""
+    id: int
