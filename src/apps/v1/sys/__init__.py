@@ -22,6 +22,9 @@ from .api.role_permission import role_permission_api
 from .api.tenant import tenant_api
 from .api.user import user_api
 from .api.user_role import user_role_api
+from .api.factory import factory_api
+from .api.factory_user import factory_user_api
+from .api.layout import layout_api
 
 router = APIRouter(prefix="/sys")
 
@@ -38,3 +41,6 @@ router.include_router(tenant_api.router)
 router.include_router(code_setting_api.router)
 router.include_router(code_trace_api.router)
 router.include_router(notification_api.router)
+router.include_router(factory_api.router)
+router.include_router(factory_user_api.router)
+router.include_router(layout_api.router)
