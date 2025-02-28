@@ -227,7 +227,7 @@ class TreeCRUD(CRUDBase):
                 # 使用自定义解析器反序列化
                 return json.loads(cached_data, object_hook=datetime_parser)
             except Exception as e:
-                print(f"反序列化缓存数据失败: {str(e)}")
+                print(f"反序列化缓存数据失败: {str(getattr(e, 'data', e))}")
                 # 发生错误时从数据库重新获取
 
         # 从数据库获取扁平结构
@@ -244,7 +244,7 @@ class TreeCRUD(CRUDBase):
                 ex=settings.CACHE_TREE_EXPIRE_IN_SECONDS
             )
         except Exception as e:
-            print(f"序列化缓存数据失败: {str(e)}")
+            print(f"序列化缓存数据失败: {str(getattr(e, 'data', e))}")
 
         return tree_data
 
@@ -403,7 +403,7 @@ class TreeCRUD(CRUDBase):
                 results.append(node)
             except Exception as e:
                 # 记录错误但继续处理
-                print(f"移动节点 {node_id} 失败: {str(e)}")
+                print(f"移动节点 {node_id} 失败: {str(getattr(e, 'data', e))}")
         return results
 
     async def copy_subtree(

@@ -32,7 +32,7 @@ class RuleEngine:
                 return RuleEngine._evaluate_data_condition(condition, context)
             raise errors.RuleExecutionError(data=f"不支持的条件类型: {condition.type}")  # noqa: TRY301
         except Exception as e:
-            raise errors.RuleExecutionError(data=f"条件执行失败: {str(e)}") from e
+            raise errors.RuleExecutionError(data=f"条件执行失败: {str(getattr(e, 'data', e))}") from e
 
     @staticmethod
     def _evaluate_time_condition(condition: RuleCondition, context: Dict[str, Any]) -> bool:

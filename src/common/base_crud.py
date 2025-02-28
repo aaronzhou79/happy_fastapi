@@ -235,7 +235,12 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
 
 
     @abstractmethod
-    async def update(self, session: AuditAsyncSession, *, obj_in: Dict | UpdateModelType) -> ModelType:
+    async def update(
+        self,
+        session: AuditAsyncSession,
+        *,
+        obj_in: Dict | UpdateModelType,
+    ) -> ModelType:
         """更新对象"""
         if isinstance(obj_in, dict):
             update_data = obj_in

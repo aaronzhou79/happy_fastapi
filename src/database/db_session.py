@@ -34,6 +34,13 @@ elif settings.DB_TYPE == 'gbase':
 else:
     raise ValueError(f"Invalid database type: {settings.DB_TYPE}")
 
+__all__ = [
+    "async_session",
+    "async_audit_session",
+    "AuditAsyncSession",
+    "CurrentSession",
+]
+
 
 class AuditAsyncSession(AsyncSession):
     """扩展AsyncSession以支持审计"""

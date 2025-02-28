@@ -130,7 +130,7 @@ class AuthService(BaseService[User, UserCreate, UserUpdate]):
                     httponly=True,
                 )
             except Exception as e:
-                errors.TokenError(msg=f'set cookie error: {str(e)}')
+                errors.TokenError(msg=f'set cookie error: {str(getattr(e, 'data', e))}')
             await session.refresh(current_user)
             user_dict = await current_user.to_dict(max_depth=1)
             return GetLoginToken(

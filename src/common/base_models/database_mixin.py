@@ -121,7 +121,7 @@ class DatabaseModel(AsyncAttrs, SQLModel):
             try:
                 value = await getattr(self.awaitable_attrs, key)
             except Exception as e:
-                print(f"获取关联对象失败: {self.__class__.__name__}.{key} - {str(e)}")
+                print(f"获取关联对象失败: {self.__class__.__name__}.{key} - {str(getattr(e, 'data', e))}")
                 continue
 
             # 处理关联对象

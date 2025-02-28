@@ -12,6 +12,7 @@
         "initdata",
         "kingbase",
         "lpush",
+        "lrem",
         "passlib",
         "pydantic",
         "selectinload",

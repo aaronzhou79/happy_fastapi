@@ -23,5 +23,5 @@ class UserState():
             if request and hasattr(request, 'user'):
                 return getattr(request.user, "identity", 0)
         except Exception as e:
-            print(f"获取当前请求用户ID失败: {str(e)}")
+            print(f"获取当前请求用户ID失败: {str(getattr(e, 'data', e))}")
         return 0

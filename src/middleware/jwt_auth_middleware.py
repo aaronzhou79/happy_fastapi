@@ -21,6 +21,7 @@ from src.apps.v1.sys.models.mdl_tenant import TenantGet
 from src.apps.v1.sys.models.mdl_user import UserGetWithRelations
 from src.common.logger import log
 from src.core.conf import settings
+from src.core.context import get_user_id, set_user_id
 from src.core.exceptions.errors import TokenError
 from src.core.responses.response_schema import MsgSpecJSONResponse
 from src.core.security import auth_security
@@ -96,6 +97,7 @@ class JwtAuthMiddleware(AuthenticationBackend):
                 async with async_audit_session(async_session(), request=request) as db:
                     current_user = await crud_user.get_by_id(db, id=sub)
                     if current_user:
+                        set_user_id(current_user.id)
                         user_dict = await current_user.to_api_dict()
                         # 确保关系对象也被正确转换
                         if 'roles' in user_dict:
@@ -118,6 +120,7 @@ class JwtAuthMiddleware(AuthenticationBackend):
                         )
             else:
                 user = UserGetWithRelations.model_validate_json(cache_user)
+                set_user_id(user.id)
         except TokenError as exc:
             raise _AuthenticationError(code=exc.code, msg=exc.detail, headers=exc.headers) from exc
         except Exception as e:
