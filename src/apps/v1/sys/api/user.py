@@ -20,7 +20,7 @@ from src.apps.v1.sys.models.mdl_user import (
     UserUpdate,
 )
 from src.apps.v1.sys.service.svr_auth import svr_auth
-from src.apps.v1.sys.service.user import svr_user
+from src.apps.v1.sys.service.svr_user import svr_user
 from src.common.base_api import BaseAPI
 from src.core.responses.response_schema import ResponseModel, response_base
 from src.core.security.auth_security import DependsJwtAuth

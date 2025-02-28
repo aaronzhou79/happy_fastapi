@@ -31,7 +31,7 @@ class Settings(BaseSettings):
 
     # 多账套相关配置
     MULTI_TENANT_ENABLED: bool = True           # 是否启用多账套功能
-    DEFAULT_TENANT_ID: str = "happy_code"       # 默认账套ID
+    DEFAULT_TENANT_ID: int = 0                  # 默认账套ID
     TENANT_HEADER: str = "X-Tenant-ID"          # 账套ID请求头名称
     TENANT_QUERY_PARAM: str = "tenant_id"       # 账套ID查询参数名称
 
