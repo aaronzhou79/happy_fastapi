@@ -40,7 +40,7 @@ class Factory(FactoryBase, DateTimeMixin, DatabaseModel, table=True):
     __tablename__: Literal['sys_factory'] = 'sys_factory'
 
     # Relationships
-    users: list["User"] = Relationship(back_populates="factorys", link_model=FactoryUser)
+    users: list["User"] = Relationship(back_populates="factories", link_model=FactoryUser)
 
 
 class FactoryCreate(FactoryBase):

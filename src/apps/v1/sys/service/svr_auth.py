@@ -14,7 +14,7 @@ from src.apps.v1.sys.models.mdl_user import (
     GetNewToken,
     User,
     UserCreate,
-    UserGetWithRoles,
+    UserGetWithRelations,
     UserUpdate,
 )
 from src.apps.v1.sys.service.svr_login_log import svr_login_log
@@ -136,7 +136,7 @@ class AuthService(BaseService[User, UserCreate, UserUpdate]):
             return GetLoginToken(
                 access_token=access_token.access_token,
                 access_token_expire_time=access_token.access_token_expire_time,
-                user=UserGetWithRoles.model_validate(user_dict),
+                user=UserGetWithRelations.model_validate(user_dict),
             )
 
     @staticmethod

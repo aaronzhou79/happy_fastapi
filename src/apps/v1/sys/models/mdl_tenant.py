@@ -1,9 +1,13 @@
 from enum import StrEnum
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, Relationship, SQLModel
 
+from src.apps.v1.sys.models.mdl_user_tenant import UserTenant
 from src.common.base_models.database_mixin import DatabaseModel
+
+if TYPE_CHECKING:
+    from src.apps.v1.sys.models.mdl_user import User
 
 
 class TenantStatus(StrEnum):
@@ -23,6 +27,7 @@ class TenantBase(SQLModel):
 class Tenant(TenantBase, DatabaseModel, table=True):
     """账套表"""
     __tablename__: Literal["sys_tenant"] = "sys_tenant"
+    users: list['User'] = Relationship(back_populates="tenants", link_model=UserTenant)
 
 
 class TenantCreate(TenantBase):

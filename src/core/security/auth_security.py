@@ -17,7 +17,7 @@ from src.utils.timezone import TimeZone
 from ..exceptions.errors import AuthorizationError, TokenError
 
 if TYPE_CHECKING:
-    from src.apps.v1.sys.models.mdl_user import UserGetWithRoles
+    from src.apps.v1.sys.models.mdl_user import UserGetWithRelations
 
 pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 
@@ -187,11 +187,11 @@ async def superuser_verify(request: Request) -> bool:
     return superuser
 
 
-async def get_current_user(request: Request) -> "UserGetWithRoles":
+async def get_current_user(request: Request) -> "UserGetWithRelations":
     """
     获取当前用户
     """
-    from src.apps.v1.sys.models.mdl_user import UserGetWithRoles
+    from src.apps.v1.sys.models.mdl_user import UserGetWithRelations
     token = request.headers.get('Authorization')
     if not token:
         raise AuthorizationError(msg="用户未登录")
@@ -199,7 +199,7 @@ async def get_current_user(request: Request) -> "UserGetWithRoles":
     user = await redis_client.get(f'{settings.TOKEN_REDIS_PREFIX}:{user_id}:{token}')
     if not user:
         raise AuthorizationError(msg="用户未登录")
-    return UserGetWithRoles(**user)
+    return UserGetWithRelations(**user)
 
 
 CurrentUser = Annotated["UserGetWithRoles", Depends(get_current_user)]

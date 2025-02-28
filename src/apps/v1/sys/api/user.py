@@ -16,7 +16,7 @@ from src.apps.v1.sys.models.mdl_user import (
     GetLoginToken,
     User,
     UserCreateWithRoles,
-    UserGetWithRoles,
+    UserGetWithRelations,
     UserUpdate,
 )
 from src.apps.v1.sys.service.svr_auth import svr_auth
@@ -33,7 +33,7 @@ user_api = BaseAPI(
     service=svr_user,
     create_schema=UserCreateWithRoles,
     update_schema=UserUpdate,
-    base_schema=UserGetWithRoles,
+    base_schema=UserGetWithRelations,
     prefix="/user",
     gen_delete=True,
     tags=["系统管理/用户管理"],

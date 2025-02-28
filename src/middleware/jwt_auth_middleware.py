@@ -16,7 +16,7 @@ from starlette.requests import HTTPConnection
 
 from src.apps.v1.sys.crud.crud_user import crud_user
 from src.apps.v1.sys.models.mdl_role import Role
-from src.apps.v1.sys.models.mdl_user import UserGetWithRoles
+from src.apps.v1.sys.models.mdl_user import UserGetWithRelations
 from src.common.logger import log
 from src.core.conf import settings
 from src.core.exceptions.errors import TokenError
@@ -44,8 +44,8 @@ class _AuthenticationError(AuthenticationError):
 class AuthenticatedUser(BaseUser):
     """认证用户"""
 
-    def __init__(self, user_data: UserGetWithRoles):
-        self.user_data: UserGetWithRoles = user_data
+    def __init__(self, user_data: UserGetWithRelations):
+        self.user_data: UserGetWithRelations = user_data
 
     @property
     def is_authenticated(self) -> bool:
@@ -100,14 +100,14 @@ class JwtAuthMiddleware(AuthenticationBackend):
                             user_dict['roles'] = [
                                 Role.model_validate(role) for role in user_dict['roles']
                             ]
-                        user = UserGetWithRoles.model_validate(user_dict)
+                        user = UserGetWithRelations.model_validate(user_dict)
                         await redis_client.setex(
                             f'{settings.JWT_USER_REDIS_PREFIX}:{sub}',
                             settings.JWT_USER_REDIS_EXPIRE_SECONDS or 60 * 60 * 24 * 30,
                             user.model_dump_json(),
                         )
             else:
-                user = UserGetWithRoles.model_validate_json(cache_user)
+                user = UserGetWithRelations.model_validate_json(cache_user)
         except TokenError as exc:
             raise _AuthenticationError(code=exc.code, msg=exc.detail, headers=exc.headers) from exc
         except Exception as e:

@@ -5,19 +5,20 @@ import sqlalchemy as sa
 
 from sqlmodel import Field, Relationship, SQLModel
 
+from src.apps.v1.sys.models.mdl_factory_user import FactoryUser
 from src.apps.v1.sys.models.mdl_role import Role
 from src.apps.v1.sys.models.mdl_user_role import UserRole
+from src.apps.v1.sys.models.mdl_user_tenant import UserTenant
 from src.common.base_models.database_mixin import DatabaseModel
 from src.common.base_models.datetime_mixin import DateTimeMixin
 from src.common.enums import UserEmpType, UserStatus
 from src.core.conf import settings
 from src.database.db_session import uuid4_str
-from src.apps.v1.sys.models.mdl_factory import Factory
-from src.apps.v1.sys.models.mdl_factory_user import FactoryUser
 
 if TYPE_CHECKING:
     from src.apps.v1.sys.models.mdl_dept import Dept
-
+    from src.apps.v1.sys.models.mdl_factory import Factory
+    from src.apps.v1.sys.models.mdl_tenant import Tenant
 
 
 class UserBase(DateTimeMixin, SQLModel):
@@ -80,7 +81,8 @@ class User(UserBase, DatabaseModel, table=True):
         }
     )
 
-    factorys: list['Factory'] = Relationship(back_populates="users", link_model=FactoryUser)
+    factories: list['Factory'] = Relationship(back_populates="users", link_model=FactoryUser)
+    tenants: list['Tenant'] = Relationship(back_populates="users", link_model=UserTenant)
 
 
 class UserCreate(UserBase):
@@ -112,10 +114,12 @@ class UserCreateWithRoles(UserCreate):
         return super().model_dump(**kwargs)
 
 
-class UserGetWithRoles(UserBase):
+class UserGetWithRelations(UserBase):
     """用户获取模型"""
     id: int
     roles: list[Role]
+    factories: list[Factory]
+    tenants: list[Tenant]
 
 
 class AuthBase(SQLModel):
@@ -157,4 +161,4 @@ class GetLoginToken(AccessTokenBase):
     """
     获取登录令牌
     """
-    user: UserGetWithRoles
+    user: UserGetWithRelations

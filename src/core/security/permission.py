@@ -3,7 +3,7 @@ from typing import Sequence
 from fastapi import Request
 from jose import jwt
 
-from src.apps.v1.sys.models.mdl_user import UserGetWithRoles
+from src.apps.v1.sys.models.mdl_user import UserGetWithRelations
 from src.apps.v1.sys.service.svr_permission import svr_permission
 from src.core.conf import settings
 from src.core.exceptions.errors import AuthorizationError
@@ -22,7 +22,7 @@ class RequestPermission:
 
     async def __call__(self, request: Request):
         """权限验证装饰器"""
-        user = UserGetWithRoles.model_validate(request.user.user_data.model_dump())
+        user = UserGetWithRelations.model_validate(request.user.user_data.model_dump())
 
         # 超级管理员跳过权限验证
         if user.is_superuser:
