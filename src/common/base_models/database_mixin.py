@@ -54,17 +54,6 @@ class DatabaseModel(AsyncAttrs, SQLModel):
         validate_assignment = True
         arbitrary_types_allowed = True
 
-    # @lru_cache(maxsize=1000)  # 本地缓存
-    async def _get_relationship_info(self) -> list[RelationshipProperty]:
-        """缓存类的关系信息"""
-        mapper = inspect(self.__class__)
-        if not mapper:
-            return []
-        return [
-            attr for attr in mapper.attrs
-            if isinstance(attr, RelationshipProperty)
-        ]
-
     async def to_dict(  # noqa: C901
         self,
         *,
@@ -88,7 +77,7 @@ class DatabaseModel(AsyncAttrs, SQLModel):
         Returns:
             dict: 转换后的字典
         """
-        relationships = await self._get_relationship_info()
+        relationships = self.__foreign_info__
         # 初始化已访问集合
         if _visited is None:
             _visited = set()
@@ -213,6 +202,23 @@ class DatabaseModel(AsyncAttrs, SQLModel):
     def __tablename__(self) -> str:
         """表名"""
         return self.__name__.lower()
+
+
+    @declared_attr.directive
+    def __unique_info__(self) -> list[dict]:
+        """获取唯一约束信息"""
+        mapper = inspect(self)
+        if not mapper:
+            return []
+
+        unique_info = []
+        for constraint in mapper.persist_selectable.constraints:
+            if isinstance(constraint, sa.UniqueConstraint):
+                unique_info.append({
+                    'columns': [column.name for column in constraint.columns],
+                })
+        return unique_info
+
 
     @declared_attr.directive
     def __foreign_info__(self) -> dict[str, dict]:

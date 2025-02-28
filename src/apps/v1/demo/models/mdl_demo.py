@@ -43,13 +43,17 @@ class DemoItemBase(SQLModel):
     """DEMO明细基础模型"""
     __table_args__ = (
         sa.Index('idx_demo_item_demo_id', 'demo_id'),
+        sa.UniqueConstraint('product_name', 'soft_delete'),
+        sa.UniqueConstraint('product_code', 'soft_delete'),
     )
 
-    demo_id: int = Field(..., foreign_key="demo.id", sa_type=sa.BIGINT, description="订单ID")
+    demo_id: int = Field(..., foreign_key="demo.id", sa_type=sa.BIGINT, description="主表ID")
     product_name: str = Field(..., max_length=32, description="商品名称")
+    product_code: str = Field(..., max_length=32, description="商品编码")
     quantity: int = Field(..., description="数量")
     unit_price: float = Field(..., description="单价")
     total_price: float = Field(..., description="总价")
+    soft_delete: bool = Field(default=False, description="软删除")
 
 
 class DemoItem(DemoItemBase, DateTimeMixin, DatabaseModel, table=True):
