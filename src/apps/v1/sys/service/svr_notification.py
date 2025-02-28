@@ -9,7 +9,7 @@
 
 
 from src.apps.v1.sys.crud.crud_notification import crud_notification
-from src.apps.v1.sys.models.mdl_notification import Notification, NotificationCreate, NotificationUpdate
+from src.apps.v1.sys.models.mdl_notification import Notification, NotificationCreate, NotificationList, NotificationUpdate
 from src.common.base_crud import HookContext
 from src.common.base_service import BaseService
 from src.common.enums import HookTypeEnum
@@ -49,7 +49,7 @@ class SvrNotification(BaseService[Notification, NotificationCreate, Notification
             )
 
             # 将通知ID添加到用户的通知列表
-            redis_client.lpush(user_notifications_key, db_obj.id)
+            await redis_client.lpush(user_notifications_key, db_obj.id)   # type: ignore
 
             # 设置用户通知列表的过期时间
             await redis_client.expire(
@@ -76,14 +76,17 @@ class SvrNotification(BaseService[Notification, NotificationCreate, Notification
 
     async def get_by_user(
         self,
-        db: AuditAsyncSession,
         user_id: int
-    ) -> list[Notification]:
+    ) -> NotificationList:
         """获取用户通知"""
         user_notifications_key = f"{self.USER_NOTIFICATIONS_KEY}{user_id}"
 
         # 直接使用 execute_command 方法执行 LRANGE 命令
-        notification_ids = await redis_client.execute_command('LRANGE', user_notifications_key, 0, -1) or []
+        # notification_ids = await redis_client.execute_command('LRANGE', user_notifications_key, 0, -1) or []
+        notification_ids = await redis_client.lrange(user_notifications_key, 0, -1)  # type: ignore
+
+        # 获取用户通知列表的总数量
+        total_count = await redis_client.llen(user_notifications_key)  # type: ignore
 
         # 获取通知详情
         notifications = []
@@ -92,7 +95,10 @@ class SvrNotification(BaseService[Notification, NotificationCreate, Notification
             if notification:
                 notifications.append(notification)
 
-        return notifications
+        return NotificationList(
+            total=total_count,
+            items=notifications
+        )
 
 
 svr_notification = SvrNotification()

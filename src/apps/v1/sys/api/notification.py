@@ -38,5 +38,5 @@ async def get_user_notifications(
     db: CurrentSession,
 ) -> ResponseModel:
     """获取用户通知"""
-    data = await svr_notification.get_by_user(db, user_id=user_id)
+    data = await svr_notification.get_by_user(user_id=user_id)
     return response_base.success(data=data)

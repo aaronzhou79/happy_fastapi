@@ -56,3 +56,8 @@ class NotificationUpdate(NotificationBase):
     """更新通知请求模型"""
     id: str = Field(..., description="通知ID")
 
+
+class NotificationList(SQLModel):
+    """通知列表响应模型"""
+    total: int = Field(..., description="总数")
+    items: List[Notification] = Field(default_factory=list, description="通知列表")
