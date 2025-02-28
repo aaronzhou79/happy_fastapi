@@ -14,11 +14,10 @@ from src.common.base_models.datetime_mixin import DateTimeMixin
 from src.common.enums import UserEmpType, UserStatus
 from src.core.conf import settings
 from src.database.db_session import uuid4_str
+from src.apps.v1.sys.models.mdl_factory import Factory
+from src.apps.v1.sys.models.mdl_tenant import Tenant
 
-if TYPE_CHECKING:
-    from src.apps.v1.sys.models.mdl_dept import Dept
-    from src.apps.v1.sys.models.mdl_factory import Factory
-    from src.apps.v1.sys.models.mdl_tenant import Tenant
+from src.apps.v1.sys.models.mdl_dept import Dept
 
 
 class UserBase(DateTimeMixin, SQLModel):
@@ -70,7 +69,7 @@ class User(UserBase, DatabaseModel, table=True):
         default=None, max_length=16, description="盐")
 
     # Relationships
-    dept: "Dept" = Relationship(
+    dept: Dept = Relationship(
         back_populates="users",
     )
     roles: list["Role"] = Relationship(
@@ -81,8 +80,8 @@ class User(UserBase, DatabaseModel, table=True):
         }
     )
 
-    factories: list['Factory'] = Relationship(back_populates="users", link_model=FactoryUser)
-    tenants: list['Tenant'] = Relationship(back_populates="users", link_model=UserTenant)
+    factories: list[Factory] = Relationship(back_populates="users", link_model=FactoryUser)
+    tenants: list[Tenant] = Relationship(back_populates="users", link_model=UserTenant)
 
 
 class UserCreate(UserBase):
