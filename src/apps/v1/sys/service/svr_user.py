@@ -6,7 +6,7 @@
 # @File    : svr_user.py
 # @Software: Cursor
 # @Description: 用户服务
-from typing import Sequence, override
+from typing import Sequence
 
 from src.apps.v1.sys.crud.crud_permission import crud_permission
 from src.apps.v1.sys.crud.crud_role import crud_role

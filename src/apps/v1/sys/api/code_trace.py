@@ -1,4 +1,4 @@
-# src/apps/v1/bas/api/code_trace.py
+# src/apps/v1/sys/api/code_trace.py
 # !/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # @Date    : 2025/02/23
@@ -9,8 +9,8 @@
 
 from fastapi import Query, Request
 
-from src.apps.v1.bas.models.mdl_code_trace import CodeTrace, CodeTraceBase, CodeTraceCreate, CodeTraceUpdate
-from src.apps.v1.bas.service.svr_code_trace import svr_code_trace
+from src.apps.v1.sys.models.mdl_code_trace import CodeTrace, CodeTraceBase, CodeTraceCreate, CodeTraceUpdate
+from src.apps.v1.sys.service.svr_code_trace import svr_code_trace
 from src.common.base_api import BaseAPI
 from src.common.enums import DocumentType
 from src.core.responses.response_schema import ResponseModel, response_base
@@ -18,7 +18,7 @@ from src.core.security.auth_security import DependsJwtAuth
 from src.database.db_session import async_audit_session, async_session
 
 code_trace_api = BaseAPI(
-    module_name="bas",
+    module_name="sys",
     model=CodeTrace,
     service=svr_code_trace,
     create_schema=CodeTraceCreate,
@@ -28,7 +28,7 @@ code_trace_api = BaseAPI(
     gen_delete=False,
     gen_update=False,
     prefix="/code_trace",
-    tags=["基础管理/编码生成"],
+    tags=["系统管理/编码生成"],
 )
 
 @code_trace_api.router.get(

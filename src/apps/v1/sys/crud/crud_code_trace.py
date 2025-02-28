@@ -1,8 +1,8 @@
 
 import sqlalchemy as sa
 
-from src.apps.v1.bas.models.mdl_code_setting import CodeSetting
-from src.apps.v1.bas.models.mdl_code_trace import CodeTrace, CodeTraceCreate, CodeTraceUpdate
+from src.apps.v1.sys.models.mdl_code_setting import CodeSetting
+from src.apps.v1.sys.models.mdl_code_trace import CodeTrace, CodeTraceCreate, CodeTraceUpdate
 from src.common.base_crud import CRUDBase
 from src.common.enums import CodeGenerationRule, CodeResetFrequency, DocumentType
 from src.database.db_session import AuditAsyncSession

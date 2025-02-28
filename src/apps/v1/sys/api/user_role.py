@@ -7,7 +7,7 @@
 # @Software: Cursor
 # @Description: 用户角色管理API
 from src.apps.v1.sys.models.mdl_user_role import UserRole, UserRoleBase, UserRoleCreate, UserRoleUpdate
-from src.apps.v1.sys.service.user_role import svr_user_role
+from src.apps.v1.sys.service.svr_user_role import svr_user_role
 from src.common.base_api import BaseAPI
 
 user_role_api = BaseAPI(
