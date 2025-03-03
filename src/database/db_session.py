@@ -39,6 +39,7 @@ __all__ = [
     "async_audit_session",
     "AuditAsyncSession",
     "CurrentSession",
+    "SQLALCHEMY_DATABASE_URL",
 ]
 
 

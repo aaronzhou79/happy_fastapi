@@ -43,8 +43,8 @@ class DemoItemBase(SQLModel):
     """DEMO明细基础模型"""
     __table_args__ = (
         sa.Index('idx_demo_item_demo_id', 'demo_id'),
-        sa.UniqueConstraint('product_name', 'soft_delete'),
-        sa.UniqueConstraint('product_code', 'soft_delete'),
+        sa.UniqueConstraint('product_name', 'soft_delete', name='uq_demo_item_product_name_soft_delete'),
+        sa.UniqueConstraint('product_code', 'soft_delete', name='uq_demo_item_product_code_soft_delete'),
     )
 
     demo_id: int = Field(..., foreign_key="demo.id", sa_type=sa.BIGINT, description="主表ID")

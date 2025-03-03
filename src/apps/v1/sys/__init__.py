@@ -16,6 +16,7 @@ from .api.factory import factory_api
 from .api.factory_user import factory_user_api
 from .api.login_log import login_log_api
 from .api.notification import notification_api
+from .api.notification_rule import notification_rule_api
 from .api.opera_log import opera_log_api
 from .api.permission import permission_api
 from .api.permission_rule import permission_rule_api
@@ -40,5 +41,6 @@ router.include_router(tenant_api.router)
 router.include_router(code_setting_api.router)
 router.include_router(code_trace_api.router)
 router.include_router(notification_api.router)
+router.include_router(notification_rule_api.router)
 router.include_router(factory_api.router)
 router.include_router(factory_user_api.router)

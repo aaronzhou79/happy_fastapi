@@ -209,6 +209,7 @@ class Settings(BaseSettings):
     IP_LOCATION_REDIS_PREFIX: str | None = f'{REDIS_PREFIX}:ip:location'
     IP_LOCATION_EXPIRE_SECONDS: int | None = 60 * 60 * 24 * 1  # 过期时间，单位：秒
 
+
 @lru_cache
 def get_settings() -> Settings:
     """获取全局配置"""

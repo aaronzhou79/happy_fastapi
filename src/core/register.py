@@ -6,7 +6,6 @@
 # @File    : register.py
 # @Software: Cursor
 # @Description: 应用注册初始化
-
 from contextlib import asynccontextmanager  # noqa: I001
 from typing import AsyncIterator
 
@@ -14,7 +13,6 @@ from asgi_correlation_id import CorrelationIdMiddleware
 from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.routing import APIRoute
-from fastapi.security import APIKeyHeader
 from fastapi_limiter import FastAPILimiter
 from starlette.middleware.authentication import AuthenticationMiddleware
 
@@ -33,7 +31,46 @@ from src.middleware.state_middleware import StateMiddleware
 from src.middleware.tenant_middleware import TenantMiddleware
 from src.utils.health_check import http_limit_callback
 
-async def init_limiter() -> None:  # noqa: E302
+notification_rules_config = {}
+
+
+# 在init_limiter函数后添加新函数
+def init_notification_rules() -> None:
+    """初始化通知路由配置"""
+    global notification_rules_config
+
+    # 使用同步会话
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import Session
+
+    from src.apps.v1.sys.models.mdl_notification_rule import NotificationRule
+    from src.database.db_session import SQLALCHEMY_DATABASE_URL
+    if settings.DB_TYPE == 'sqlite':
+        sync_db_url = SQLALCHEMY_DATABASE_URL.replace('sqlite+aiosqlite:', 'sqlite:')
+    elif settings.DB_TYPE == 'postgresql':
+        sync_db_url = SQLALCHEMY_DATABASE_URL.replace('postgresql+asyncpg:', 'postgresql:')
+    else:
+        raise ValueError(f"不支持的数据库类型: {settings.DB_TYPE}")
+
+    engine = create_engine(sync_db_url)
+
+    with Session(engine) as session:
+        # 同步方式获取规则
+        rules = session.query(NotificationRule).all()
+        notification_rules_config.update({
+            rule.path: {
+                "method": rule.method,
+                "type": rule.type,
+                "title_template": rule.title_template,
+                "content_template": rule.content_template,
+                "condition": rule.condition
+            } for rule in rules
+        })
+
+    NotificationMiddleware.notification_rules = notification_rules_config
+
+
+async def init_limiter() -> None:
     """初始化限流器"""
     try:
 
@@ -68,6 +105,8 @@ async def register_init(app: FastAPI) -> AsyncIterator[None]:
         await create_table()
         # 初始化限流器
         await init_limiter()
+        # 先同步初始化通知规则配置
+        init_notification_rules()
 
         yield
     except Exception as e:
@@ -111,43 +150,15 @@ def register_app() -> FastAPI:
     return app
 
 
-def register_routers(app: FastAPI) -> None:
-    """注册路由"""
-
-    def _generate_operation_id(route: APIRoute) -> str:
-        """生成简化的operation_id
-
-        去掉api/v1前缀,使用更简洁的格式: {module}_{resource}
-        """
-        # 获取路径中最后两段作为资源名
-        path_parts = route.path.strip("/").replace("api/v1/", "").split("/")
-        resource = "_".join(path_parts)
-
-        return f"{resource}"
-
-    app.router.generate_unique_id_function = _generate_operation_id
-    app.include_router(apps_router)
-
-
 def register_middleware(app: FastAPI) -> None:
     """
-    中间件，执行顺序从下往上
+    中间件
 
     :param app:
     :return:
     """
-    app.add_middleware(
-       NotificationMiddleware,
-       notification_routes={
-           "/user/create": {
-               "method": "POST",
-               "type": "SYSTEM",
-               "title_template": "用户创建通知",
-               "content_template": "新用户已创建",
-               "condition": "success"
-           },
-       }
-   )
+    # 初始化通知路由配置
+    app.add_middleware(NotificationMiddleware)
     # GZip
     app.add_middleware(GZipMiddleware, minimum_size=1000)
     # Tenant (required)
@@ -185,6 +196,24 @@ def register_middleware(app: FastAPI) -> None:
             allow_headers=['*'],
             expose_headers=settings.CORS_EXPOSE_HEADERS,
         )
+
+
+def register_routers(app: FastAPI) -> None:
+    """注册路由"""
+
+    def _generate_operation_id(route: APIRoute) -> str:
+        """生成简化的operation_id
+
+        去掉api/v1前缀,使用更简洁的格式: {module}_{resource}
+        """
+        # 获取路径中最后两段作为资源名
+        path_parts = route.path.strip("/").replace("api/v1/", "").split("/")
+        resource = "_".join(path_parts)
+
+        return f"{resource}"
+
+    app.router.generate_unique_id_function = _generate_operation_id
+    app.include_router(apps_router)
 
 
 def register_logger() -> None:
