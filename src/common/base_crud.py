@@ -299,7 +299,7 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         result = await session.execute(statement)
         obj = result.scalars().all()
         if not obj:
-            raise errors.RequestError(data="请求删除的对象不存在！")
+            return False
         try:
             await session.delete(obj)
             await session.flush()

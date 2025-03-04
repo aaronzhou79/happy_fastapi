@@ -1,3 +1,4 @@
+from typing import Sequence
 from src.apps.v1.demo.crud.crud_demo import crud_demo, crud_demo_item
 from src.apps.v1.demo.models.mdl_demo import (
     Demo,
@@ -8,6 +9,8 @@ from src.apps.v1.demo.models.mdl_demo import (
     DemoUpdate,
 )
 from src.common.base_service import BaseService
+from src.common.query_fields import FilterCondition, FilterGroup, QueryOptions
+from src.database.db_session import AuditAsyncSession
 
 
 class SvrDemo(BaseService[Demo, DemoCreate, DemoUpdate]):
@@ -16,6 +19,18 @@ class SvrDemo(BaseService[Demo, DemoCreate, DemoUpdate]):
     """
     def __init__(self):
         self.crud = crud_demo
+
+    async def get_by_custom_options(self, session: AuditAsyncSession, code: str, ignore_id: int) -> tuple[int, Sequence[Demo]]:
+        """根据自定义选项获取对象列表和总数"""
+        options = QueryOptions(
+            filters=FilterGroup(
+                conditions=[
+                    FilterCondition(field="code", op="=", value=code),
+                    FilterCondition(field="id", op="!=", value=ignore_id),
+                ]
+            )
+        )
+        return await self.crud.get_by_options(session, options)
 
 
 svr_demo = SvrDemo()
