@@ -143,9 +143,9 @@ class CodeResetFrequency(StrEnum):
     NEVER = '从不'
 
 
-class ProductBomType(StrEnum):
-    """产品Bom类型"""
-    FP = '成品层'
-    SMG = '半成品层'
-    Hollow = '中空层'
-    PVB = '夹胶层'
+class DataOperationType(StrEnum):
+    """数据操作类型"""
+    INSERT = '新增'
+    UPDATE = '修改'
+    DELETE = '删除'
+    SELECT = '查询'
