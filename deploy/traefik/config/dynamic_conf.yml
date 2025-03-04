@@ -1,0 +1,97 @@
+http:
+  middlewares:
+    # 全局CORS中间件配置
+    cors-headers:
+      headers:
+        accessControlAllowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+        accessControlAllowHeaders:
+          - "*"
+        accessControlAllowOriginList:
+          - "*"
+        accessControlMaxAge: 100
+        addVaryHeader: true
+
+    # API路径前缀剥离中间件 - 注释掉，使用FastAPI的root_path处理
+    # api-strip:
+    #   stripPrefix:
+    #     prefixes:
+    #       - "/api"
+    #     forceSlash: false
+
+    # 请求速率限制中间件
+    rate-limit:
+      rateLimit:
+        average: 100
+        burst: 50
+        period: 1s
+
+    # 请求压缩中间件
+    compress:
+      compress: {}
+
+    # 安全头部中间件
+    secure-headers:
+      headers:
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        contentTypeNosniff: true
+        browserXssFilter: true
+        referrerPolicy: "same-origin"
+        permissionsPolicy: "camera=(), microphone=(), geolocation=(), payment=()"
+        customFrameOptionsValue: "SAMEORIGIN"
+
+  # 全局路由器配置
+  routers:
+    # API路由器
+    api-router:
+      rule: "Host(`api.example.com`) || PathPrefix(`/api`)"
+      service: api-service
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - compress
+        - rate-limit
+        - secure-headers
+        # - api-strip
+
+    # API文档路由器
+    api-docs-router:
+      rule: "PathPrefix(`/api/docs`) || PathPrefix(`/api/redoc`) || PathPrefix(`/api/openapi.json`)"
+      service: api-service
+      entryPoints:
+        - web
+      middlewares:
+        - cors-headers
+        - compress
+
+    # 健康检查路由器
+    health-router:
+      rule: "PathPrefix(`/health`)"
+      service: api-service
+      entryPoints:
+        - web
+
+  # 服务配置
+  services:
+    api-service:
+      loadBalancer:
+        # 添加服务器URL配置
+        servers:
+          - url: "http://fastapi_app:8000"
+        # 添加负载均衡配置
+        sticky:
+          cookie:
+            name: sticky_session
+            secure: true
+            httpOnly: true
+        healthCheck:
+          path: /health
+          interval: "30s"
+          timeout: "10s"
+          followRedirects: true

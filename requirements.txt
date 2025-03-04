@@ -3,6 +3,7 @@ asgi_correlation_id==4.3.4
 asgiref==3.8.1
 asyncpg==0.30.0
 aiomysql
+aiosqlite
 cryptography==41.0.7
 fast_captcha==0.3.2
 fastapi==0.115.8

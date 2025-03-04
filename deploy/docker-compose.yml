@@ -1,25 +1,98 @@
 services:
-  postgres:
-    image: postgres
-    container_name: postgres
-    environment:
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: 123456
-      POSTGRES_DB: happy_code
-      POSTGRESQL_TIMEZONE: Asia/Shanghai
-      TZ: Asia/Shanghai
-      PGTZ: Asia/Shanghai
-    volumes:
-      - ../data/postgres:/var/lib/postgresql/data
-      - ./postgresql.conf:/etc/postgresql/postgresql.conf
+  # Traefik - API网关
+  traefik:
+    image: traefik:latest
+    container_name: traefik
+    command:
+      - "--configfile=/etc/traefik/traefik.yml"
     ports:
-      - "5432:5432"
-    command: postgres -c 'config_file=/etc/postgresql/postgresql.conf'
+      - "80:80"      # HTTP
+      - "443:443"    # HTTPS
+      - "8080:8080"  # Traefik Dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro  # 挂载Docker socket以监控容器
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro  # 挂载主配置文件
+      - ./traefik/config:/etc/traefik/dynamic:ro  # 挂载动态配置目录
+      - ./traefik/certs:/etc/traefik/certs:ro  # 挂载证书目录
+      - ../logs/traefik:/var/log/traefik  # 挂载日志目录
     networks:
       - app-network
     restart: unless-stopped
+    # 添加健康检查
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:8080/api/overview || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # FastAPI应用服务
+  fastapi_app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    environment:
+      - TZ=Asia/Shanghai
+      - ROOT_PATH=/api  # 添加ROOT_PATH环境变量，使FastAPI知道它运行在/api前缀下
+    volumes:
+      - ../logs:/var/log/fastapi_server  # 挂载日志目录
+    expose:
+      - "8000"  # 仅在内部网络暴露端口
+    networks:
+      - app-network
+    # depends_on:
+    #   - postgres
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - "traefik.enable=true"  # 启用Traefik
+      - "traefik.http.routers.api.rule=Host(`api.docker.localhost`) || PathPrefix(`/api`)"  # 域名规则和路径前缀
+      - "traefik.http.routers.api.entrypoints=web"  # 使用web入口点
+      - "traefik.http.services.api.loadbalancer.server.port=8000"  # 后端服务端口
+      # 健康检查配置
+      - "traefik.http.services.api.loadbalancer.healthcheck.path=/health"
+      - "traefik.http.services.api.loadbalancer.healthcheck.interval=30s"
+      - "traefik.http.services.api.loadbalancer.healthcheck.timeout=10s"
+      # 添加负载均衡配置
+      - "traefik.http.services.api.loadbalancer.sticky=true"
+      - "traefik.http.services.api.loadbalancer.sticky.cookie.name=sticky_session"
+      - "traefik.http.services.api.loadbalancer.sticky.cookie.secure=true"
+      - "traefik.http.services.api.loadbalancer.sticky.cookie.httpOnly=true"
+
+  # # PostgreSQL数据库
+  # postgres:
+  #   image: postgres
+  #   container_name: postgres
+  #   environment:
+  #     POSTGRES_USER: root
+  #     POSTGRES_PASSWORD: 123456
+  #     POSTGRES_DB: happy_code
+  #     POSTGRESQL_TIMEZONE: Asia/Shanghai
+  #     TZ: Asia/Shanghai
+  #     PGTZ: Asia/Shanghai
+  #   volumes:
+  #     - ../data/postgres:/var/lib/postgresql/data
+  #     - ./postgresql.conf:/etc/postgresql/postgresql.conf
+  #   expose:
+  #     - "5432"  # 仅在内部网络暴露端口
+  #   command: postgres -c 'config_file=/etc/postgresql/postgresql.conf'
+  #   networks:
+  #     - app-network
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U root -d happy_code"]
+  #     interval: 30s
+  #     timeout: 5s
+  #     retries: 3
+  #     start_period: 10s
 
 networks:
   app-network:
+    name: app-network  # 显式指定网络名称，避免Docker Compose自动添加项目前缀
     driver: bridge
 

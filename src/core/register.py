@@ -121,6 +121,11 @@ def register_app() -> FastAPI:
     """注册应用"""
     register_logger()
 
+    # 获取环境变量中的ROOT_PATH，用于API网关代理
+    import os
+    root_path = os.environ.get("ROOT_PATH", "")
+    log.info("🟢 应用根路径: {}", root_path)
+
     app = FastAPI(
         title=settings.PROJECT_NAME,
         version=settings.VERSION,
@@ -130,6 +135,7 @@ def register_app() -> FastAPI:
         openapi_url=settings.OPENAPI_URL,
         default_response_class=MsgSpecJSONResponse,
         lifespan=register_init,
+        root_path=root_path,  # 添加root_path参数
         swagger_ui_parameters={
             "docExpansion": "none",
             "defaultModelsExpandDepth": 0,
@@ -196,6 +202,10 @@ def register_middleware(app: FastAPI) -> None:
             allow_headers=['*'],
             expose_headers=settings.CORS_EXPOSE_HEADERS,
         )
+
+    @app.get("/health")
+    async def health_check():
+        return {"status": "health"}
 
 
 def register_routers(app: FastAPI) -> None:

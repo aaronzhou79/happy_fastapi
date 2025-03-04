@@ -1,0 +1,52 @@
+## 全局配置
+global:
+  checkNewVersion: true
+  sendAnonymousUsage: false
+
+## 入口点配置
+entryPoints:
+  web:
+    address: ":80"
+    # HTTP重定向到HTTPS（生产环境使用）
+    # http:
+    #   redirections:
+    #     entryPoint:
+    #       to: websecure
+    #       scheme: https
+
+  websecure:
+    address: ":443"
+
+## API和仪表盘配置
+api:
+  insecure: true  # 仅在开发环境使用
+  dashboard: true
+
+## 提供者配置
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: app-network  # 确保使用正确的网络名称
+    watch: true
+
+  file:
+    directory: "/etc/traefik/dynamic"
+    watch: true
+
+## 日志配置
+log:
+  level: "INFO"
+  format: "common"
+
+accessLog:
+  format: "common"
+  filePath: "/var/log/traefik/access.log"
+  bufferingSize: 100
+
+## 指标配置
+metrics:
+  prometheus:
+    entryPoint: web
+    addEntryPointsLabels: true
+    addServicesLabels: true

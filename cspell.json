@@ -8,6 +8,7 @@
         "asgi",
         "fastapi",
         "gbase",
+        "gunicorn",
         "ILIKE",
         "initdata",
         "kingbase",
@@ -15,11 +16,15 @@
         "lrem",
         "passlib",
         "pydantic",
+        "pyproject",
         "selectinload",
         "sqlalchemy",
         "sqlmodel",
+        "supervisord",
+        "traefik",
         "treemodel",
-        "uvicorn"
+        "uvicorn",
+        "websecure"
     ],
     "ignoreWords": [
         "ondelete"
