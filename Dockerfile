@@ -35,7 +35,7 @@ COPY deploy/supervisor.conf ./deploy/supervisor.conf
 
 # 复制项目文件
 COPY src/ ./src/
-COPY src/.env ./.env
+COPY .env.production .env
 
 # 设置环境变量
 ENV PYTHONPATH=/happy_app \

@@ -1,18 +1,4 @@
-# 账套管理
 
-在需要进行账套管理的MODEL中添加TenantMixin
-```python
-class Demo(DemoBase, TenantMixin, DateTimeMixin, DatabaseModel, table=True):
-    """DEMO表"""
-    __tablename__: Literal["demo"] = "demo"
-
-    # Relationships
-    demo_items: list["DemoItem"] = Relationship(back_populates="demo")
-```
-
-需要前端在请求时，携带账套ID
-增加请求头：
-    X-Tenant-Id: 租户ID
 
 # Happy FastAPI 项目
 
@@ -173,3 +159,19 @@ Traefik将自动发现新实例并进行负载均衡。
 3. 定期更新依赖和Docker镜像
 4. 配置适当的请求限流以防止DoS攻击
 5. 使用HTTPS加密所有通信
+
+# 账套管理
+
+在需要进行账套管理的MODEL中添加TenantMixin
+```python
+class Demo(DemoBase, TenantMixin, DateTimeMixin, DatabaseModel, table=True):
+    """DEMO表"""
+    __tablename__: Literal["demo"] = "demo"
+
+    # Relationships
+    demo_items: list["DemoItem"] = Relationship(back_populates="demo")
+```
+
+需要前端在请求时，携带账套ID
+增加请求头：
+    X-Tenant-Id: 租户ID

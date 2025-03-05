@@ -1,8 +1,36 @@
 {
     "version": "0.2",
-    "ignorePaths": [],
+    "language": "en,zh-CN",
+    "ignorePaths": [
+        "node_modules/**",
+        ".git/**",
+        "venv/**",
+        "__pycache__/**",
+        "*.pyc",
+        "dist/**",
+        "build/**",
+        "*.min.js"
+    ],
+    "ignoreRegExpList": [
+        "/from\\s+([a-zA-Z0-9_]+)\\s+import/",
+        "/import\\s+([a-zA-Z0-9_]+)/",
+        "/#.*/"
+    ],
     "dictionaryDefinitions": [],
-    "dictionaries": [],
+    "dictionaries": [
+        "python",
+        "softwareTerms",
+        "typescript",
+        "node",
+        "html",
+        "css",
+        "bash",
+        "chinese",
+        "chinese-simplified",
+        "chinese-traditional",
+        "python",
+        "softwareTerms"
+    ],
     "words": [
         "aiocache",
         "asgi",
@@ -24,6 +52,7 @@
         "traefik",
         "treemodel",
         "uvicorn",
+        "venv",
         "websecure"
     ],
     "ignoreWords": [
