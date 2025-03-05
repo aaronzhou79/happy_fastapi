@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Literal
 
 import sqlalchemy as sa
@@ -6,6 +7,7 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from src.common.base_models.database_mixin import DatabaseModel
 from src.common.base_models.datetime_mixin import DateTimeMixin
+from src.common.base_models.numeric_mixin import MoneyField, PercentageField, PriceField, QuantityField
 from src.common.base_models.tenant_mixin import TenantMixin
 
 
@@ -17,7 +19,13 @@ class DemoBase(SQLModel):
 
     order_no: str = Field(..., max_length=32, unique=True, description="订单编号")
     customer_name: str = Field(..., max_length=32, description="客户名称")
-    total_amount: float = Field(..., description="总金额")
+    total_amount: Decimal = MoneyField(description="总金额")
+    tax_amount: Decimal = MoneyField(description="税额")
+    discount_amount: Decimal = MoneyField(description="折扣金额")
+
+    # 使用自定义百分比字段
+    tax_rate: Decimal = PercentageField(description="税率")
+    discount_rate: Decimal = PercentageField(description="折扣率")
     status: str = Field(..., max_length=32, description="状态")
 
 
@@ -50,9 +58,12 @@ class DemoItemBase(SQLModel):
     demo_id: int = Field(..., foreign_key="demo.id", sa_type=sa.BIGINT, description="主表ID")
     product_name: str = Field(..., max_length=32, description="商品名称")
     product_code: str = Field(..., max_length=32, description="商品编码")
-    quantity: int = Field(..., description="数量")
-    unit_price: float = Field(..., description="单价")
-    total_price: float = Field(..., description="总价")
+    # 使用自定义数量字段
+    quantity: Decimal = QuantityField(description="数量")
+    # 使用自定义价格字段
+    unit_price: Decimal = PriceField(description="单价")
+    # 使用自定义金额字段
+    total_price: Decimal = MoneyField(description="总价")
     soft_delete: bool = Field(default=False, description="软删除")
 
 

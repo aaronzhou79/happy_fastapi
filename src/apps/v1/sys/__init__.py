@@ -25,6 +25,7 @@ from .api.role_permission import role_permission_api
 from .api.tenant import tenant_api
 from .api.user import user_api
 from .api.user_role import user_role_api
+from .routers.system_config import router as system_config_router
 
 router = APIRouter(prefix="/sys")
 
@@ -44,3 +45,4 @@ router.include_router(notification_api.router)
 router.include_router(notification_rule_api.router)
 router.include_router(factory_api.router)
 router.include_router(factory_user_api.router)
+router.include_router(system_config_router)

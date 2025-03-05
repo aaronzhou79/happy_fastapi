@@ -203,8 +203,9 @@ def register_middleware(app: FastAPI) -> None:
             expose_headers=settings.CORS_EXPOSE_HEADERS,
         )
 
-    @app.get("/health")
-    async def health_check():
+    @app.get("/health", tags=["健康检查"])
+    async def health_check() -> dict:
+        """健康检查"""
         return {"status": "health"}
 
 
