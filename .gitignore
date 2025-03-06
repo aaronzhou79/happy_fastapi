@@ -52,4 +52,3 @@ openapi.json
 
 # Data
 data/
-migrations/versions/20250305_1818-bc765a1635ce_初始化数据库_包含系统模块相关表.py
