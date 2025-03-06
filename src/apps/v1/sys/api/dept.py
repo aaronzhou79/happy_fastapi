@@ -19,7 +19,7 @@ dept_api = TreeAPI(
     update_schema=DeptUpdate,
     base_schema=DeptWithUsers,
     prefix="/dept",
-    tags=["系统管理/部门管理"]
+    tags=["系统管理/部门管理"],
 )
 
 # 获取路由器

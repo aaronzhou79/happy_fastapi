@@ -13,10 +13,11 @@ class BaseService(Generic[ModelType, CreateModelType, UpdateModelType]):
     """
     基础服务类
     """
+
     def __init__(
         self,
         crud: CRUDBase[ModelType, CreateModelType, UpdateModelType],
-        hooks: Dict[str, list[Callable[..., Any]]] | None = None
+        hooks: Dict[str, list[Callable[..., Any]]] | None = None,
     ):
         self.crud = crud
         # 注册钩子
@@ -38,7 +39,9 @@ class BaseService(Generic[ModelType, CreateModelType, UpdateModelType]):
         """获取单个数据"""
         return await self.crud.get_by_id(session=session, id=id)
 
-    async def get_by_fields(self, session: AuditAsyncSession, **kwargs) -> Sequence[ModelType]:
+    async def get_by_fields(
+        self, session: AuditAsyncSession, **kwargs
+    ) -> Sequence[ModelType]:
         """根据字段获取对象"""
         return await self.crud.get_by_fields(session=session, **kwargs)
 
@@ -46,7 +49,7 @@ class BaseService(Generic[ModelType, CreateModelType, UpdateModelType]):
     async def create(
         self,
         session: AuditAsyncSession,
-        obj_in: Annotated[CreateModelType, Field(..., description="创建模型")]
+        obj_in: Annotated[CreateModelType, Field(..., description="创建模型")],
     ) -> ModelType:
         """创建对象"""
         return await self.crud.create(session=session, obj_in=obj_in)
@@ -60,40 +63,32 @@ class BaseService(Generic[ModelType, CreateModelType, UpdateModelType]):
         batch_size: int = 1000
     ) -> Sequence[ModelType]:
         """批量创建对象"""
-        return await self.crud.bulk_create(session=session, objects=objects, batch_size=batch_size)
+        return await self.crud.bulk_create(
+            session=session, objects=objects, batch_size=batch_size
+        )
 
     @abstractmethod
     async def update(
-        self,
-        session: AuditAsyncSession,
-        obj_in: UpdateModelType
+        self, session: AuditAsyncSession, obj_in: UpdateModelType
     ) -> ModelType:
         """更新对象"""
         return await self.crud.update(session=session, obj_in=obj_in)
 
     @abstractmethod
-    async def delete(
-        self,
-        session: AuditAsyncSession,
-        id: int
-    ) -> None:
+    async def delete(self, session: AuditAsyncSession, id: int) -> None:
         """删除对象"""
         return await self.crud.delete(session=session, id=id)
 
     @abstractmethod
     async def bulk_delete(
-        self,
-        session: AuditAsyncSession,
-        ids: Sequence[int]
+        self, session: AuditAsyncSession, ids: Sequence[int]
     ) -> list[int]:
         """批量删除对象"""
         return await self.crud.bulk_delete(session=session, ids=ids)
 
     @abstractmethod
     async def get_by_options(
-        self,
-        session: AuditAsyncSession,
-        options: QueryOptions
+        self, session: AuditAsyncSession, options: QueryOptions
     ) -> tuple[int, Sequence[ModelType]]:
         """根据查询选项获取对象列表和总数"""
         return await self.crud.get_by_options(session=session, options=options)

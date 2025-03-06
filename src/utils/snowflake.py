@@ -44,10 +44,8 @@ class IdWorker:
     """
     用于生成IDs
     """
-    def __init__(self,
-                datacenter_id: int = 1,
-                worker_id: int = 1,
-                sequence: int = 1):
+
+    def __init__(self, datacenter_id: int = 1, worker_id: int = 1, sequence: int = 1):
         """
         初始化
 
@@ -57,10 +55,10 @@ class IdWorker:
         """
         # sanity check
         if worker_id > MAX_WORKER_ID or worker_id < 0:
-            raise ValueError('worker_id值越界')
+            raise ValueError("worker_id值越界")
 
         if datacenter_id > MAX_DATACENTER_ID or datacenter_id < 0:
-            raise ValueError('datacenter_id值越界')
+            raise ValueError("datacenter_id值越界")
 
         self.worker_id = worker_id
         self.datacenter_id = datacenter_id
@@ -97,8 +95,12 @@ class IdWorker:
 
         self.last_timestamp = timestamp
 
-        return ((timestamp - TWEPOCH) << TIMESTAMP_LEFT_SHIFT) | (self.datacenter_id << DATACENTER_ID_SHIFT) | \
-                 (self.worker_id << WOKER_ID_SHIFT) | self.sequence
+        return (
+            ((timestamp - TWEPOCH) << TIMESTAMP_LEFT_SHIFT)
+            | (self.datacenter_id << DATACENTER_ID_SHIFT)
+            | (self.worker_id << WOKER_ID_SHIFT)
+            | self.sequence
+        )
 
     def _til_next_millis(self, last_timestamp: int) -> int:
         """
@@ -124,5 +126,5 @@ def get_snowflake_id() -> int:
 
 
 # ## test
-if __name__ == '__main__':
+if __name__ == "__main__":
     print(get_snowflake_id())

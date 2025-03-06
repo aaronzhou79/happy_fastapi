@@ -15,7 +15,7 @@ class TenantMiddleware(BaseHTTPMiddleware):
         app: ASGIApp,
         tenant_header: str = "X-Tenant-ID",
         tenant_query_param: str = "tenant_id",
-        default_tenant: int | None = None
+        default_tenant: int | None = None,
     ):
         super().__init__(app)
         self.tenant_header = tenant_header
@@ -23,9 +23,7 @@ class TenantMiddleware(BaseHTTPMiddleware):
         self.default_tenant = default_tenant
 
     async def dispatch(
-        self,
-        request: Request,
-        call_next: Callable[[Request], Awaitable[Response]]
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
         """多账套中间件，负责从请求中提取账套ID并设置到上下文中"""
         # 从请求中提取账套ID

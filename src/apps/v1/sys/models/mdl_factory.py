@@ -25,13 +25,17 @@ if TYPE_CHECKING:
 class FactoryBase(SQLModel):
     """工厂信息模型"""
 
-    factory_name: str | None = Field(default=None, max_length=128, description='厂别名称')
-    factory_alias: str | None = Field(default=None, max_length=128, description='厂别别名')
-    logo: str | None = Field(default=None, max_length=128, description='Logo图片地址')
-    is_default: bool = Field(default=False, description='默认厂别')
-    sales_type: int = Field(default=1, description='销售类型 1.以销带产 2.以产代销')
-    standard_money: str = Field(default='RMB', max_length=32, description='本位币')
-    address: str | None = Field(default=None, max_length=512, description='工厂地址')
+    factory_name: str | None = Field(
+        default=None, max_length=128, description="厂别名称"
+    )
+    factory_alias: str | None = Field(
+        default=None, max_length=128, description="厂别别名"
+    )
+    logo: str | None = Field(default=None, max_length=128, description="Logo图片地址")
+    is_default: bool = Field(default=False, description="默认厂别")
+    sales_type: int = Field(default=1, description="销售类型 1.以销带产 2.以产代销")
+    standard_money: str = Field(default="RMB", max_length=32, description="本位币")
+    address: str | None = Field(default=None, max_length=512, description="工厂地址")
 
     def __repr__(self) -> str:
         """返回对象的字符串表示，包含id、工厂名称和别名"""
@@ -47,10 +51,12 @@ class FactoryBase(SQLModel):
 class Factory(FactoryBase, DateTimeMixin, DatabaseModel, table=True):
     """工厂信息表"""
 
-    __tablename__: Literal['sys_factory'] = 'sys_factory'
+    __tablename__: Literal["sys_factory"] = "sys_factory"
 
     # Relationships
-    users: list["User"] = Relationship(back_populates="factories", link_model=FactoryUser)
+    users: list["User"] = Relationship(
+        back_populates="factories", link_model=FactoryUser
+    )
 
 
 class FactoryCreate(FactoryBase):
@@ -59,9 +65,11 @@ class FactoryCreate(FactoryBase):
 
 class FactoryUpdate(FactoryBase):
     """工厂信息更新模型"""
+
     id: int
 
 
 class FactoryGet(FactoryBase):
     """工厂信息创建模型"""
+
     id: int

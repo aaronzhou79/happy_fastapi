@@ -7,9 +7,11 @@ from decimal import Decimal
 from enum import Enum
 from typing import Dict, Type
 
+
 # 数值字段精度配置
 class NumericFieldType(str, Enum):
     """数值字段类型"""
+
     # 金额
     MONEY = "money"
     # 重量
@@ -29,17 +31,27 @@ class NumericFieldType(str, Enum):
     # 自定义
     CUSTOM = "custom"
 
+
 # 数值字段精度配置
 NUMERIC_PRECISION: Dict[NumericFieldType, Dict[str, int]] = {
-    NumericFieldType.MONEY:         {"precision": 18, "scale": 2},  # 金额：  18位数字，2位小数
-    NumericFieldType.WEIGHT:        {"precision": 15, "scale": 3},  # 重量：  15位数字，3位小数
-    NumericFieldType.AREA:          {"precision": 15, "scale": 4},  # 面积：  15位数字，4位小数
-    NumericFieldType.LENGTH:        {"precision": 15, "scale": 4},  # 长度：  15位数字，4位小数
-    NumericFieldType.QUANTITY:      {"precision": 15, "scale": 4},  # 数量：  15位数字，4位小数
-    NumericFieldType.PERCENTAGE:    {"precision": 5, "scale": 2},   # 百分比： 5位数字，2位小数
-    NumericFieldType.EXCHANGE_RATE: {"precision": 10, "scale": 6},  # 汇率：  10位数字，6位小数
-    NumericFieldType.PRICE:         {"precision": 18, "scale": 4},  # 单价：  18位数字，4位小数
-    NumericFieldType.CUSTOM:        {"precision": 18, "scale": 6},  # 自定义：18位数字，6位小数
+    NumericFieldType.MONEY: {"precision": 18, "scale": 2},  # 金额：  18位数字，2位小数
+    NumericFieldType.WEIGHT: {"precision": 15, "scale": 3},  # 重量：  15位数字，3位小数
+    NumericFieldType.AREA: {"precision": 15, "scale": 4},  # 面积：  15位数字，4位小数
+    NumericFieldType.LENGTH: {"precision": 15, "scale": 4},  # 长度：  15位数字，4位小数
+    NumericFieldType.QUANTITY: {
+        "precision": 15,
+        "scale": 4,
+    },  # 数量：  15位数字，4位小数
+    NumericFieldType.PERCENTAGE: {
+        "precision": 5,
+        "scale": 2,
+    },  # 百分比： 5位数字，2位小数
+    NumericFieldType.EXCHANGE_RATE: {
+        "precision": 10,
+        "scale": 6,
+    },  # 汇率：  10位数字，6位小数
+    NumericFieldType.PRICE: {"precision": 18, "scale": 4},  # 单价：  18位数字，4位小数
+    NumericFieldType.CUSTOM: {"precision": 18, "scale": 6},  # 自定义：18位数字，6位小数
 }
 
 # 默认数值字段精度
@@ -106,6 +118,7 @@ FRONTEND_FORMAT_CONFIG = {
         "align": "right",
     },
 }
+
 
 def get_numeric_config_for_frontend():
     """获取前端可用的数值字段配置

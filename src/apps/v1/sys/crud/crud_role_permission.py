@@ -10,13 +10,18 @@ from typing import Sequence
 
 from sqlmodel import select
 
-from src.apps.v1.sys.models.mdl_role_permission import RolePermission, RolePermissionCreate, RolePermissionUpdate
+from src.apps.v1.sys.models.mdl_role_permission import (
+    RolePermission,
+    RolePermissionCreate,
+    RolePermissionUpdate,
+)
 from src.common.base_crud import CRUDBase
 from src.database.db_session import AuditAsyncSession
 
 
 class CrudRolePermission(CRUDBase):
     """权限相关CRUD类"""
+
     def __init__(self):
         super().__init__(
             model=RolePermission,

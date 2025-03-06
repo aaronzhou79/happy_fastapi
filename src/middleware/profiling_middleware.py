@@ -25,28 +25,40 @@ from src.core.conf import settings
 class ProfilingMiddleware(BaseHTTPMiddleware):
     """性能分析中间件"""
 
-    DB_OP_KEYWORDS = ('query', 'insert', 'update', 'delete', 'commit', 'rollback', 'execute')
+    DB_OP_KEYWORDS = (
+        "query",
+        "insert",
+        "update",
+        "delete",
+        "commit",
+        "rollback",
+        "execute",
+    )
 
-    def __init__(self, app, **options):   # noqa: ANN001
+    def __init__(self, app, **options):  # noqa: ANN001
         """
         初始化
         """
         super().__init__(app)
         self._profiler = None
         # 从配置或参数中读取阈值
-        self.slow_threshold = options.get('slow_threshold', settings.SLOW_REQUEST_THRESHOLD)
+        self.slow_threshold = options.get(
+            "slow_threshold", settings.SLOW_REQUEST_THRESHOLD
+        )
         self.memory_warning_threshold = options.get(
-            'memory_warning_threshold',
-            settings.MEMORY_WARNING_THRESHOLD)
+            "memory_warning_threshold", settings.MEMORY_WARNING_THRESHOLD
+        )
         # 启动内存跟踪(只需启动一次)
         tracemalloc.start()
 
-    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
         """
         处理请求
         """
         # 获取请求ID用于关联日志
-        request_id = request.headers.get('X-Request-ID', '')
+        request_id = request.headers.get("X-Request-ID", "")
         if self._profiler is not None:
             # 如果已经有profiler在运行，直接执行下一个中间件
             return await call_next(request)
@@ -79,7 +91,7 @@ class ProfilingMiddleware(BaseHTTPMiddleware):
             duration=duration,
             profile_data=profile_data,
             memory_increase=memory_increase,
-            peak_memory=peak_memory
+            peak_memory=peak_memory,
         )
 
         return response
@@ -87,13 +99,17 @@ class ProfilingMiddleware(BaseHTTPMiddleware):
     def _get_profile_stats(self, stats: pstats.Stats) -> List[dict]:
         """直接从 Stats 对象获取性能数据"""
         results = []
-        for func, (cc, nc, tt, ct, callers) in stats.stats.items():   # type: ignore
+        for func, (cc, nc, tt, ct, callers) in stats.stats.items():  # type: ignore
             if any(kw in str(func).lower() for kw in self.DB_OP_KEYWORDS):
-                results.append({
-                    'func_name': str(func[2]) if isinstance(func, tuple) else str(func),
-                    'total_time': ct,
-                    'calls': cc
-                })
+                results.append(
+                    {
+                        "func_name": (
+                            str(func[2]) if isinstance(func, tuple) else str(func)
+                        ),
+                        "total_time": ct,
+                        "calls": cc,
+                    }
+                )
         return results
 
     def _log_performance_data(
@@ -103,36 +119,40 @@ class ProfilingMiddleware(BaseHTTPMiddleware):
         duration: float,
         profile_data: List[dict],
         memory_increase: int,
-        peak_memory: int
+        peak_memory: int,
     ) -> None:
         """记录结构化的性能数据"""
         perf_data = {
-            'request_id': request_id,
-            'path': f"{request.method} {request.url.path}",
-            'duration': round(duration, 3),
-            'memory': {
-                'increase': round(memory_increase / 1024 / 1024, 2),
-                'peak': round(peak_memory / 1024 / 1024, 2)
+            "request_id": request_id,
+            "path": f"{request.method} {request.url.path}",
+            "duration": round(duration, 3),
+            "memory": {
+                "increase": round(memory_increase / 1024 / 1024, 2),
+                "peak": round(peak_memory / 1024 / 1024, 2),
             },
-            'db_operations': []
+            "db_operations": [],
         }
 
         # 添加警告标记
         if duration > self.slow_threshold:
-            perf_data['warnings'] = ['slow_request']
+            perf_data["warnings"] = ["slow_request"]
         if memory_increase > self.memory_warning_threshold:
-            perf_data['warnings'] = perf_data.get('warnings', []) + ['high_memory']
+            perf_data["warnings"] = perf_data.get("warnings", []) + ["high_memory"]
 
         # 处理数据库操作数据
         if profile_data:
-            sorted_data = sorted(profile_data, key=lambda x: x['total_time'], reverse=True)[:10]
+            sorted_data = sorted(
+                profile_data, key=lambda x: x["total_time"], reverse=True
+            )[:10]
             for op in sorted_data:
-                perf_data['db_operations'].append({
-                    'name': op['func_name'].split('/')[-1],  # type: ignore
-                    'time': round(op['total_time'], 3),
-                    'calls': op['calls'],
-                    'percentage': round((op['total_time'] / duration) * 100, 1)
-                })
+                perf_data["db_operations"].append(
+                    {
+                        "name": op["func_name"].split("/")[-1],  # type: ignore
+                        "time": round(op["total_time"], 3),
+                        "calls": op["calls"],
+                        "percentage": round((op["total_time"] / duration) * 100, 1),
+                    }
+                )
 
         # 输出 JSON 格式日志
         log.info("--------------------------------")

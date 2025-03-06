@@ -8,7 +8,11 @@
 # @Description: 操作日志服务
 
 from src.apps.v1.sys.crud.crud_opera_log import crud_opera_log
-from src.apps.v1.sys.models.mdl_opera_log import OperaLog, OperaLogCreate, OperaLogUpdate
+from src.apps.v1.sys.models.mdl_opera_log import (
+    OperaLog,
+    OperaLogCreate,
+    OperaLogUpdate,
+)
 from src.common.base_service import BaseService
 from src.database.db_session import async_audit_session, async_session
 
@@ -17,6 +21,7 @@ class SvrOperaLog(BaseService[OperaLog, OperaLogCreate, OperaLogUpdate]):  # typ
     """
     操作日志服务
     """
+
     def __init__(self):
         self.crud = crud_opera_log
 

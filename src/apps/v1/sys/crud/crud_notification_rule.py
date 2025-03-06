@@ -18,6 +18,7 @@ from src.common.base_crud import CRUDBase
 
 class CrudNotificationRule(CRUDBase):
     """通知规则配置表CRUD类"""
+
     def __init__(self):
         super().__init__(
             model=NotificationRule,

@@ -26,7 +26,7 @@ def ensure_unique_route_names(app: FastAPI) -> None:
     for route in app.routes:
         if isinstance(route, APIRoute):
             if route.name in temp_routes:
-                raise ValueError(f'Non-unique route name: {route.name}')
+                raise ValueError(f"Non-unique route name: {route.name}")
             temp_routes.add(route.name)
 
 
@@ -40,4 +40,6 @@ async def http_limit_callback(expire: int) -> None:
     :return:
     """
     expires = ceil(expire / 1000)
-    raise errors.HTTPError(code=429, msg='请求过于频繁，请稍后重试', headers={'Retry-After': str(expires)})
+    raise errors.HTTPError(
+        code=429, msg="请求过于频繁，请稍后重试", headers={"Retry-After": str(expires)}
+    )

@@ -10,7 +10,11 @@ from typing import Sequence
 
 from sqlmodel import select
 
-from src.apps.v1.sys.models.mdl_permission import Permission, PermissionCreate, PermissionUpdate
+from src.apps.v1.sys.models.mdl_permission import (
+    Permission,
+    PermissionCreate,
+    PermissionUpdate,
+)
 from src.apps.v1.sys.models.mdl_role_permission import RolePermission
 from src.apps.v1.sys.models.mdl_user_role import UserRole
 from src.common.tree_crud import TreeCRUD
@@ -19,13 +23,12 @@ from src.database.db_session import AuditAsyncSession
 
 class CrudPermission(TreeCRUD):
     """权限相关CRUD类"""
+
     def __init__(self) -> None:
         super().__init__(Permission, PermissionCreate, PermissionUpdate)
 
     async def get_permissions_by_role(
-        self,
-        session: AuditAsyncSession,
-        role_ids: list[int]
+        self, session: AuditAsyncSession, role_ids: list[int]
     ) -> Sequence[Permission]:
         """
         获取角色权限
@@ -40,10 +43,7 @@ class CrudPermission(TreeCRUD):
         return await self.to_tree_dict(data)
 
     async def get_permissions_by_user(
-        self,
-        session: AuditAsyncSession,
-        user_id: int,
-        is_superuser: bool
+        self, session: AuditAsyncSession, user_id: int, is_superuser: bool
     ) -> Sequence[Permission]:
         """获取用户权限"""
         if is_superuser:
@@ -52,7 +52,7 @@ class CrudPermission(TreeCRUD):
             stmt = (
                 select(Permission)
                 .join(RolePermission, RolePermission.permission_id == Permission.id)
-                .join(UserRole, UserRole.role_id == RolePermission.role_id)   # type: ignore
+                .join(UserRole, UserRole.role_id == RolePermission.role_id)  # type: ignore
                 .where(UserRole.user_id == user_id)
             )
             result = await session.execute(stmt)

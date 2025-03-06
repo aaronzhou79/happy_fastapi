@@ -11,7 +11,12 @@ from typing import Any
 
 from fastapi import Request, Response
 from fastapi.security.utils import get_authorization_scheme_param
-from starlette.authentication import AuthCredentials, AuthenticationBackend, AuthenticationError, BaseUser
+from starlette.authentication import (
+    AuthCredentials,
+    AuthenticationBackend,
+    AuthenticationError,
+    BaseUser,
+)
 from starlette.requests import HTTPConnection
 
 from src.apps.v1.sys.crud.crud_user import crud_user
@@ -33,11 +38,11 @@ class _AuthenticationError(AuthenticationError):
     """重写内部认证错误类"""
 
     def __init__(
-            self,
-            *,
-            code: int | None = None,
-            msg: str | None = None,
-            headers: dict[str, Any] | None = None,
+        self,
+        *,
+        code: int | None = None,
+        msg: str | None = None,
+        headers: dict[str, Any] | None = None,
     ):
         self.code = code
         self.msg = msg
@@ -58,28 +63,32 @@ class AuthenticatedUser(BaseUser):
     @property
     def display_name(self) -> str:
         """显示名称"""
-        return str(getattr(self.user_data, 'username', ''))
+        return str(getattr(self.user_data, "username", ""))
 
     @property
     def identity(self) -> str:
         """标识"""
-        return str(getattr(self.user_data, 'id', ''))
+        return str(getattr(self.user_data, "id", ""))
 
 
 class JwtAuthMiddleware(AuthenticationBackend):
     """JWT 认证中间件"""
 
     @staticmethod
-    def auth_exception_handler(conn: HTTPConnection, exc: _AuthenticationError) -> Response:
+    def auth_exception_handler(
+        conn: HTTPConnection, exc: _AuthenticationError
+    ) -> Response:
         """覆盖内部认证错误处理"""
         return MsgSpecJSONResponse(
-            content={'code': exc.code, 'msg': exc.msg, 'data': None},
+            content={"code": exc.code, "msg": exc.msg, "data": None},
             status_code=exc.code or 401,
         )
 
-    async def authenticate(self, request: Request) -> tuple[AuthCredentials, AuthenticatedUser] | None:
+    async def authenticate(
+        self, request: Request
+    ) -> tuple[AuthCredentials, AuthenticatedUser] | None:
         """认证"""
-        token = request.headers.get('Authorization')
+        token = request.headers.get("Authorization")
         if not token:
             return None
 
@@ -87,12 +96,14 @@ class JwtAuthMiddleware(AuthenticationBackend):
             return None
 
         scheme, token = get_authorization_scheme_param(token)
-        if scheme.lower() != 'bearer':
+        if scheme.lower() != "bearer":
             return None
 
         try:
             sub = await auth_security.jwt_authentication(token)
-            cache_user = await redis_client.get(f'{settings.JWT_USER_REDIS_PREFIX}:{sub}')
+            cache_user = await redis_client.get(
+                f"{settings.JWT_USER_REDIS_PREFIX}:{sub}"
+            )
             if not cache_user:
                 async with async_audit_session(async_session(), request=request) as db:
                     current_user = await crud_user.get_by_id(db, id=sub)
@@ -100,21 +111,24 @@ class JwtAuthMiddleware(AuthenticationBackend):
                         set_user_id(current_user.id)
                         user_dict = await current_user.to_api_dict()
                         # 确保关系对象也被正确转换
-                        if 'roles' in user_dict:
-                            user_dict['roles'] = [
-                                RoleGet.model_validate(role) for role in user_dict['roles']
+                        if "roles" in user_dict:
+                            user_dict["roles"] = [
+                                RoleGet.model_validate(role)
+                                for role in user_dict["roles"]
                             ]
-                        if 'factories' in user_dict:
-                            user_dict['factories'] = [
-                                FactoryGet.model_validate(factory) for factory in user_dict['factories']
+                        if "factories" in user_dict:
+                            user_dict["factories"] = [
+                                FactoryGet.model_validate(factory)
+                                for factory in user_dict["factories"]
                             ]
-                        if 'tenants' in user_dict:
-                            user_dict['tenants'] = [
-                                TenantGet.model_validate(tenant) for tenant in user_dict['tenants']
+                        if "tenants" in user_dict:
+                            user_dict["tenants"] = [
+                                TenantGet.model_validate(tenant)
+                                for tenant in user_dict["tenants"]
                             ]
                         user = UserGetWithRelations.model_validate(user_dict)
                         await redis_client.setex(
-                            f'{settings.JWT_USER_REDIS_PREFIX}:{sub}',
+                            f"{settings.JWT_USER_REDIS_PREFIX}:{sub}",
                             settings.JWT_USER_REDIS_EXPIRE_SECONDS or 60 * 60 * 24 * 30,
                             user.model_dump_json(),
                         )
@@ -122,13 +136,15 @@ class JwtAuthMiddleware(AuthenticationBackend):
                 user = UserGetWithRelations.model_validate_json(cache_user)
                 set_user_id(user.id)
         except TokenError as exc:
-            raise _AuthenticationError(code=exc.code, msg=exc.detail, headers=exc.headers) from exc
+            raise _AuthenticationError(
+                code=exc.code, msg=exc.detail, headers=exc.headers
+            ) from exc
         except Exception as e:
             log.exception(e)
-            code = getattr(e, 'code', 500)
-            msg = getattr(e, 'msg', getattr(e, 'message', 'Internal Server Error'))
+            code = getattr(e, "code", 500)
+            msg = getattr(e, "msg", getattr(e, "message", "Internal Server Error"))
             if type(code) == str:  # noqa: E721
                 code = 500
             raise _AuthenticationError(code=code, msg=msg) from e
 
-        return AuthCredentials(['authenticated']), AuthenticatedUser(user)
+        return AuthCredentials(["authenticated"]), AuthenticatedUser(user)

@@ -21,6 +21,7 @@ class BaseError(Exception):
     """
     基础异常类
     """
+
     code: int
 
     def __init__(
@@ -40,7 +41,10 @@ class HTTPError(HTTPException):
     """
     HTTP 异常类
     """
-    def __init__(self, *, code: int, msg: Any = None, headers: dict[str, Any] | None = None):
+
+    def __init__(
+        self, *, code: int, msg: Any = None, headers: dict[str, Any] | None = None
+    ):
         super().__init__(status_code=code, detail=msg, headers=headers)
 
 
@@ -48,7 +52,14 @@ class CustomError(BaseError):
     """
     自定义异常类
     """
-    def __init__(self, *, error: CustomErrorCode, data: Any = None, background: BackgroundTask | None = None):
+
+    def __init__(
+        self,
+        *,
+        error: CustomErrorCode,
+        data: Any = None,
+        background: BackgroundTask | None = None
+    ):
         self.code = error.code
         super().__init__(msg=error.msg, data=data, background=background)
 
@@ -57,9 +68,16 @@ class RequestError(BaseError):
     """
     请求错误异常类
     """
+
     code = StandardResponseCode.HTTP_400
 
-    def __init__(self, *, msg: str = 'Bad Request', data: Any = None, background: BackgroundTask | None = None):
+    def __init__(
+        self,
+        *,
+        msg: str = "Bad Request",
+        data: Any = None,
+        background: BackgroundTask | None = None
+    ):
         super().__init__(msg=msg, data=data, background=background)
 
 
@@ -67,9 +85,16 @@ class ForbiddenError(BaseError):
     """
     禁止访问异常类
     """
+
     code = StandardResponseCode.HTTP_403
 
-    def __init__(self, *, msg: str = 'Forbidden', data: Any = None, background: BackgroundTask | None = None):
+    def __init__(
+        self,
+        *,
+        msg: str = "Forbidden",
+        data: Any = None,
+        background: BackgroundTask | None = None
+    ):
         super().__init__(msg=msg, data=data, background=background)
 
 
@@ -77,9 +102,16 @@ class NotFoundError(BaseError):
     """
     未找到异常类
     """
+
     code = StandardResponseCode.HTTP_404
 
-    def __init__(self, *, msg: str = 'Not Found', data: Any = None, background: BackgroundTask | None = None):
+    def __init__(
+        self,
+        *,
+        msg: str = "Not Found",
+        data: Any = None,
+        background: BackgroundTask | None = None
+    ):
         super().__init__(msg=msg, data=data, background=background)
 
 
@@ -87,10 +119,15 @@ class ServerError(BaseError):
     """
     服务器错误异常类
     """
+
     code = StandardResponseCode.HTTP_500
 
     def __init__(
-        self, *, msg: str = 'Internal Server Error', data: Any = None, background: BackgroundTask | None = None
+        self,
+        *,
+        msg: str = "Internal Server Error",
+        data: Any = None,
+        background: BackgroundTask | None = None
     ):
         super().__init__(msg=msg, data=data, background=background)
 
@@ -99,9 +136,16 @@ class GatewayError(BaseError):
     """
     网关错误异常类
     """
+
     code = StandardResponseCode.HTTP_502
 
-    def __init__(self, *, msg: str = 'Bad Gateway', data: Any = None, background: BackgroundTask | None = None):
+    def __init__(
+        self,
+        *,
+        msg: str = "Bad Gateway",
+        data: Any = None,
+        background: BackgroundTask | None = None
+    ):
         super().__init__(msg=msg, data=data, background=background)
 
 
@@ -109,9 +153,16 @@ class AuthorizationError(BaseError):
     """
     授权错误异常类
     """
+
     code = StandardResponseCode.HTTP_401
 
-    def __init__(self, *, msg: str = 'Permission Denied', data: Any = None, background: BackgroundTask | None = None):
+    def __init__(
+        self,
+        *,
+        msg: str = "Permission Denied",
+        data: Any = None,
+        background: BackgroundTask | None = None
+    ):
         super().__init__(msg=msg, data=data, background=background)
 
 
@@ -119,19 +170,31 @@ class TokenError(HTTPError):
     """
     令牌错误异常类
     """
+
     code = StandardResponseCode.HTTP_401
 
-    def __init__(self, *, msg: str = 'Not Authenticated', headers: dict[str, Any] | None = None):
-        super().__init__(code=self.code, msg=msg, headers=headers or {'WWW-Authenticate': 'Bearer'})
+    def __init__(
+        self, *, msg: str = "Not Authenticated", headers: dict[str, Any] | None = None
+    ):
+        super().__init__(
+            code=self.code, msg=msg, headers=headers or {"WWW-Authenticate": "Bearer"}
+        )
 
 
 class RuleExecutionError(BaseError):
     """
     规则执行错误异常类
     """
+
     code = StandardResponseCode.HTTP_400
 
-    def __init__(self, *, msg: str = 'Rule Execution Error', data: Any = None, background: BackgroundTask | None = None):
+    def __init__(
+        self,
+        *,
+        msg: str = "Rule Execution Error",
+        data: Any = None,
+        background: BackgroundTask | None = None
+    ):
         super().__init__(msg=msg, data=data, background=background)
 
 
@@ -139,7 +202,14 @@ class DBError(BaseError):
     """
     数据库错误异常类
     """
+
     code = StandardResponseCode.HTTP_500
 
-    def __init__(self, *, msg: str = 'Database Error', data: Any = None, background: BackgroundTask | None = None):
+    def __init__(
+        self,
+        *,
+        msg: str = "Database Error",
+        data: Any = None,
+        background: BackgroundTask | None = None
+    ):
         super().__init__(msg=msg, data=data, background=background)

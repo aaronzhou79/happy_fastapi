@@ -9,7 +9,12 @@
 
 from fastapi import Query, Request
 
-from src.apps.v1.sys.models.mdl_code_trace import CodeTrace, CodeTraceBase, CodeTraceCreate, CodeTraceUpdate
+from src.apps.v1.sys.models.mdl_code_trace import (
+    CodeTrace,
+    CodeTraceBase,
+    CodeTraceCreate,
+    CodeTraceUpdate,
+)
 from src.apps.v1.sys.service.svr_code_trace import svr_code_trace
 from src.common.base_api import BaseAPI
 from src.common.enums import DocumentType
@@ -31,19 +36,21 @@ code_trace_api = BaseAPI(
     tags=["系统管理/编码生成"],
 )
 
+
 @code_trace_api.router.get(
     "/get_code",
     summary="获取编码",
     description="每次调用，都会返回一个新的编码，需要前端处理，在页面加载时调用并保存到LocalStorage中，保存或关闭后，需要手工清理LocalStorage!",
-    dependencies=[DependsJwtAuth]
+    dependencies=[DependsJwtAuth],
 )
 async def get_next_code(
     request: Request,
     doc_type: DocumentType,
-    classify_code: str | None = Query(default=None, description="分类编码(用于在前缀和流水号之间插入字符)")
+    classify_code: str | None = Query(
+        default=None, description="分类编码(用于在前缀和流水号之间插入字符)"
+    ),
 ) -> ResponseModel:
     """获取下一个编码"""
     async with async_audit_session(async_session(), request) as db:
         code = await svr_code_trace.get_next_code(db, doc_type, classify_code)
     return response_base.success(data={"doc_type": doc_type, "code": code})
-

@@ -18,15 +18,19 @@ from src.common.base_models.datetime_mixin import DateTimeMixin
 class FactoryUserBase(SQLModel):
     """工厂用户模型"""
 
-    user_id: int = Field(default=None, foreign_key="sys_user.id", ondelete='CASCADE')
-    factory_id: int = Field(default=None, foreign_key="sys_factory.id", ondelete='CASCADE')
+    user_id: int = Field(default=None, foreign_key="sys_user.id", ondelete="CASCADE")
+    factory_id: int = Field(
+        default=None, foreign_key="sys_factory.id", ondelete="CASCADE"
+    )
 
 
 class FactoryUser(FactoryUserBase, DateTimeMixin, DatabaseModel, table=True):
     """工厂用户表"""
 
-    __tablename__: Literal['sys_factory_user'] = 'sys_factory_user'
-    __table_args__ = (UniqueConstraint('user_id', 'factory_id', name='uq_factory_user'),)
+    __tablename__: Literal["sys_factory_user"] = "sys_factory_user"
+    __table_args__ = (
+        UniqueConstraint("user_id", "factory_id", name="uq_factory_user"),
+    )
 
     # Relationships
 

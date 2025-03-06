@@ -10,15 +10,21 @@ from src.common.base_models.database_mixin import DatabaseModel
 
 class RolePermissionBase(SQLModel):
     """角色-权限关联基础模型"""
+
     __tablename__: Literal["sys_role_permission"] = "sys_role_permission"
 
-    role_id: int = Field(..., foreign_key="sys_role.id", sa_type=sa.BIGINT, ondelete='CASCADE')
-    permission_id: int = Field(..., foreign_key="sys_permission.id", sa_type=sa.BIGINT, ondelete='CASCADE')
+    role_id: int = Field(
+        ..., foreign_key="sys_role.id", sa_type=sa.BIGINT, ondelete="CASCADE"
+    )
+    permission_id: int = Field(
+        ..., foreign_key="sys_permission.id", sa_type=sa.BIGINT, ondelete="CASCADE"
+    )
 
 
 class RolePermission(RolePermissionBase, DatabaseModel, table=True):
     """角色-权限关联表"""
-    __table_args__ = (UniqueConstraint('role_id', 'permission_id'),)
+
+    __table_args__ = (UniqueConstraint("role_id", "permission_id"),)
 
 
 class RolePermissionCreate(RolePermissionBase):
@@ -27,4 +33,5 @@ class RolePermissionCreate(RolePermissionBase):
 
 class RolePermissionUpdate(RolePermissionBase):
     """角色权限关联更新模型"""
+
     id: int

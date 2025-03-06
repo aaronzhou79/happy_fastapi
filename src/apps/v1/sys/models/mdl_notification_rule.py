@@ -1,4 +1,3 @@
-
 from typing import Literal
 
 import sqlalchemy as sa
@@ -18,23 +17,22 @@ class NotificationRuleBase(SQLModel):
     title_template: str = Field(..., nullable=False, description="通知标题模板")
     content_template: str = Field(..., nullable=False, description="通知内容模板")
     condition: NotificationCondition = Field(
-        default=NotificationCondition.SUCCESS,
-        description="触发条件"
+        default=NotificationCondition.SUCCESS, description="触发条件"
     )
-    recipient_id_field: str | None = Field(
-        default=None,
-        description="接收者ID字段"
-    )
+    recipient_id_field: str | None = Field(default=None, description="接收者ID字段")
 
 
 class NotificationRule(NotificationRuleBase, DatabaseModel, table=True):
     """通知规则配置表"""
+
     __tablename__: Literal["sys_notification_rules"] = "sys_notification_rules"
     __table_args__ = (
-        sa.UniqueConstraint('path', 'method', 'type', name='uq_notification_rule_path_method_type'),
+        sa.UniqueConstraint(
+            "path", "method", "type", name="uq_notification_rule_path_method_type"
+        ),
         {
             "comment": "通知规则配置表",
-        }
+        },
     )
 
 
@@ -44,10 +42,11 @@ class NotificationRuleCreate(NotificationRuleBase):
 
 class NotificationRuleUpdate(NotificationRuleBase):
     """通知规则配置表更新"""
+
     id: int = Field(..., description="ID")
 
 
 class NotificationRuleGet(NotificationRuleBase):
     """通知规则配置表"""
-    id: int = Field(..., description="ID")
 
+    id: int = Field(..., description="ID")

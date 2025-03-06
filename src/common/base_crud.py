@@ -10,7 +10,11 @@ import sqlalchemy as sa
 from sqlalchemy.orm import selectinload
 from sqlmodel import insert, select
 
-from src.common.base_models.database_mixin import CreateModelType, ModelType, UpdateModelType
+from src.common.base_models.database_mixin import (
+    CreateModelType,
+    ModelType,
+    UpdateModelType,
+)
 from src.common.enums import HookTypeEnum
 from src.common.query_fields import FilterGroup, QueryOptions, SortOrder
 from src.core.context import get_tenant_id
@@ -22,6 +26,7 @@ from src.database.db_session import AuditAsyncSession
 @dataclass
 class HookContext:
     """钩子执行上下文"""
+
     session: AuditAsyncSession
     params: Dict[str, Any]
     results: Dict[str, Any]
@@ -34,6 +39,7 @@ HookFunc = Callable[[HookContext], Any]
 @dataclass
 class Hook:
     """钩子配置类"""
+
     func: HookFunc  # 钩子函数
     priority: int = 0  # 优先级,数字越小优先级越高
     condition: Callable[[HookContext], bool] | None = None  # 执行条件
@@ -42,6 +48,7 @@ class Hook:
 
 class HookManager:
     """钩子管理器"""
+
     def __init__(self):
         self.hooks: Dict[HookTypeEnum, list[Hook]] = defaultdict(list)
 
@@ -51,15 +58,22 @@ class HookManager:
         func: HookFunc,
         priority: int = 0,
         condition: Callable[[HookContext], bool] | None = None,
-        error_handler: Callable[[Exception, HookContext], Any] | None = None
+        error_handler: Callable[[Exception, HookContext], Any] | None = None,
     ) -> None:
         """添加钩子"""
-        hook = Hook(func=func, priority=priority, condition=condition, error_handler=error_handler)
+        hook = Hook(
+            func=func,
+            priority=priority,
+            condition=condition,
+            error_handler=error_handler,
+        )
         self.hooks[hook_type].append(hook)
         # 按优先级排序
         self.hooks[hook_type].sort(key=lambda x: x.priority)
 
-    async def execute_hooks(self, hook_type: HookTypeEnum, context: HookContext) -> None:
+    async def execute_hooks(
+        self, hook_type: HookTypeEnum, context: HookContext
+    ) -> None:
         """执行指定类型的钩子"""
         for hook in self.hooks[hook_type]:
             # 检查条件
@@ -81,7 +95,13 @@ class HookManager:
 
 class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
     """基础 CRUD 类"""
-    def __init__(self, model: type[ModelType], create_model: type[CreateModelType], update_model: type[UpdateModelType]):
+
+    def __init__(
+        self,
+        model: type[ModelType],
+        create_model: type[CreateModelType],
+        update_model: type[UpdateModelType],
+    ):
         self.model = model
         self.create_model = create_model
         self.update_model = update_model
@@ -92,26 +112,26 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         hook_type: HookTypeEnum,
         priority: int = 0,
         condition: Callable[[HookContext], bool] | None = None,
-        error_handler: Callable[[Exception, HookContext], Any] | None = None
+        error_handler: Callable[[Exception, HookContext], Any] | None = None,
     ) -> Callable[[HookFunc], HookFunc]:
         """钩子装饰器"""
+
         def decorator(func: HookFunc) -> HookFunc:
             self.hook_manager.add_hook(
                 hook_type=hook_type,
                 func=func,
                 priority=priority,
                 condition=condition,
-                error_handler=error_handler
+                error_handler=error_handler,
             )
             return func
+
         return decorator
 
     async def _run_hooks(self, hook_type: HookTypeEnum, **kwargs) -> Dict[str, Any]:
         """运行指定类型的钩子"""
         context = HookContext(
-            session=kwargs.get('session'),   # type: ignore
-            params=kwargs,
-            results={}
+            session=kwargs.get("session"), params=kwargs, results={}  # type: ignore
         )
         await self.hook_manager.execute_hooks(hook_type, context)
         return context.results
@@ -121,13 +141,14 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         self,
         session: AuditAsyncSession,
         db_obj: ModelType,
-        obj_in: Dict | CreateModelType) -> None:
+        obj_in: Dict | CreateModelType,
+    ) -> None:
         """创建关联对象"""
-        if not hasattr(self.model, '__relation_info__'):
+        if not hasattr(self.model, "__relation_info__"):
             return
 
         for _relation, _relation_info in self.model.__relation_info__.items():
-            relation_model = _relation_info['relation_model']
+            relation_model = _relation_info["relation_model"]
             relation_obj = getattr(obj_in, _relation, None)
             if isinstance(relation_obj, list):
                 for item in relation_obj:
@@ -140,8 +161,9 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
     async def create(
         self,
         session: AuditAsyncSession,
-        *, obj_in: Dict | CreateModelType,
-        create_relation: bool = True
+        *,
+        obj_in: Dict | CreateModelType,
+        create_relation: bool = True,
     ) -> ModelType:
         """
         创建对象
@@ -163,8 +185,8 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
             )
 
             # 允许钩子修改创建数据
-            if 'modified_data' in hook_results:
-                create_data = hook_results['modified_data']
+            if "modified_data" in hook_results:
+                create_data = hook_results["modified_data"]
             else:
                 create_data = obj_in
 
@@ -178,12 +200,14 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
                 HookTypeEnum.after_create,
                 session=session,
                 db_obj=db_obj,
-                obj_in=create_data
+                obj_in=create_data,
             )
 
             await session.flush()
         except Exception as e:
-            raise errors.RequestError(data=f"创建失败: {str(getattr(e, 'data', e))}") from e
+            raise errors.RequestError(
+                data=f"创建失败: {str(getattr(e, 'data', e))}"
+            ) from e
         else:
             return db_obj
 
@@ -191,18 +215,24 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
     async def get_by_id(self, session: AuditAsyncSession, id: Any) -> ModelType | None:
         """获取单个对象"""
         statement = select(self.model).filter_by(id=id)
-        if hasattr(self.model, 'tenant_id'):
-            statement = statement.where(getattr(self.model, 'tenant_id') == get_tenant_id())
+        if hasattr(self.model, "tenant_id"):
+            statement = statement.where(
+                getattr(self.model, "tenant_id") == get_tenant_id()
+            )
 
         result = await session.execute(statement)
         return result.scalar_one_or_none()
 
     @abstractmethod
-    async def get_by_fields(self, session: AuditAsyncSession, **kwargs) -> Sequence[ModelType]:
+    async def get_by_fields(
+        self, session: AuditAsyncSession, **kwargs
+    ) -> Sequence[ModelType]:
         """根据字段获取单个对象"""
         statement = select(self.model).filter_by(**kwargs)
-        if hasattr(self.model, 'tenant_id'):
-            statement = statement.where(getattr(self.model, 'tenant_id') == get_tenant_id())
+        if hasattr(self.model, "tenant_id"):
+            statement = statement.where(
+                getattr(self.model, "tenant_id") == get_tenant_id()
+            )
         result = await session.execute(statement)
         return result.scalars().all()
 
@@ -220,10 +250,12 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         if filters:
             statement = statement.where(filters.build_query(self.model))
 
-        if hasattr(self.model, 'tenant_id'):
-            statement = statement.where(getattr(self.model, 'tenant_id') == get_tenant_id())
+        if hasattr(self.model, "tenant_id"):
+            statement = statement.where(
+                getattr(self.model, "tenant_id") == get_tenant_id()
+            )
 
-        if hasattr(self.model, '__relation_info__'):
+        if hasattr(self.model, "__relation_info__"):
             for relation_name, _ in self.model.__relation_info__.items():
                 # 使用 getattr 获取关系属性
                 relation_attr = getattr(self.model, relation_name, None)
@@ -238,7 +270,6 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         result = await session.execute(statement)
         return result.scalars().all()
 
-
     @abstractmethod
     async def update(
         self,
@@ -252,16 +283,13 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         else:
             update_data = obj_in.model_dump(exclude_unset=True)
 
-        db_obj = await self.get_by_id(session=session, id=update_data['id'])
+        db_obj = await self.get_by_id(session=session, id=update_data["id"])
         if db_obj is None:
             raise errors.RequestError(data="请求更新的对象不存在！")
 
         # 运行更新前钩子
         await self._run_hooks(
-            HookTypeEnum.before_update,
-            session=session,
-            db_obj=db_obj,
-            obj_in=obj_in
+            HookTypeEnum.before_update, session=session, db_obj=db_obj, obj_in=obj_in
         )
 
         for field in update_data:
@@ -273,10 +301,7 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
 
         # 运行更新后钩子
         await self._run_hooks(
-            HookTypeEnum.after_update,
-            session=session,
-            db_obj=db_obj,
-            obj_in=obj_in
+            HookTypeEnum.after_update, session=session, db_obj=db_obj, obj_in=obj_in
         )
 
         return db_obj
@@ -309,7 +334,9 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
             await session.delete(obj)
             await session.flush()
         except Exception as e:
-            raise errors.RequestError(data=f"删除失败: {str(getattr(e, 'data', e))}") from e
+            raise errors.RequestError(
+                data=f"删除失败: {str(getattr(e, 'data', e))}"
+            ) from e
         else:
             return True
 
@@ -353,17 +380,17 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
 
         created_objects = []
 
-        cols = [getattr(self.model, 'id')] if hasattr(self.model, 'id') else []
-        if hasattr(self.model, 'name'):
-            cols.append(getattr(self.model, 'name'))
-        if hasattr(self.model, 'code'):
-            cols.append(getattr(self.model, 'code'))
+        cols = [getattr(self.model, "id")] if hasattr(self.model, "id") else []
+        if hasattr(self.model, "name"):
+            cols.append(getattr(self.model, "name"))
+        if hasattr(self.model, "code"):
+            cols.append(getattr(self.model, "code"))
 
         tuple_cols = tuple(set(cols))  # 最后转换为tuple
 
         # 分批处理
         for i in range(0, len(values), batch_size):
-            batch = values[i:i + batch_size]
+            batch = values[i : i + batch_size]
 
             # 使用RETURNING子句
             stmt = insert(self.model).values(batch).returning(*tuple_cols)
@@ -411,7 +438,7 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
                 values.append(obj.model_dump())
 
         for i in range(0, len(values), batch_size):
-            batch = values[i:i + batch_size]
+            batch = values[i : i + batch_size]
             stmt = insert(self.model).values(batch)
             result = await session.execute(stmt)
 
@@ -419,7 +446,7 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
                 ids = result.inserted_primary_key_rows
                 if ids:
                     stmt = select(self.model).where(
-                        getattr(self.model, 'id').in_([id_[0] for id_ in ids])
+                        getattr(self.model, "id").in_([id_[0] for id_ in ids])
                     )
                     result = await session.execute(stmt)
                     created_batch = list(result.scalars().all())
@@ -427,7 +454,9 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
                     yield created_batch
 
     @abstractmethod
-    async def bulk_delete(self, session: AuditAsyncSession, ids: Sequence[int]) -> list[int]:
+    async def bulk_delete(
+        self, session: AuditAsyncSession, ids: Sequence[int]
+    ) -> list[int]:
         """批量删除对象
 
         Args:
@@ -441,12 +470,12 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
             return []
 
         # 查询所有存在的对象
-        statement = select(self.model).where(getattr(self.model, 'id').in_(ids))
+        statement = select(self.model).where(getattr(self.model, "id").in_(ids))
         result = await session.execute(statement)
         existing_objects = result.scalars().all()
 
         # 找出不存在的ID
-        existing_ids = {getattr(obj, 'id') for obj in existing_objects}
+        existing_ids = {getattr(obj, "id") for obj in existing_objects}
         failed_ids = [id_ for id_ in ids if id_ not in existing_ids]
 
         # 删除存在的对象
@@ -454,7 +483,7 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
             try:
                 await session.delete(obj)
             except Exception:
-                failed_ids.append(getattr(obj, 'id'))
+                failed_ids.append(getattr(obj, "id"))
 
         await session.flush()
         return failed_ids
@@ -476,10 +505,10 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         """
         # 构建基础查询
         stmt = select(self.model)
-        if hasattr(self.model, 'tenant_id'):
-            stmt = stmt.where(getattr(self.model, 'tenant_id') == get_tenant_id())
+        if hasattr(self.model, "tenant_id"):
+            stmt = stmt.where(getattr(self.model, "tenant_id") == get_tenant_id())
 
-        if hasattr(self.model, '__relation_info__'):
+        if hasattr(self.model, "__relation_info__"):
             for relation_name, _ in self.model.__relation_info__.items():
                 # 使用 getattr 获取关系属性
                 relation_attr = getattr(self.model, relation_name, None)
@@ -500,10 +529,10 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
                 order_by_clauses.append(field)
             stmt = stmt.order_by(*order_by_clauses)
         else:
-            if hasattr(self.model, 'sort_order'):
-                stmt = stmt.order_by(getattr(self.model, 'sort_order').asc())
+            if hasattr(self.model, "sort_order"):
+                stmt = stmt.order_by(getattr(self.model, "sort_order").asc())
             else:
-                stmt = stmt.order_by(getattr(self.model, 'id').desc())
+                stmt = stmt.order_by(getattr(self.model, "id").desc())
 
         # 查询总数
         count_stmt = select(sa.func.count()).select_from(stmt.alias())
@@ -517,17 +546,14 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         return total, items
 
     async def has_ids(
-        self,
-        session: AuditAsyncSession,
-        ids: Sequence[int]
+        self, session: AuditAsyncSession, ids: Sequence[int]
     ) -> Sequence[int] | None:
         """根据ID列表判断对象是否存在,并返回不存在的ID列表"""
-        statement = select(self.model).where(getattr(self.model, 'id').in_(ids))
+        statement = select(self.model).where(getattr(self.model, "id").in_(ids))
         result = await session.execute(statement)
         data = result.scalars().all()
         if not data:
             return ids
-        exist_ids = {getattr(obj, 'id') for obj in data}
+        exist_ids = {getattr(obj, "id") for obj in data}
         # 从ids中移除存在的ID
         return [id_ for id_ in ids if id_ not in exist_ids]
-

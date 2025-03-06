@@ -34,7 +34,7 @@ class TreeAPI(BaseAPI[ModelType, CreateModelType, UpdateModelType]):
         module_name: str,
         model: Type[ModelType],
         service: TreeService,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         super().__init__(module_name, model, service, **kwargs)
         self.module_name = module_name
@@ -62,24 +62,25 @@ class TreeAPI(BaseAPI[ModelType, CreateModelType, UpdateModelType]):
 
     def _register_get_tree_route(self) -> None:
         """注册获取树形结构路由"""
+
         @self.tree_router.get(
             "/tree",
             summary=f"获取{self.model.__name__}树形结构",
             dependencies=[
                 DependsJwtAuth,
                 # Depends(RequestPermission(f"{self.perm_prefix}:tree"))
-            ]
+            ],
         )
         async def get_tree(
             session: CurrentSession,
             root_id: Annotated[int | None, Query(ge=1, description="根节点ID")] = None,
-            max_depth: Annotated[int, Query(ge=-1, le=100, description="最大深度,-1表示不限制")] = -1
+            max_depth: Annotated[
+                int, Query(ge=-1, le=100, description="最大深度,-1表示不限制")
+            ] = -1,
         ) -> ResponseModel:
             try:
                 items = await self.service.get_tree(
-                    session=session,
-                    root_id=root_id,
-                    max_depth=max_depth
+                    session=session, root_id=root_id, max_depth=max_depth
                 )
                 return response_base.success(data=items)
             except Exception as e:
@@ -87,115 +88,121 @@ class TreeAPI(BaseAPI[ModelType, CreateModelType, UpdateModelType]):
 
     def _register_get_siblings_route(self) -> None:
         """注册获取同级节点路由"""
+
         @self.tree_router.get(
             "/siblings/{node_id}",
             summary=f"获取{self.model.__name__}同级节点",
             dependencies=[
                 DependsJwtAuth,
                 # Depends(RequestPermission(f"{self.perm_prefix}:siblings"))
-            ]
+            ],
         )
         async def get_siblings(
             session: CurrentSession,
             node_id: Annotated[int, Path(..., description="节点ID")],
-            include_self: Annotated[bool, Query(description="是否包含自身")] = False
+            include_self: Annotated[bool, Query(description="是否包含自身")] = False,
         ) -> ResponseModel:
             items = await self.service.get_siblings(
-                session=session,
-                node_id=node_id,
-                include_self=include_self
+                session=session, node_id=node_id, include_self=include_self
             )
             return response_base.success(data=items)
 
     def _register_get_ancestors_route(self) -> None:
         """注册获取祖先节点路由"""
+
         @self.tree_router.get(
             "/ancestors/{node_id}",
             summary=f"获取{self.model.__name__}祖先节点",
             dependencies=[
                 DependsJwtAuth,
                 # Depends(RequestPermission(f"{self.perm_prefix}:ancestors"))
-            ]
+            ],
         )
         async def get_ancestors(
             session: CurrentSession,
             node_id: Annotated[int, Path(..., description="节点ID")],
-            include_self: Annotated[bool, Query(description="是否包含自身")] = False
+            include_self: Annotated[bool, Query(description="是否包含自身")] = False,
         ) -> ResponseModel:
-            items = await self.service.get_ancestors(session=session, node_id=node_id, include_self=include_self)
+            items = await self.service.get_ancestors(
+                session=session, node_id=node_id, include_self=include_self
+            )
             return response_base.success(data=items)
 
     def _register_move_node_route(self) -> None:
         """注册移动节点路由"""
+
         @self.tree_router.put(
             "/move",
             summary=f"移动{self.model.__name__}节点",
             dependencies=[
                 DependsJwtAuth,
-                Depends(RequestPermission(f"{self.perm_prefix}:move"))
-            ]
+                Depends(RequestPermission(f"{self.perm_prefix}:move")),
+            ],
         )
         async def move_node(
             request: Request,
             node_id: Annotated[int, Body(ge=1, description="要移动的节点ID")],
-            new_parent_id: Annotated[int | None, Body(ge=1, description="新的父节点ID")]
+            new_parent_id: Annotated[
+                int | None, Body(ge=1, description="新的父节点ID")
+            ],
         ) -> ResponseModel:
             async with async_audit_session(async_session(), request) as session:
                 result = await self.service.move_node(
-                    session=session,
-                    node_id=node_id,
-                    new_parent_id=new_parent_id
+                    session=session, node_id=node_id, new_parent_id=new_parent_id
                 )
                 data = result.model_dump()
             return response_base.success(data=data)
 
     def _register_bulk_move_nodes_route(self) -> None:
         """注册批量移动节点路由"""
+
         @self.tree_router.put(
             "/bulk_move",
             summary=f"批量移动{self.model.__name__}节点",
             dependencies=[
                 DependsJwtAuth,
-                Depends(RequestPermission(f"{self.perm_prefix}:bulk_move"))
-            ]
+                Depends(RequestPermission(f"{self.perm_prefix}:bulk_move")),
+            ],
         )
         async def bulk_move_nodes(
             request: Request,
-            node_ids: Annotated[list[int], Body(..., min_length=1, max_length=100, description="要移动的节点ID列表")],
-            new_parent_id: Annotated[int | None, Body(..., description="新的父节点ID")]
+            node_ids: Annotated[
+                list[int],
+                Body(
+                    ..., min_length=1, max_length=100, description="要移动的节点ID列表"
+                ),
+            ],
+            new_parent_id: Annotated[int | None, Body(..., description="新的父节点ID")],
         ) -> ResponseModel:
             # 验证节点ID不重复
             if len(set(node_ids)) != len(node_ids):
                 return response_base.fail(data="节点ID不能重复")
             async with async_audit_session(async_session(), request) as session:
                 results = await self.service.bulk_move_nodes(
-                    session=session,
-                    node_ids=node_ids,
-                    new_parent_id=new_parent_id
+                    session=session, node_ids=node_ids, new_parent_id=new_parent_id
                 )
                 data = [item.model_dump() for item in results]
             return response_base.success(data=data)
 
     def _register_copy_subtree_route(self) -> None:
         """注册复制子树路由"""
+
         @self.tree_router.post(
             "/copy",
             summary=f"复制{self.model.__name__}子树",
             dependencies=[
                 DependsJwtAuth,
-                Depends(RequestPermission(f"{self.perm_prefix}:copy"))
-            ]
+                Depends(RequestPermission(f"{self.perm_prefix}:copy")),
+            ],
         )
         async def copy_subtree(
             request: Request,
             node_id: Annotated[int, Body(..., description="要复制的节点ID")],
-            new_parent_id: Annotated[int | None, Body(..., description="新的父节点ID")]
+            new_parent_id: Annotated[int | None, Body(..., description="新的父节点ID")],
         ) -> ResponseModel:
             async with async_audit_session(async_session(), request) as session:
                 result = await self.service.copy_subtree(
-                    session=session,
-                    node_id=node_id,
-                    new_parent_id=new_parent_id
+                    session=session, node_id=node_id, new_parent_id=new_parent_id
                 )
                 data = result.model_dump()
             return response_base.success(data=data)

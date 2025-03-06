@@ -1,4 +1,3 @@
-
 from .mdl_code_setting import CodeSetting
 from .mdl_code_trace import CodeTrace
 from .mdl_dept import Dept
@@ -18,21 +17,21 @@ from .mdl_user_role import UserRole
 from .mdl_user_tenant import UserTenant
 
 __all__ = [
-    'Dept',
-    'Role',
-    'User',
-    'LoginLog',
-    'OperaLog',
-    'UserRole',
-    'UserTenant',
-    'Notification',
-    'NotificationRule',
-    'Tenant',
-    'CodeSetting',
-    'CodeTrace',
-    'Factory',
-    'FactoryUser',
-    'Permission',
-    'PermissionRule',
-    'RolePermission',
+    "Dept",
+    "Role",
+    "User",
+    "LoginLog",
+    "OperaLog",
+    "UserRole",
+    "UserTenant",
+    "Notification",
+    "NotificationRule",
+    "Tenant",
+    "CodeSetting",
+    "CodeTrace",
+    "Factory",
+    "FactoryUser",
+    "Permission",
+    "PermissionRule",
+    "RolePermission",
 ]

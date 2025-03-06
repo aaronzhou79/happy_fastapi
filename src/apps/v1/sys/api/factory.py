@@ -7,7 +7,12 @@
 # @Software: Cursor
 # @Description: 工厂信息API
 
-from src.apps.v1.sys.models.mdl_factory import Factory, FactoryBase, FactoryCreate, FactoryUpdate
+from src.apps.v1.sys.models.mdl_factory import (
+    Factory,
+    FactoryBase,
+    FactoryCreate,
+    FactoryUpdate,
+)
 from src.apps.v1.sys.service.svr_factory import svr_factory
 from src.common.base_api import BaseAPI
 

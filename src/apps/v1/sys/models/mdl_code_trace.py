@@ -17,6 +17,7 @@ from src.common.enums import DocumentType
 
 class CodeTraceBase(SQLModel):
     """单据编号跟踪基础模型"""
+
     doc_type: DocumentType = Field(..., description="单据类型")
     year: int = Field(..., description="年份")
     month: int = Field(..., description="月份")
@@ -27,6 +28,7 @@ class CodeTraceBase(SQLModel):
 
 class CodeTrace(DatabaseModel, CodeTraceBase, table=True):
     """单据编号跟踪模型"""
+
     __tablename__: Literal["code_trace"] = "code_trace"
 
 
@@ -36,4 +38,5 @@ class CodeTraceCreate(CodeTraceBase):
 
 class CodeTraceUpdate(CodeTraceBase):
     """单据编号跟踪更新模型"""
+
     id: int = Field(..., description="主键")

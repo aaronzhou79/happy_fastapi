@@ -15,12 +15,13 @@ if TYPE_CHECKING:
 
 class PermissionBase(SQLModel):
     """权限基础模型"""
+
     __tablename__: Literal["sys_permission"] = "sys_permission"
 
     __table_args__ = (
-        sa.Index('idx_permission_parent_id', 'parent_id'),
-        sa.Index('idx_permission_route_path', 'route_path'),
-        sa.Index('idx_permission_api_path', 'api_path'),
+        sa.Index("idx_permission_parent_id", "parent_id"),
+        sa.Index("idx_permission_route_path", "route_path"),
+        sa.Index("idx_permission_api_path", "api_path"),
     )
 
     name: str = Field(..., max_length=50, description="权限名称")
@@ -30,14 +31,20 @@ class PermissionBase(SQLModel):
         default=None,
         sa_type=sa.BIGINT,
         foreign_key="sys_permission.id",
-        ondelete='RESTRICT',
-        description="父权限ID"
+        ondelete="RESTRICT",
+        description="父权限ID",
     )
 
     # 路由相关字段
-    route_path: str | None = Field(default=None, max_length=200, description="前端路由路径")
-    route_component: str | None = Field(default=None, max_length=100, description="前端组件路径")
-    route_redirect: str | None = Field(default=None, max_length=200, description="路由重定向路径")
+    route_path: str | None = Field(
+        default=None, max_length=200, description="前端路由路径"
+    )
+    route_component: str | None = Field(
+        default=None, max_length=100, description="前端组件路径"
+    )
+    route_redirect: str | None = Field(
+        default=None, max_length=200, description="路由重定向路径"
+    )
     route_name: str | None = Field(default=None, max_length=50, description="路由名称")
     route_title: str | None = Field(default=None, max_length=50, description="路由标题")
     route_icon: str | None = Field(default=None, max_length=50, description="路由图标")
@@ -56,9 +63,9 @@ class PermissionBase(SQLModel):
 
 class Permission(PermissionBase, TreeModel, table=True):
     """权限表"""
+
     roles: list["Role"] = Relationship(
-        back_populates="permissions",
-        link_model=RolePermission
+        back_populates="permissions", link_model=RolePermission
     )
 
 
@@ -68,9 +75,11 @@ class PermissionCreate(PermissionBase):
 
 class PermissionUpdate(PermissionBase):
     """权限更新模型"""
+
     id: int
 
 
 class PermissionGet(PermissionBase):
     """权限获取模型"""
+
     id: int

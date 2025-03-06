@@ -14,6 +14,7 @@ from src.database.db_session import async_audit_session, async_session
 
 class RequestPermission:
     """权限验证装饰器"""
+
     def __init__(self, permissions: str | Sequence[str], evaluate_rules: bool = True):
         if isinstance(permissions, str):
             permissions = [permissions]
@@ -37,8 +38,7 @@ class RequestPermission:
             role_ids = [role.id for role in user.roles]
             async with async_session() as session:
                 role_permissions = await svr_permission.get_role_permissions(
-                    session=session,
-                    role_id=role_ids
+                    session=session, role_id=role_ids
                 )
 
                 for perm in role_permissions:
@@ -49,7 +49,7 @@ class RequestPermission:
                 await redis_client.setex(
                     f"{settings.JWT_PERMS_REDIS_PREFIX}:{user.id}",
                     settings.JWT_PERMS_REDIS_EXPIRE_SECONDS,
-                    ",".join(set(user_perms))
+                    ",".join(set(user_perms)),
                 )
         else:
             user_perms = user_perms.lower().split(",")
@@ -63,9 +63,7 @@ class RequestPermission:
 async def get_permission_id(perm: str) -> int | None:
     """根据权限标识获取权限ID"""
     from src.apps.v1.sys.crud.crud_permission import crud_permission
+
     async with async_audit_session(async_session()) as session:
-        permission = await crud_permission.get_by_fields(
-            session=session,
-            perms=perm
-        )
-        return permission[0].id if permission else None # type: ignore
+        permission = await crud_permission.get_by_fields(session=session, perms=perm)
+        return permission[0].id if permission else None  # type: ignore

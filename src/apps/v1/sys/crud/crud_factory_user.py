@@ -12,13 +12,18 @@ from typing import Sequence
 from sqlalchemy import delete
 from sqlmodel import select
 
-from src.apps.v1.sys.models.mdl_factory_user import FactoryUser, FactoryUserCreate, FactoryUserUpdate
+from src.apps.v1.sys.models.mdl_factory_user import (
+    FactoryUser,
+    FactoryUserCreate,
+    FactoryUserUpdate,
+)
 from src.common.base_crud import CRUDBase
 from src.database.db_session import AuditAsyncSession
 
 
 class CrudFactoryUser(CRUDBase):
     """工厂用户CRUD类"""
+
     def __init__(self):
         super().__init__(
             model=FactoryUser,
@@ -26,7 +31,9 @@ class CrudFactoryUser(CRUDBase):
             update_model=FactoryUserUpdate,
         )
 
-    async def clear_factory_users(self, session: AuditAsyncSession, factory_id: int, user_ids: list[int]) -> None:
+    async def clear_factory_users(
+        self, session: AuditAsyncSession, factory_id: int, user_ids: list[int]
+    ) -> None:
         """
         清除工厂用户
 
@@ -41,7 +48,9 @@ class CrudFactoryUser(CRUDBase):
 
         await session.flush()
 
-    async def get_by_factory_id(self, session: AuditAsyncSession, factory_id: int) -> Sequence[FactoryUser]:
+    async def get_by_factory_id(
+        self, session: AuditAsyncSession, factory_id: int
+    ) -> Sequence[FactoryUser]:
         """
         获取工厂用户
 
@@ -53,7 +62,9 @@ class CrudFactoryUser(CRUDBase):
 
         return result.scalars().all()
 
-    async def get_by_user_id(self, session: AuditAsyncSession, user_id: int) -> Sequence[FactoryUser]:
+    async def get_by_user_id(
+        self, session: AuditAsyncSession, user_id: int
+    ) -> Sequence[FactoryUser]:
         """
         获取用户工厂
 

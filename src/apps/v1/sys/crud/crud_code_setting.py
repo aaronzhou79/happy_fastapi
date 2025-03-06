@@ -1,11 +1,14 @@
-
-
-from src.apps.v1.sys.models.mdl_code_setting import CodeSetting, CodeSettingCreate, CodeSettingUpdate
+from src.apps.v1.sys.models.mdl_code_setting import (
+    CodeSetting,
+    CodeSettingCreate,
+    CodeSettingUpdate,
+)
 from src.common.base_crud import CRUDBase
 
 
 class CrudCodeSetting(CRUDBase[CodeSetting, CodeSettingCreate, CodeSettingUpdate]):
     """编码生成设置CRUD操作"""
+
     def __init__(self) -> None:
         super().__init__(
             model=CodeSetting,

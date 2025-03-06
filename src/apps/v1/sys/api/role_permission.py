@@ -6,7 +6,11 @@
 # @File    : role_permission.py
 # @Software: Cursor
 # @Description: 角色权限管理API
-from src.apps.v1.sys.models.mdl_role_permission import RolePermission, RolePermissionCreate, RolePermissionUpdate
+from src.apps.v1.sys.models.mdl_role_permission import (
+    RolePermission,
+    RolePermissionCreate,
+    RolePermissionUpdate,
+)
 from src.apps.v1.sys.service.svr_role_permission import svr_role_permission
 from src.common.base_api import BaseAPI
 

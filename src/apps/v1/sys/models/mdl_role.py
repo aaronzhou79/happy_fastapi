@@ -25,6 +25,7 @@ if TYPE_CHECKING:
 
 class RoleBase(DateTimeMixin, SQLModel):
     """角色基础模型"""
+
     __tablename__: Literal["sys_role"] = "sys_role"
 
     name: str = Field(..., max_length=32)
@@ -36,13 +37,13 @@ class RoleBase(DateTimeMixin, SQLModel):
 
 class Role(RoleBase, DatabaseModel, table=True):
     """角色表"""
+
     __tablename__: Literal["sys_role"] = "sys_role"
 
     # Relationships
     users: list["User"] = Relationship(back_populates="roles", link_model=UserRole)
     permissions: list["Permission"] = Relationship(
-        back_populates="roles",
-        link_model=RolePermission
+        back_populates="roles", link_model=RolePermission
     )
 
 
@@ -52,9 +53,11 @@ class RoleCreate(RoleBase):
 
 class RoleUpdate(RoleBase):
     """角色更新模型"""
+
     id: int
 
 
 class RoleGet(RoleBase):
     """角色获取模型"""
+
     id: int

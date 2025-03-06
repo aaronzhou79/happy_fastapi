@@ -16,9 +16,10 @@ from src.apps.v1.sys.models.mdl_role_permission import RolePermissionCreate
 from src.core.responses.response_schema import response_base
 from src.database.db_session import async_session
 
-router = APIRouter(tags=['系统管理/初始化'])
+router = APIRouter(tags=["系统管理/初始化"])
 
-@router.post('/init_data', summary='初始化数据')
+
+@router.post("/init_data", summary="初始化数据")
 async def initdata(request: Request) -> Response:
     """初始化数据"""
     async with async_session() as session:
@@ -36,9 +37,8 @@ async def initdata(request: Request) -> Response:
                 RolePermissionCreate(role_id=2, permission_id=6),
                 RolePermissionCreate(role_id=2, permission_id=7),
                 RolePermissionCreate(role_id=2, permission_id=8),
-            ]
+            ],
         )
 
         await session.commit()
-    return response_base.fast_success(data='数据初始化成功')
-
+    return response_base.fast_success(data="数据初始化成功")

@@ -1,4 +1,3 @@
-
 import asyncio
 
 from typing import Annotated, Any, Dict, TypeVar
@@ -15,39 +14,40 @@ from src.core.conf import settings
 from src.database.db_session import AuditAsyncSession
 from src.utils.snowflake import id_worker
 
-ModelType = TypeVar("ModelType", bound='DatabaseModel')
+ModelType = TypeVar("ModelType", bound="DatabaseModel")
 CreateModelType = TypeVar("CreateModelType", bound=SQLModel)
 UpdateModelType = TypeVar("UpdateModelType", bound=SQLModel)
 
-if settings.APP_ENV == 'dev':
-    id_pk = Annotated[int | None, Field(
-        default=None,
-        primary_key=True,
-        description="主键ID",
-        sa_column_kwargs={
-            "autoincrement": True,
-            "nullable": False,
-            "index": True
-        }
-    )]
+if settings.APP_ENV == "dev":
+    id_pk = Annotated[
+        int | None,
+        Field(
+            default=None,
+            primary_key=True,
+            description="主键ID",
+            sa_column_kwargs={"autoincrement": True, "nullable": False, "index": True},
+        ),
+    ]
 else:
-    id_pk = Annotated[int | None, Field(
-        primary_key=True,
-        index=True,
-        default_factory=id_worker.get_id,
-        description='主键ID',
-        sa_type=sa.BIGINT,
-        sa_column_kwargs={
-            "nullable": False,
-            "index": True
-        }
-    )]
+    id_pk = Annotated[
+        int | None,
+        Field(
+            primary_key=True,
+            index=True,
+            default_factory=id_worker.get_id,
+            description="主键ID",
+            sa_type=sa.BIGINT,
+            sa_column_kwargs={"nullable": False, "index": True},
+        ),
+    ]
 
 
 class DatabaseModel(AsyncAttrs, SQLModel):
     """数据库模型基类"""
+
     __abstract__ = True
     id: id_pk = None  # type: ignore
+
     class Config:
         from_attributes = True
         use_enum_values = True
@@ -62,7 +62,7 @@ class DatabaseModel(AsyncAttrs, SQLModel):
         max_depth: int = 1,
         limit: int = 20,
         _depth: int = 1,
-        _visited: set | None = None
+        _visited: set | None = None,
     ) -> dict[str, Any]:
         """转换为字典,支持递归加载关联对象
 
@@ -105,8 +105,7 @@ class DatabaseModel(AsyncAttrs, SQLModel):
         # 获取所有relationship
         mapper = inspect(self.__class__)
         relationships = [
-            attr for attr in mapper.attrs
-            if isinstance(attr, RelationshipProperty)
+            attr for attr in mapper.attrs if isinstance(attr, RelationshipProperty)
         ]
 
         # 处理每个relationship
@@ -121,7 +120,9 @@ class DatabaseModel(AsyncAttrs, SQLModel):
             try:
                 value = await getattr(self.awaitable_attrs, key)
             except Exception as e:
-                print(f"获取关联对象失败: {self.__class__.__name__}.{key} - {str(getattr(e, 'data', e))}")
+                print(
+                    f"获取关联对象失败: {self.__class__.__name__}.{key} - {str(getattr(e, 'data', e))}"
+                )
                 continue
 
             # 处理关联对象
@@ -131,13 +132,17 @@ class DatabaseModel(AsyncAttrs, SQLModel):
                 # 处理集合关联,只取前20条
                 limited_value = value[:limit]
                 data[key] = [
-                    await item.to_dict(
-                        exclude=exclude,
-                        include=include,
-                        max_depth=max_depth,
-                        _depth=_depth + 1,
-                        _visited=_visited
-                    ) if hasattr(item, "to_dict") else item
+                    (
+                        await item.to_dict(
+                            exclude=exclude,
+                            include=include,
+                            max_depth=max_depth,
+                            _depth=_depth + 1,
+                            _visited=_visited,
+                        )
+                        if hasattr(item, "to_dict")
+                        else item
+                    )
                     for item in limited_value
                 ]
                 # 等待所有异步操作完成
@@ -145,24 +150,26 @@ class DatabaseModel(AsyncAttrs, SQLModel):
                     data[key] = await asyncio.gather(*data[key])
             else:
                 # 处理单个关联对象
-                data[key] = await value.to_dict(
-                    exclude=exclude,
-                    include=include,
-                    max_depth=max_depth,
-                    _depth=_depth + 1,
-                    _visited=_visited
-                ) if hasattr(value, "to_dict") else value
+                data[key] = (
+                    await value.to_dict(
+                        exclude=exclude,
+                        include=include,
+                        max_depth=max_depth,
+                        _depth=_depth + 1,
+                        _visited=_visited,
+                    )
+                    if hasattr(value, "to_dict")
+                    else value
+                )
 
         return data
 
     async def to_api_dict(
-        self,
-        max_depth: int = 1,
-        exclude_fields: list[str] | None = None
+        self, max_depth: int = 1, exclude_fields: list[str] | None = None
     ) -> dict[str, Any]:
         """转换为API响应格式的字典"""
         exclude_fields = exclude_fields or []
-        exclude_fields.extend(['password'])
+        exclude_fields.extend(["password"])
         return await self.to_dict(exclude=exclude_fields, max_depth=max_depth)
 
     def __repr__(self) -> str:
@@ -183,7 +190,7 @@ class DatabaseModel(AsyncAttrs, SQLModel):
             {'id': 1, 'product_name': 'string', 'order_id': 1}
         """
         # 提取括号内的内容
-        content = repr_str[repr_str.find("(") + 1:repr_str.rfind(")")]
+        content = repr_str[repr_str.find("(") + 1 : repr_str.rfind(")")]
 
         # 分割并转换为字典
         result = {}
@@ -191,18 +198,18 @@ class DatabaseModel(AsyncAttrs, SQLModel):
             key, value = item.split("=")
             # 处理字符串值
             if value.startswith(("'", '"')):
-                value = value.strip('"\'')
+                value = value.strip("\"'")
             # 处理数字值
             elif value.isdigit():
                 value = int(value)
             result[key] = value
 
         return result
+
     @declared_attr.directive
     def __tablename__(self) -> str:
         """表名"""
         return self.__name__.lower()
-
 
     @declared_attr.directive
     def __unique_info__(self) -> list[dict]:
@@ -214,11 +221,12 @@ class DatabaseModel(AsyncAttrs, SQLModel):
         unique_info = []
         for constraint in mapper.persist_selectable.constraints:
             if isinstance(constraint, sa.UniqueConstraint):
-                unique_info.append({
-                    'columns': [column.name for column in constraint.columns],
-                })
+                unique_info.append(
+                    {
+                        "columns": [column.name for column in constraint.columns],
+                    }
+                )
         return unique_info
-
 
     @declared_attr.directive
     def __foreign_info__(self) -> dict[str, dict]:
@@ -231,8 +239,8 @@ class DatabaseModel(AsyncAttrs, SQLModel):
             foreign_keys_info = {}
             for table in mapper.persist_selectable.foreign_keys:
                 foreign_keys_info[table.parent.name] = {
-                    'target_table': table.column.table.name,
-                    'target_column': table.column.name
+                    "target_table": table.column.table.name,
+                    "target_column": table.column.name,
                 }
         except Exception:
             return {}
@@ -249,12 +257,12 @@ class DatabaseModel(AsyncAttrs, SQLModel):
         relation_info = {}
         for rel_name, rel in mapper.relationships.items():
             relation_info[rel_name] = {
-                'relation_type': rel.direction.name,
-                'relation_model': rel.mapper.class_,
-                'relation_table': rel.mapper.class_.__tablename__,
-                'relation_column': rel.key,
-                'remote_column': rel.remote_side,
-                'secondary': rel.secondary,
+                "relation_type": rel.direction.name,
+                "relation_model": rel.mapper.class_,
+                "relation_table": rel.mapper.class_.__tablename__,
+                "relation_column": rel.key,
+                "remote_column": rel.remote_side,
+                "secondary": rel.secondary,
             }
         return relation_info
 
@@ -269,13 +277,13 @@ class DatabaseModel(AsyncAttrs, SQLModel):
             field_info = {}
             for column in mapper.persist_selectable.columns:
                 field_info[column.name] = {
-                    'type': str(column.type),
-                    'nullable': column.nullable,
-                    'primary_key': column.primary_key,
-                    'default': str(column.default.arg) if column.default else None,
-                    'comment': column.comment,
-                    'unique': column.unique,
-                    'index': column.index,
+                    "type": str(column.type),
+                    "nullable": column.nullable,
+                    "primary_key": column.primary_key,
+                    "default": str(column.default.arg) if column.default else None,
+                    "comment": column.comment,
+                    "unique": column.unique,
+                    "index": column.index,
                 }
         except Exception:
             return {}
@@ -287,19 +295,22 @@ class DatabaseModel(AsyncAttrs, SQLModel):
         return {
             "foreign_info": self.__foreign_info__,
             "relation_info": self.__relation_info__,
-            "field_info": self.__field_info__
+            "field_info": self.__field_info__,
         }
 
     @classmethod
     async def create(
-        cls,
-        db: AuditAsyncSession,
-        obj_in: CreateModelType | ModelType | Dict[str, Any]
+        cls, db: AuditAsyncSession, obj_in: CreateModelType | ModelType | Dict[str, Any]
     ) -> Any:
         """创建对象"""
         exclude_fields = {
-            "id", "created_at", "updated_at", "deleted_at",
-            "created_by", "updated_by", "_sa_instance_state"
+            "id",
+            "created_at",
+            "updated_at",
+            "deleted_at",
+            "created_by",
+            "updated_by",
+            "_sa_instance_state",
         } | set(cls.__relation_info__.keys())
 
         if isinstance(obj_in, dict):

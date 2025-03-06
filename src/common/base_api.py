@@ -91,17 +91,18 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
 
     def _register_create(self) -> None:
         """注册创建接口"""
+
         @self.router.post(
             "/create",
             summary=f"创建 {self.summary_suffix} {self.perm_prefix}:create",
             dependencies=[
                 DependsJwtAuth,
-                Depends(RequestPermission(f"{self.perm_prefix}:create"))
-            ]
+                Depends(RequestPermission(f"{self.perm_prefix}:create")),
+            ],
         )
         async def create(
             request: Request,
-            obj_in: Annotated[self.create_schema, Body(..., description="创建模型")]  # type: ignore
+            obj_in: Annotated[self.create_schema, Body(..., description="创建模型")],  # type: ignore
         ) -> ResponseModel[self.model]:  # type: ignore
             async with async_audit_session(async_session(), request) as session:
                 data = await self.service.create(session=session, obj_in=obj_in)
@@ -109,39 +110,39 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
 
     def _register_bulk_create(self) -> None:
         """注册批量创建接口"""
+
         @self.router.post(
             "/bulk_create",
             summary=f"批量创建 {self.summary_suffix} {self.perm_prefix}:bulk_create",
             dependencies=[
                 DependsJwtAuth,
-                Depends(RequestPermission(f"{self.perm_prefix}:bulk_create"))
-            ]
+                Depends(RequestPermission(f"{self.perm_prefix}:bulk_create")),
+            ],
         )
         async def bulk_create(
             request: Request,
-            datas: Annotated[Sequence[self.create_schema], Body(..., description="批量创建模型")]  # type: ignore
+            datas: Annotated[Sequence[self.create_schema], Body(..., description="批量创建模型")],  # type: ignore
         ) -> ResponseModel[Sequence[self.base_schema]]:  # type: ignore
             async with async_audit_session(async_session(), request) as session:
-                result = await self.service.bulk_create(
-                    session=session, objects=datas
-                )
+                result = await self.service.bulk_create(session=session, objects=datas)
             return response_base.success(data=result)
 
     def _register_update(self) -> None:
         """注册更新接口"""
+
         @self.router.put(
             "/update",
             summary=f"更新 {self.summary_suffix} {self.perm_prefix}:update",
             dependencies=[
                 DependsJwtAuth,
-                Depends(RequestPermission(f"{self.perm_prefix}:update"))
-            ]
+                Depends(RequestPermission(f"{self.perm_prefix}:update")),
+            ],
         )
         async def update(
             request: Request,
-            obj_in: Annotated[self.update_schema, Body(..., description="更新模型")]  # type: ignore
+            obj_in: Annotated[self.update_schema, Body(..., description="更新模型")],  # type: ignore
         ) -> ResponseModel[self.base_schema]:  # type: ignore
-            if not hasattr(obj_in, 'id'):
+            if not hasattr(obj_in, "id"):
                 return response_base.fail(data="请求参数错误，ID不存在！")
             key = generate_cache_key(self.cache_prefix, f"id_{getattr(obj_in, 'id')}")
             await redis_client.delete_prefix(key)
@@ -157,18 +158,17 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
 
     def _register_delete(self) -> None:
         """注册删除接口"""
+
         @self.router.delete(
             "/delete/{id}",
             summary=f"删除 {self.summary_suffix} {self.perm_prefix}:delete",
             dependencies=[
                 DependsJwtAuth,
-                Depends(RequestPermission(f"{self.perm_prefix}:delete"))
-            ]
+                Depends(RequestPermission(f"{self.perm_prefix}:delete")),
+            ],
         )
         async def delete(
-            request: Request,
-            *,
-            id: Annotated[int, Path(..., description="要删除的id")]
+            request: Request, *, id: Annotated[int, Path(..., description="要删除的id")]
         ) -> ResponseModel[str]:
             key = generate_cache_key(self.cache_prefix, f"id_{id}")
             await redis_client.delete_prefix(key)
@@ -184,18 +184,19 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
 
     def _register_bulk_delete(self) -> None:
         """注册批量删除接口"""
+
         @self.router.delete(
             "/bulk_delete",
             summary=f"批量删除 {self.summary_suffix} {self.perm_prefix}:bulk_delete",
             dependencies=[
                 DependsJwtAuth,
-                Depends(RequestPermission(f"{self.perm_prefix}:bulk_delete"))
-            ]
+                Depends(RequestPermission(f"{self.perm_prefix}:bulk_delete")),
+            ],
         )
         async def bulk_delete(
             request: Request,
             *,
-            ids: Annotated[list[int], Query(..., description="要删除的id列表")]
+            ids: Annotated[list[int], Query(..., description="要删除的id列表")],
         ) -> ResponseModel[str]:
             for id in ids:
                 key = generate_cache_key(self.cache_prefix, f"id_{id}")
@@ -214,13 +215,14 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
 
     def _register_get(self) -> None:
         """注册获取单个接口"""
+
         @self.router.get(
             "/get",
             summary=f"获取 {self.summary_suffix}",
             dependencies=[
                 DependsJwtAuth,
                 # Depends(RequestPermission(f"{self.perm_prefix}:get"))
-            ]
+            ],
         )
         @cached(
             ttl=self.cache_ttl,
@@ -231,15 +233,17 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
                 f"{self.cache_prefix}:{self.model.__name__}",
                 f"tenant_id_{get_tenant_id()}",
                 f"id_{kwargs.get('id')}",
-                f"depth_{kwargs.get('max_depth')}"
+                f"depth_{kwargs.get('max_depth')}",
             ),
-            **get_redis_settings()
+            **get_redis_settings(),
         )
         async def get(
             session: CurrentSession,
             *,
             id: int,
-            max_depth: Annotated[int, Query(le=3, description="关联数据的最大深度")] = 1
+            max_depth: Annotated[
+                int, Query(le=3, description="关联数据的最大深度")
+            ] = 1,
         ) -> ResponseModel[self.with_schema]:  # type: ignore
             item = await self.service.get_by_id(session=session, id=id)
             if not item:
@@ -249,19 +253,22 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
 
     def _register_query(self) -> None:
         """注册查询接口"""
+
         @self.router.post(
             "/query",
             summary=f"查询 {self.summary_suffix}",
             dependencies=[
                 DependsJwtAuth,
                 # Depends(RequestPermission(f"{self.perm_prefix}:query"))
-            ]
+            ],
         )
         async def query(
             session: CurrentSession,
             options: QueryOptions,
         ) -> ResponseModel[self.with_schema]:  # type: ignore
-            total, items = await self.service.get_by_options(session=session, options=options)
+            total, items = await self.service.get_by_options(
+                session=session, options=options
+            )
             data = [await item.to_api_dict(max_depth=1) for item in items]  # type: ignore
             return response_base.success(data={"total": total, "items": data})
 
@@ -269,12 +276,7 @@ class BaseAPI(Generic[ModelType, CreateModelType, UpdateModelType]):
         """将路由包含到其他路由器中"""
         router.include_router(self.router)
 
-    def add_api_route(
-        self,
-        path: str,
-        endpoint: Callable,
-        **kwargs: Any
-    ) -> None:
+    def add_api_route(self, path: str, endpoint: Callable, **kwargs: Any) -> None:
         """添加自定义路由"""
         self.router.add_api_route(path, endpoint, **kwargs)
 

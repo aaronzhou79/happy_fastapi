@@ -10,13 +10,18 @@ from typing import Sequence
 
 from sqlmodel import select
 
-from src.apps.v1.sys.models.mdl_permission_rule import PermissionRule, PermissionRuleCreate, PermissionRuleUpdate
+from src.apps.v1.sys.models.mdl_permission_rule import (
+    PermissionRule,
+    PermissionRuleCreate,
+    PermissionRuleUpdate,
+)
 from src.common.base_crud import CRUDBase
 from src.database.db_session import AuditAsyncSession
 
 
 class CrudPermissionRule(CRUDBase):
     """权限规则相关CRUD类"""
+
     def __init__(self):
         super().__init__(
             model=PermissionRule,
@@ -24,11 +29,13 @@ class CrudPermissionRule(CRUDBase):
             update_model=PermissionRuleUpdate,
         )
 
-    async def get_by_permission(self, session: AuditAsyncSession, permission_id: int) -> Sequence[PermissionRule]:
+    async def get_by_permission(
+        self, session: AuditAsyncSession, permission_id: int
+    ) -> Sequence[PermissionRule]:
         """获取权限规则"""
         result = await session.execute(
-            select(self.model).where(
-                self.model.permission_id == permission_id))
+            select(self.model).where(self.model.permission_id == permission_id)
+        )
         return result.scalars().all()
 
 

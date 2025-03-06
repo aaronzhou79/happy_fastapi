@@ -19,14 +19,20 @@ from src.common.base_models.datetime_mixin import DateTimeMixin
 
 class UserTenantBase(DateTimeMixin, SQLModel):
     """用户-账套关联基础模型"""
-    user_id: int = Field(default=None, foreign_key="sys_user.id", sa_type=sa.BIGINT, ondelete='CASCADE')
-    tenant_id: int = Field(default=None, foreign_key="sys_tenant.id", sa_type=sa.BIGINT, ondelete='CASCADE')
+
+    user_id: int = Field(
+        default=None, foreign_key="sys_user.id", sa_type=sa.BIGINT, ondelete="CASCADE"
+    )
+    tenant_id: int = Field(
+        default=None, foreign_key="sys_tenant.id", sa_type=sa.BIGINT, ondelete="CASCADE"
+    )
 
 
 class UserTenant(UserTenantBase, DatabaseModel, table=True):
     """用户-账套关联表"""
+
     __tablename__: Literal["sys_user_tenant"] = "sys_user_tenant"
-    __table_args__ = (UniqueConstraint('user_id', 'tenant_id', name='uq_user_tenant'),)
+    __table_args__ = (UniqueConstraint("user_id", "tenant_id", name="uq_user_tenant"),)
 
 
 class UserTenantCreate(UserTenantBase):
@@ -35,4 +41,5 @@ class UserTenantCreate(UserTenantBase):
 
 class UserTenantUpdate(UserTenantBase):
     """用户-账套关联更新模型"""
+
     id: int = Field(..., description="用户-账套关联ID")

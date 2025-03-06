@@ -10,15 +10,22 @@
 
 from typing import Sequence
 from src.apps.v1.sys.crud.crud_role_permission import crud_role_permission
-from src.apps.v1.sys.models.mdl_role_permission import RolePermission, RolePermissionCreate, RolePermissionUpdate
+from src.apps.v1.sys.models.mdl_role_permission import (
+    RolePermission,
+    RolePermissionCreate,
+    RolePermissionUpdate,
+)
 from src.common.base_service import BaseService
 from src.database.db_session import AuditAsyncSession
 
 
-class SvrRolePermission(BaseService[RolePermission, RolePermissionCreate, RolePermissionUpdate]):
+class SvrRolePermission(
+    BaseService[RolePermission, RolePermissionCreate, RolePermissionUpdate]
+):
     """
     角色权限服务
     """
+
     def __init__(self):
         self.crud = crud_role_permission
 

@@ -24,6 +24,7 @@ from src.common.logger import log
 
 class AESCipher:
     """AES 加密解密类"""
+
     def __init__(self, key: bytes | str) -> None:
         """
         :param key: 密钥，16/24/32 bytes 或 16 进制字符串
@@ -38,7 +39,7 @@ class AESCipher:
         :return:
         """
         if not isinstance(plaintext, bytes):
-            plaintext = str(plaintext).encode('utf-8')
+            plaintext = str(plaintext).encode("utf-8")
         iv = os.urandom(16)
         cipher = Cipher(algorithms.AES(self.key), modes.CBC(iv), backend=backend)
         encryptor = cipher.encryptor()
@@ -54,7 +55,11 @@ class AESCipher:
         :param ciphertext: 解密前的密文, bytes 或 16 进制字符串
         :return:
         """
-        ciphertext = ciphertext if isinstance(ciphertext, bytes) else bytes.fromhex(str(ciphertext))
+        ciphertext = (
+            ciphertext
+            if isinstance(ciphertext, bytes)
+            else bytes.fromhex(str(ciphertext))
+        )
         iv = ciphertext[:16]
         ciphertext = ciphertext[16:]
         cipher = Cipher(algorithms.AES(self.key), modes.CBC(iv), backend=backend)
@@ -62,11 +67,12 @@ class AESCipher:
         unpadder = padding.PKCS7(cipher.algorithm.block_size).unpadder()  # type: ignore
         padded_plaintext = decryptor.update(ciphertext) + decryptor.finalize()
         plaintext = unpadder.update(padded_plaintext) + unpadder.finalize()
-        return plaintext.decode('utf-8')
+        return plaintext.decode("utf-8")
 
 
 class Md5Cipher:
     """MD5 加密类"""
+
     @staticmethod
     def encrypt(plaintext: bytes | str) -> str:
         """
@@ -77,13 +83,14 @@ class Md5Cipher:
         """
         sha256 = hashlib.sha256()
         if not isinstance(plaintext, bytes):
-            plaintext = str(plaintext).encode('utf-8')
+            plaintext = str(plaintext).encode("utf-8")
         sha256.update(plaintext)
         return sha256.hexdigest()
 
 
 class ItsDCipher:
     """ItsDangerous 加密解密类"""
+
     def __init__(self, key: bytes | str) -> None:
         """
         :param key: 密钥，16/24/32 bytes 或 16 进制字符串
@@ -101,7 +108,7 @@ class ItsDCipher:
         try:
             ciphertext = serializer.dumps(plaintext)
         except Exception as e:
-            log.error(f'ItsDangerous encrypt failed: {str(getattr(e, 'data', e))}')
+            log.error(f"ItsDangerous encrypt failed: {str(getattr(e, 'data', e))}")
             ciphertext = Md5Cipher.encrypt(plaintext)
         return str(ciphertext)
 
@@ -116,7 +123,7 @@ class ItsDCipher:
         try:
             plaintext = serializer.loads(ciphertext)
         except Exception as e:
-            log.error(f'ItsDangerous decrypt failed: {str(getattr(e, 'data', e))}')
+            log.error(f"ItsDangerous decrypt failed: {str(getattr(e, 'data', e))}")
             plaintext = ciphertext
         return plaintext
 
@@ -127,7 +134,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 def generate_salt(length: int = 16) -> str:
     """生成随机盐值"""
     alphabet = string.ascii_letters + string.digits
-    return ''.join(secrets.choice(alphabet) for _ in range(length))
+    return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
 def hash_password(password: str, salt: str) -> str:

@@ -19,14 +19,20 @@ from src.common.base_models.datetime_mixin import DateTimeMixin
 
 class UserRoleBase(DateTimeMixin, SQLModel):
     """用户-角色关联基础模型"""
-    user_id: int = Field(default=None, foreign_key="sys_user.id", sa_type=sa.BIGINT, ondelete='CASCADE')
-    role_id: int = Field(default=None, foreign_key="sys_role.id", sa_type=sa.BIGINT, ondelete='CASCADE')
+
+    user_id: int = Field(
+        default=None, foreign_key="sys_user.id", sa_type=sa.BIGINT, ondelete="CASCADE"
+    )
+    role_id: int = Field(
+        default=None, foreign_key="sys_role.id", sa_type=sa.BIGINT, ondelete="CASCADE"
+    )
 
 
 class UserRole(UserRoleBase, DatabaseModel, table=True):
     """用户-角色关联表"""
+
     __tablename__: Literal["sys_user_role"] = "sys_user_role"
-    __table_args__ = (UniqueConstraint('user_id', 'role_id', name='uq_user_role'),)
+    __table_args__ = (UniqueConstraint("user_id", "role_id", name="uq_user_role"),)
 
 
 class UserRoleCreate(UserRoleBase):

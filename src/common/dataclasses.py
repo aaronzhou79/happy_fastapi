@@ -12,6 +12,7 @@ from src.common.enums import OperaLogStatus
 @dataclasses.dataclass
 class IpInfo:
     """IP 信息"""
+
     ip: str
     country: str | None
     region: str | None
@@ -21,6 +22,7 @@ class IpInfo:
 @dataclasses.dataclass
 class UserAgentInfo:
     """用户代理信息"""
+
     user_agent: str | None
     os: str | None
     browser: str | None
@@ -30,6 +32,7 @@ class UserAgentInfo:
 @dataclasses.dataclass
 class RequestCallNext:
     """请求调用下一个中间件"""
+
     code: int
     msg: str
     status: OperaLogStatus
@@ -40,6 +43,7 @@ class RequestCallNext:
 @dataclasses.dataclass
 class NewToken:
     """新令牌"""
+
     new_access_token: str
     new_access_token_expire_time: datetime
     new_refresh_token: str
@@ -49,6 +53,7 @@ class NewToken:
 @dataclasses.dataclass
 class AccessToken:
     """访问令牌"""
+
     access_token: str
     access_token_expire_time: datetime
 
@@ -56,5 +61,6 @@ class AccessToken:
 @dataclasses.dataclass
 class RefreshToken:
     """刷新令牌"""
+
     refresh_token: str
     refresh_token_expire_time: datetime

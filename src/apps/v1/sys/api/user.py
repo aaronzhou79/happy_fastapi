@@ -39,6 +39,7 @@ user_api = BaseAPI(
     tags=["系统管理/用户管理"],
 )
 
+
 @user_api.router.post("/login")
 async def login(
     request: Request,
@@ -59,7 +60,7 @@ async def login(
     "/logout",
     dependencies=[
         DependsJwtAuth,
-    ]
+    ],
 )
 async def logout(
     request: Request,
@@ -73,10 +74,7 @@ async def logout(
 @user_api.router.post(
     "/set_as_user",
     description="设置用户, 权限码：sys:auth:set_as_user",
-    dependencies=[
-        DependsJwtAuth,
-        Depends(RequestPermission("sys:auth:set_as_user"))
-    ]
+    dependencies=[DependsJwtAuth, Depends(RequestPermission("sys:auth:set_as_user"))],
 )
 async def set_as_user(
     request: Request,
@@ -86,18 +84,23 @@ async def set_as_user(
     roles: Annotated[list[int] | None, Body(..., description="角色ID列表")] = None,
 ) -> ResponseModel:
     """设置为用户"""
-    data = await svr_auth.set_as_user(request=request, id=id, username=username, password=password, roles=roles)
+    data = await svr_auth.set_as_user(
+        request=request, id=id, username=username, password=password, roles=roles
+    )
     return response_base.success(data=data)
 
 
-@user_api.router.get("/me",
+@user_api.router.get(
+    "/me",
     dependencies=[
         DependsJwtAuth,
-    ])
+    ],
+)
 async def me(request: Request, session: CurrentSession) -> ResponseModel:
     """获取当前用户信息"""
     user_id = request.user.user_data.id
     is_superuser = request.user.user_data.is_superuser
-    data = await svr_user.get_permissions(session=session, user_id=user_id, is_superuser=is_superuser)
+    data = await svr_user.get_permissions(
+        session=session, user_id=user_id, is_superuser=is_superuser
+    )
     return response_base.success(data=data)
-

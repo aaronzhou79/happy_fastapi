@@ -36,7 +36,9 @@ class InterceptHandler(logging.Handler):
             frame = frame.f_back
             depth += 1
 
-        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
+        logger.opt(depth=depth, exception=record.exc_info).log(
+            level, record.getMessage()
+        )
 
 
 def setup_logging() -> None:
@@ -54,7 +56,7 @@ def setup_logging() -> None:
     # Remove all log handlers and propagate to root logger
     for name in logging.root.manager.loggerDict.keys():
         logging.getLogger(name).handlers = []
-        if 'uvicorn.access' in name or 'watchfiles.main' in name:
+        if "uvicorn.access" in name or "watchfiles.main" in name:
             logging.getLogger(name).propagate = False
         else:
             logging.getLogger(name).propagate = True
@@ -71,8 +73,12 @@ def setup_logging() -> None:
     def correlation_id_filter(record: dict) -> bool:
         """设置correlation_id和trace_id"""
         current_id = correlation_id.get()
-        cid = str(current_id) if current_id is not None else settings.LOG_CID_DEFAULT_VALUE
-        record['correlation_id'] = cid[: settings.LOG_CID_UUID_LENGTH]   # type: ignore
+        cid = (
+            str(current_id)
+            if current_id is not None
+            else settings.LOG_CID_DEFAULT_VALUE
+        )
+        record["correlation_id"] = cid[: settings.LOG_CID_UUID_LENGTH]  # type: ignore
 
         return True
 
@@ -80,16 +86,16 @@ def setup_logging() -> None:
     logger.configure(
         handlers=[
             {
-                'sink': stdout,
-                'level': settings.LOG_STDOUT_LEVEL,
-                'filter': lambda record: correlation_id_filter(record) and record['level'].no <= 25,  # type: ignore
-                'format': settings.LOG_STD_FORMAT,
+                "sink": stdout,
+                "level": settings.LOG_STDOUT_LEVEL,
+                "filter": lambda record: correlation_id_filter(record) and record["level"].no <= 25,  # type: ignore
+                "format": settings.LOG_STD_FORMAT,
             },
             {
-                'sink': stderr,
-                'level': settings.LOG_STDERR_LEVEL,
-                'filter': lambda record: correlation_id_filter(record) and record['level'].no >= 30,  # type: ignore
-                'format': settings.LOG_STD_FORMAT,
+                "sink": stderr,
+                "level": settings.LOG_STDERR_LEVEL,
+                "filter": lambda record: correlation_id_filter(record) and record["level"].no >= 30,  # type: ignore
+                "format": settings.LOG_STD_FORMAT,
             },
         ]
     )
@@ -102,16 +108,16 @@ def set_customize_logfile() -> None:
         os.mkdir(log_path)
 
     # log files
-    log_stdout_file = os.path.join(log_path, settings.LOG_STDOUT_FILENAME or '')
-    log_stderr_file = os.path.join(log_path, settings.LOG_STDERR_FILENAME or '')
+    log_stdout_file = os.path.join(log_path, settings.LOG_STDOUT_FILENAME or "")
+    log_stderr_file = os.path.join(log_path, settings.LOG_STDERR_FILENAME or "")
 
     # loguru logger: https://loguru.readthedocs.io/en/stable/api/logger.html#loguru._logger.Logger.add
     log_config = {
-        'rotation': '10 MB',
-        'retention': '15 days',
-        'compression': 'tar.gz',
-        'enqueue': True,
-        'format': settings.LOG_LOGURU_FORMAT,
+        "rotation": "10 MB",
+        "retention": "15 days",
+        "compression": "tar.gz",
+        "enqueue": True,
+        "format": settings.LOG_LOGURU_FORMAT,
     }
 
     # stdout file

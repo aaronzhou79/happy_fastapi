@@ -45,10 +45,13 @@ def init_notification_rules() -> None:
 
     from src.apps.v1.sys.models.mdl_notification_rule import NotificationRule
     from src.database.db_session import SQLALCHEMY_DATABASE_URL
-    if settings.DB_TYPE == 'sqlite':
-        sync_db_url = SQLALCHEMY_DATABASE_URL.replace('sqlite+aiosqlite:', 'sqlite:')
-    elif settings.DB_TYPE == 'postgresql':
-        sync_db_url = SQLALCHEMY_DATABASE_URL.replace('postgresql+asyncpg:', 'postgresql:')
+
+    if settings.DB_TYPE == "sqlite":
+        sync_db_url = SQLALCHEMY_DATABASE_URL.replace("sqlite+aiosqlite:", "sqlite:")
+    elif settings.DB_TYPE == "postgresql":
+        sync_db_url = SQLALCHEMY_DATABASE_URL.replace(
+            "postgresql+asyncpg:", "postgresql:"
+        )
     else:
         raise ValueError(f"不支持的数据库类型: {settings.DB_TYPE}")
 
@@ -57,15 +60,18 @@ def init_notification_rules() -> None:
     with Session(engine) as session:
         # 同步方式获取规则
         rules = session.query(NotificationRule).all()
-        notification_rules_config.update({
-            rule.path: {
-                "method": rule.method,
-                "type": rule.type,
-                "title_template": rule.title_template,
-                "content_template": rule.content_template,
-                "condition": rule.condition
-            } for rule in rules
-        })
+        notification_rules_config.update(
+            {
+                rule.path: {
+                    "method": rule.method,
+                    "type": rule.type,
+                    "title_template": rule.title_template,
+                    "content_template": rule.content_template,
+                    "condition": rule.condition,
+                }
+                for rule in rules
+            }
+        )
 
     NotificationMiddleware.notification_rules = notification_rules_config
 
@@ -76,7 +82,7 @@ async def init_limiter() -> None:
 
         await FastAPILimiter.init(
             redis=redis_client,
-            prefix=settings.REQUEST_LIMITER_REDIS_PREFIX or 'fastapi_limiter',
+            prefix=settings.REQUEST_LIMITER_REDIS_PREFIX or "fastapi_limiter",
             http_callback=http_limit_callback,
         )
         log.info("🟢 限流器初始化成功")
@@ -123,6 +129,7 @@ def register_app() -> FastAPI:
 
     # 获取环境变量中的ROOT_PATH，用于API网关代理
     import os
+
     root_path = os.environ.get("ROOT_PATH", "")
     log.info("🟢 应用根路径: {}", root_path)
 
@@ -172,7 +179,7 @@ def register_middleware(app: FastAPI) -> None:
         TenantMiddleware,
         tenant_header=settings.TENANT_HEADER,
         tenant_query_param=settings.TENANT_QUERY_PARAM,
-        default_tenant=settings.DEFAULT_TENANT_ID
+        default_tenant=settings.DEFAULT_TENANT_ID,
     )
     # State (required)
     app.add_middleware(StateMiddleware)
@@ -198,8 +205,8 @@ def register_middleware(app: FastAPI) -> None:
             CORSMiddleware,
             allow_origins=settings.CORS_ALLOWED_ORIGINS,
             allow_credentials=True,
-            allow_methods=['*'],
-            allow_headers=['*'],
+            allow_methods=["*"],
+            allow_headers=["*"],
             expose_headers=settings.CORS_EXPOSE_HEADERS,
         )
 

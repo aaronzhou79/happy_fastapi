@@ -12,6 +12,7 @@ from sqlmodel import SQLModel
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from dotenv import load_dotenv
+
 # 获取项目根目录路径
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 print(f"project_root: {project_root}")
@@ -30,9 +31,9 @@ try:
     from src.core.conf import settings
     from src.database.db_session import SQLALCHEMY_DATABASE_URL
 
-    if settings.DB_TYPE == 'sqlite':
+    if settings.DB_TYPE == "sqlite":
         SQLALCHEMY_DATABASE_URL = f"sqlite+aiosqlite:///./{settings.DB_NAME}"
-    elif settings.DB_TYPE == 'postgresql':
+    elif settings.DB_TYPE == "postgresql":
         SQLALCHEMY_DATABASE_URL = f"postgresql+asyncpg://{settings.DB_USER}:{settings.DB_PASSWORD}@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
     else:
         raise ValueError(f"Invalid database type: {settings.DB_TYPE}")
@@ -40,6 +41,7 @@ try:
     # 导入所有模型以确保它们被注册到SQLModel的元数据中
     try:
         from migrations.models_config import *
+
         print("========== 成功导入模型 ==========")
         print(f"数据库类型：{settings.DB_TYPE}")
         print(f"数据库连接：{SQLALCHEMY_DATABASE_URL}")

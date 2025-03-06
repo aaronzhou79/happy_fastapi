@@ -7,7 +7,12 @@
 # @Software: Cursor
 # @Description: 角色管理API
 
-from src.apps.v1.sys.models.mdl_code_setting import CodeSetting, CodeSettingBase, CodeSettingCreate, CodeSettingUpdate
+from src.apps.v1.sys.models.mdl_code_setting import (
+    CodeSetting,
+    CodeSettingBase,
+    CodeSettingCreate,
+    CodeSettingUpdate,
+)
 from src.apps.v1.sys.service.svr_code_setting import svr_code_setting
 from src.common.base_api import BaseAPI
 

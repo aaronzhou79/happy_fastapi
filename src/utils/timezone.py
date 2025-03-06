@@ -19,6 +19,7 @@ class TimeZone:
     """
     时区工具类
     """
+
     tz: str = settings.DATETIME_TIMEZONE
     tz_info: zoneinfo.ZoneInfo = zoneinfo.ZoneInfo(tz)
 
@@ -42,7 +43,9 @@ class TimeZone:
         return dt.astimezone(cls.tz_info)
 
     @classmethod
-    def f_str(cls, date_str: str, format_str: str = settings.DATETIME_FORMAT) -> datetime:
+    def f_str(
+        cls, date_str: str, format_str: str = settings.DATETIME_FORMAT
+    ) -> datetime:
         """
         时间字符串转时区时间
 

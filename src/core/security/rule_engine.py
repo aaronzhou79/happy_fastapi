@@ -15,7 +15,9 @@ class RuleEngine:
     """规则执行引擎"""
 
     @staticmethod
-    async def evaluate_condition(condition: RuleCondition, context: Dict[str, Any]) -> bool:
+    async def evaluate_condition(
+        condition: RuleCondition, context: Dict[str, Any]
+    ) -> bool:
         """
         评估单个条件
 
@@ -30,12 +32,18 @@ class RuleEngine:
                 return RuleEngine._evaluate_ip_condition(condition, context)
             if condition.type == "data":
                 return RuleEngine._evaluate_data_condition(condition, context)
-            raise errors.RuleExecutionError(data=f"不支持的条件类型: {condition.type}")  # noqa: TRY301
+            raise errors.RuleExecutionError(
+                data=f"不支持的条件类型: {condition.type}"
+            )  # noqa: TRY301
         except Exception as e:
-            raise errors.RuleExecutionError(data=f"条件执行失败: {str(getattr(e, 'data', e))}") from e
+            raise errors.RuleExecutionError(
+                data=f"条件执行失败: {str(getattr(e, 'data', e))}"
+            ) from e
 
     @staticmethod
-    def _evaluate_time_condition(condition: RuleCondition, context: Dict[str, Any]) -> bool:
+    def _evaluate_time_condition(
+        condition: RuleCondition, context: Dict[str, Any]
+    ) -> bool:
         """评估时间条件"""
         current_time = context.get("current_time", datetime.now())
         if condition.operator == "between":
@@ -44,7 +52,9 @@ class RuleEngine:
         return False
 
     @staticmethod
-    def _evaluate_ip_condition(condition: RuleCondition, context: Dict[str, Any]) -> bool:
+    def _evaluate_ip_condition(
+        condition: RuleCondition, context: Dict[str, Any]
+    ) -> bool:
         """评估IP条件"""
         request_ip = ipaddress.ip_address(context.get("ip", "0.0.0.0"))  # noqa: S104
         if condition.operator == "in":
@@ -53,7 +63,9 @@ class RuleEngine:
         return False
 
     @staticmethod
-    def _evaluate_data_condition(condition: RuleCondition, context: Dict[str, Any]) -> bool:
+    def _evaluate_data_condition(
+        condition: RuleCondition, context: Dict[str, Any]
+    ) -> bool:
         """评估数据条件"""
         data = context.get("data", {})
         if condition.operator == "eq":
@@ -99,17 +111,14 @@ class RuleEngine:
         # 从数据库获取
         async with async_session() as session:
             rules = await crud_permission_rule.get_by_permission(
-                session=session,
-                permission_id=permission_id
+                session=session, permission_id=permission_id
             )
 
         # 缓存规则
         if rules:
             rules_str = "|".join(rule.rule.json() for rule in rules)
             await redis_client.setex(
-                cache_key,
-                settings.PERMISSION_RULES_REDIS_EXPIRE_SECONDS,
-                rules_str
+                cache_key, settings.PERMISSION_RULES_REDIS_EXPIRE_SECONDS, rules_str
             )
             return [rule.rule for rule in rules]
 

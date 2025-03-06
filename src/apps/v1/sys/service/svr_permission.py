@@ -26,14 +26,13 @@ class SvrPermission(TreeService):
     """
     权限服务
     """
+
     def __init__(self):
         self.tree_crud = self.crud = crud_permission
         self.model = Permission
 
     async def get_role_permissions(
-        self,
-        session: AuditAsyncSession,
-        role_id: list[int] | int
+        self, session: AuditAsyncSession, role_id: list[int] | int
     ) -> Sequence[Permission]:
         """
         获取角色权限
@@ -56,15 +55,17 @@ class SvrPermission(TreeService):
                 if hasattr(route, "dependencies"):
                     # 解析路由权限依赖
                     for dep in route.dependencies:  # type: ignore
-                        if hasattr(dep, "dependency") and hasattr(dep.dependency, 'permissions'):
+                        if hasattr(dep, "dependency") and hasattr(
+                            dep.dependency, "permissions"
+                        ):
                             perms.append(
                                 PermissionCreate(
                                     name=route.tags[0] or route.name,  # type: ignore
-                                    code=re.sub(r'/api/v\d+/', '', route.path).replace("/", "_"),  # type: ignore
+                                    code=re.sub(r"/api/v\d+/", "", route.path).replace("/", "_"),  # type: ignore
                                     type=PermissionType.API,
                                     api_path=route.path,  # type: ignore
                                     api_method=route.methods.pop(),  # type: ignore
-                                    perm_code=",".join(dep.dependency.permissions)
+                                    perm_code=",".join(dep.dependency.permissions),
                                 )
                             )
 
@@ -137,8 +138,8 @@ class SvrPermission(TreeService):
                         "route_keep_alive": True,
                         "route_always_show": False,
                         "parent_id": None,
-                    }
-                ]
+                    },
+                ],
             }
         ]
 
@@ -147,7 +148,7 @@ class SvrPermission(TreeService):
         exists = {(r.code): r for r in result.scalars()}
 
         async def create_menu(session: AuditAsyncSession, menu: dict) -> None:
-            key = (menu["code"])
+            key = menu["code"]
             if key not in exists:
                 menu_obj = await self.crud.create(session, obj_in=menu)
             else:

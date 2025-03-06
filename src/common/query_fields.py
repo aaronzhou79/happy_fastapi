@@ -20,6 +20,7 @@ from sqlalchemy.sql.elements import ColumnElement
 
 class FilterOperator(str, Enum):
     """过滤操作符"""
+
     EQ = "eq"  # 等于
     NE = "ne"  # 不等于
     GT = "gt"  # 大于
@@ -36,6 +37,7 @@ class FilterOperator(str, Enum):
 
 class LogicalOperator(str, Enum):
     """逻辑运算符"""
+
     AND = "and"
     OR = "or"
     NOT = "not"
@@ -43,11 +45,12 @@ class LogicalOperator(str, Enum):
 
 class FilterCondition(BaseModel):
     """过滤条件"""
+
     field: str
     op: FilterOperator | Literal["=", ">", "<", ">=", "<=", "!="]
     value: Any | None = None
 
-    @field_validator('value')
+    @field_validator("value")
     @classmethod
     def validate_value(cls, v: Any, info: ValidationInfo) -> Any:
         """
@@ -55,24 +58,25 @@ class FilterCondition(BaseModel):
 
         对于 IS_NULL 和 NOT_NULL 操作符,value 应该为 None
         """
-        if info.data.get('op') in [FilterOperator.IS_NULL, FilterOperator.NOT_NULL]:
+        if info.data.get("op") in [FilterOperator.IS_NULL, FilterOperator.NOT_NULL]:
             return None
         return v
 
 
 class FilterGroup(BaseModel):
     """过滤条件组"""
+
     couple: LogicalOperator = LogicalOperator.AND
-    conditions: list[Union[FilterCondition, 'FilterGroup']] = Field(
+    conditions: list[Union[FilterCondition, "FilterGroup"]] = Field(
         description="过滤条件列表,每个条件可以是 FilterCondition 或 FilterGroup"
     )
 
-    @field_validator('conditions')
+    @field_validator("conditions")
     @classmethod
     def validate_conditions(
         cls,
-        v: list[Union[FilterCondition, 'FilterGroup']],
-    ) -> list[Union[FilterCondition, 'FilterGroup']]:
+        v: list[Union[FilterCondition, "FilterGroup"]],
+    ) -> list[Union[FilterCondition, "FilterGroup"]]:
         """
         验证 conditions 的值
 
@@ -82,7 +86,9 @@ class FilterGroup(BaseModel):
             raise ValueError("conditions 不能为空")
         return v
 
-    def _build_condition(self, field: Any, op: FilterOperator | str, value: Any) -> ColumnElement[bool]:
+    def _build_condition(
+        self, field: Any, op: FilterOperator | str, value: Any
+    ) -> ColumnElement[bool]:
         """构建单个查询条件"""
         operators = {
             FilterOperator.EQ: lambda: field == value,
@@ -114,7 +120,9 @@ class FilterGroup(BaseModel):
                 clauses.append(condition.build_query(model_class))
             else:
                 field = getattr(model_class, condition.field)
-                clauses.append(self._build_condition(field, condition.op, condition.value))
+                clauses.append(
+                    self._build_condition(field, condition.op, condition.value)
+                )
 
         match self.couple:
             case LogicalOperator.AND:
@@ -127,18 +135,21 @@ class FilterGroup(BaseModel):
 
 class SortOrder(str, Enum):
     """排序方向"""
+
     ASC = "asc"
     DESC = "desc"
 
 
 class SortField(BaseModel):
     """排序字段"""
+
     field: str = Field(default="id", description="排序字段")
     order: SortOrder = Field(default=SortOrder.DESC, description="排序方向")
 
 
 class QueryOptions(BaseModel):
     """查询选项"""
+
     filters: FilterGroup | None = None
     sort: list[SortField] | None = None
     offset: int = 0

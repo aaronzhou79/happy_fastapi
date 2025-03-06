@@ -7,6 +7,7 @@ from src.database.db_redis import redis_client
 
 class RedisManager:
     """Redis 管理类"""
+
     def __init__(self, prefix: str = ""):
         self.prefix = f"{settings.REDIS_CACHE_KEY_PREFIX}:{prefix}"
         self.client = redis_client.client
@@ -20,12 +21,7 @@ class RedisManager:
         """获取字符串值"""
         return await self.client.get(self.get_key(key))
 
-    async def set_str(
-        self,
-        key: str,
-        value: str,
-        expire: int | None = None
-    ) -> bool:
+    async def set_str(self, key: str, value: str, expire: int | None = None) -> bool:
         """设置字符串值"""
         key = self.get_key(key)
         if expire:
@@ -39,11 +35,11 @@ class RedisManager:
         """获取Hash字段值"""
         return self.client.hget(self.get_key(key), field)
 
-    async def hset(self, key: str, field: str, value: str) -> (Awaitable[int] | int):
+    async def hset(self, key: str, field: str, value: str) -> Awaitable[int] | int:
         """设置Hash字段值"""
         return self.client.hset(self.get_key(key), field, value)
 
-    async def hmset(self, key: str, mapping: Dict[str, Any]) -> (Awaitable[str] | str):
+    async def hmset(self, key: str, mapping: Dict[str, Any]) -> Awaitable[str] | str:
         """批量设置Hash字段"""
         return self.client.hmset(self.get_key(key), mapping)
 
@@ -57,18 +53,11 @@ class RedisManager:
         return await self.client.decrby(self.get_key(key), amount)
 
     # 分布式锁
-    async def acquire_lock(
-        self,
-        lock_name: str,
-        expire_seconds: int = 10
-    ) -> bool:
+    async def acquire_lock(self, lock_name: str, expire_seconds: int = 10) -> bool:
         """获取分布式锁"""
         key = self.get_key(f"lock:{lock_name}")
         return await self.client.set(
-            key,
-            str(datetime.now()),
-            nx=True,
-            ex=expire_seconds
+            key, str(datetime.now()), nx=True, ex=expire_seconds
         )
 
     async def release_lock(self, lock_name: str) -> bool:
@@ -76,12 +65,7 @@ class RedisManager:
         return await self.client.delete(self.get_key(f"lock:{lock_name}"))
 
     # 限流器
-    async def check_rate_limit(
-        self,
-        key: str,
-        max_requests: int,
-        period: int
-    ) -> bool:
+    async def check_rate_limit(self, key: str, max_requests: int, period: int) -> bool:
         """检查是否超出限流"""
         redis_key = self.get_key(f"ratelimit:{key}")
         requests = await self.client.get(redis_key)
@@ -99,10 +83,7 @@ class RedisManager:
 
     # 会话管理
     async def set_session(
-        self,
-        session_id: str,
-        data: dict,
-        expire: int | None = None
+        self, session_id: str, data: dict, expire: int | None = None
     ) -> None:
         """设置会话数据"""
         key = self.get_key(f"session:{session_id}")
@@ -112,12 +93,12 @@ class RedisManager:
                 expire = int(expire.total_seconds())
             await self.client.expire(key, expire)
 
-    async def get_session(self, session_id: str) -> (Awaitable[dict[Any, Any]] | dict[Any, Any]):
+    async def get_session(
+        self, session_id: str
+    ) -> Awaitable[dict[Any, Any]] | dict[Any, Any]:
         """获取会话数据"""
-        return self.client.hgetall(
-            self.get_key(f"session:{session_id}")
-        )
+        return self.client.hgetall(self.get_key(f"session:{session_id}"))
 
-    async def delete_session(self, session_id: str) -> (Awaitable[int] | int):
+    async def delete_session(self, session_id: str) -> Awaitable[int] | int:
         """删除会话数据"""
         return await self.client.delete(self.get_key(f"session:{session_id}"))

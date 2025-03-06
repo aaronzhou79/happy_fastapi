@@ -22,6 +22,7 @@ from src.database.db_session import async_audit_session, async_session
 
 class NotificationMiddleware(BaseHTTPMiddleware):
     """通知中间件"""
+
     notification_rules: Dict[str, Dict[str, Any]] = {}
 
     def get_notification_rules(self) -> Dict[str, Dict[str, Any]]:
@@ -61,7 +62,9 @@ class NotificationMiddleware(BaseHTTPMiddleware):
 
         return response
 
-    async def _check_and_send_notification(self, request: Request, response: Response) -> None:
+    async def _check_and_send_notification(
+        self, request: Request, response: Response
+    ) -> None:
         """检查并发送通知"""
         try:
             # 获取请求路径和方法
@@ -70,14 +73,21 @@ class NotificationMiddleware(BaseHTTPMiddleware):
 
             # 检查是否匹配通知路由
             for route_path, config in self.notification_rules.items():
-                if path.endswith(route_path) and method.upper() == config.get("method", "").upper():
+                if (
+                    path.endswith(route_path)
+                    and method.upper() == config.get("method", "").upper()
+                ):
                     # 检查条件是否满足
                     condition = config.get("condition")
-                    if condition and not self._check_condition(condition, request, response):
+                    if condition and not self._check_condition(
+                        condition, request, response
+                    ):
                         continue
 
                     # 获取接收者ID
-                    recipient_id = await self._get_recipient_id(config.get("recipient_id_field"), request)
+                    recipient_id = await self._get_recipient_id(
+                        config.get("recipient_id_field"), request
+                    )
                     if not recipient_id:
                         continue
 
@@ -86,7 +96,9 @@ class NotificationMiddleware(BaseHTTPMiddleware):
         except Exception as e:
             log.error(f"通知中间件处理失败: {str(e)}")
 
-    def _check_condition(self, condition: str, request: Request, response: Response) -> bool:
+    def _check_condition(
+        self, condition: str, request: Request, response: Response
+    ) -> bool:
         """检查条件是否满足"""
         try:
             # 这里可以根据需要实现更复杂的条件检查逻辑
@@ -109,7 +121,9 @@ class NotificationMiddleware(BaseHTTPMiddleware):
 
         return False
 
-    async def _get_recipient_id(self, field_name: str | None, request: Request) -> int | None:
+    async def _get_recipient_id(
+        self, field_name: str | None, request: Request
+    ) -> int | None:
         """获取接收者ID"""
         try:
             if not field_name:
@@ -140,16 +154,15 @@ class NotificationMiddleware(BaseHTTPMiddleware):
             if field_name in form_data:
                 return int(str(form_data[field_name]))
 
-            log.warning(f"未在请求中找到接收者ID字段 '{field_name}': {request.url.path}")
+            log.warning(
+                f"未在请求中找到接收者ID字段 '{field_name}': {request.url.path}"
+            )
         except Exception as e:
             log.error(f"获取接收者ID失败: {str(getattr(e, 'data', e))}")
         return None
 
     async def _create_notification(
-        self,
-        config: Dict[str, Any],
-        recipient_id: int,
-        request: Request
+        self, config: Dict[str, Any], recipient_id: int, request: Request
     ) -> None:
         """创建通知"""
         try:
@@ -157,7 +170,7 @@ class NotificationMiddleware(BaseHTTPMiddleware):
             notification_type = getattr(
                 NotificationType,
                 config.get("type", "SYSTEM").upper(),
-                NotificationType.SYSTEM
+                NotificationType.SYSTEM,
             )
 
             # 获取通知标题和内容
@@ -171,7 +184,7 @@ class NotificationMiddleware(BaseHTTPMiddleware):
                 type=notification_type,
                 recipient_id=recipient_id,
                 sender_id=get_user_id(),
-                meta_data={"path": str(request.url.path), "method": request.method}
+                meta_data={"path": str(request.url.path), "method": request.method},
             )
 
             # 创建通知

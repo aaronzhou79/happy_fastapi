@@ -16,6 +16,7 @@ class SvrDept(TreeService):
     """
     部门服务
     """
+
     def __init__(self):
         self.tree_crud = self.crud = crud_dept
 

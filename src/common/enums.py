@@ -129,23 +129,26 @@ class DocumentType(StrEnum):
 
 class CodeGenerationRule(StrEnum):
     """单据编号生成规则"""
-    YYYYMMDD = '年月日'
-    YYYYMM = '年月'
-    YYYY = '年'
-    NONE = '不使用日期'
+
+    YYYYMMDD = "年月日"
+    YYYYMM = "年月"
+    YYYY = "年"
+    NONE = "不使用日期"
 
 
 class CodeResetFrequency(StrEnum):
     """序号重置频率"""
-    DAILY = '每天'
-    MONTHLY = '每月'
-    YEARLY = '每年'
-    NEVER = '从不'
+
+    DAILY = "每天"
+    MONTHLY = "每月"
+    YEARLY = "每年"
+    NEVER = "从不"
 
 
 class DataOperationType(StrEnum):
     """数据操作类型"""
-    INSERT = '新增'
-    UPDATE = '修改'
-    DELETE = '删除'
-    SELECT = '查询'
+
+    INSERT = "新增"
+    UPDATE = "修改"
+    DELETE = "删除"
+    SELECT = "查询"

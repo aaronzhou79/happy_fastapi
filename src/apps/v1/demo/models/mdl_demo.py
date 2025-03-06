@@ -7,15 +7,19 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from src.common.base_models.database_mixin import DatabaseModel
 from src.common.base_models.datetime_mixin import DateTimeMixin
-from src.common.base_models.numeric_mixin import MoneyField, PercentageField, PriceField, QuantityField
+from src.common.base_models.numeric_mixin import (
+    MoneyField,
+    PercentageField,
+    PriceField,
+    QuantityField,
+)
 from src.common.base_models.tenant_mixin import TenantMixin
 
 
 class DemoBase(SQLModel):
     """DEMO基础模型"""
-    __table_args__ = (
-        sa.Index('idx_demo_order_no', 'order_no'),
-    )
+
+    __table_args__ = (sa.Index("idx_demo_order_no", "order_no"),)
 
     order_no: str = Field(..., max_length=32, unique=True, description="订单编号")
     customer_name: str = Field(..., max_length=32, description="客户名称")
@@ -31,6 +35,7 @@ class DemoBase(SQLModel):
 
 class Demo(DemoBase, TenantMixin, DateTimeMixin, DatabaseModel, table=True):
     """DEMO表"""
+
     __tablename__: Literal["demo"] = "demo"
 
     # Relationships
@@ -39,23 +44,32 @@ class Demo(DemoBase, TenantMixin, DateTimeMixin, DatabaseModel, table=True):
 
 class DemoCreate(DemoBase):
     """DEMO创建模型"""
+
     demo_items: list["DemoItemCreate"]
 
 
 class DemoUpdate(DemoCreate):
     """DEMO更新模型"""
+
     id: int
 
 
 class DemoItemBase(SQLModel):
     """DEMO明细基础模型"""
+
     __table_args__ = (
-        sa.Index('idx_demo_item_demo_id', 'demo_id'),
-        sa.UniqueConstraint('product_name', 'soft_delete', name='uq_demo_item_product_name_soft_delete'),
-        sa.UniqueConstraint('product_code', 'soft_delete', name='uq_demo_item_product_code_soft_delete'),
+        sa.Index("idx_demo_item_demo_id", "demo_id"),
+        sa.UniqueConstraint(
+            "product_name", "soft_delete", name="uq_demo_item_product_name_soft_delete"
+        ),
+        sa.UniqueConstraint(
+            "product_code", "soft_delete", name="uq_demo_item_product_code_soft_delete"
+        ),
     )
 
-    demo_id: int = Field(..., foreign_key="demo.id", sa_type=sa.BIGINT, description="主表ID")
+    demo_id: int = Field(
+        ..., foreign_key="demo.id", sa_type=sa.BIGINT, description="主表ID"
+    )
     product_name: str = Field(..., max_length=32, description="商品名称")
     product_code: str = Field(..., max_length=32, description="商品编码")
     # 使用自定义数量字段
@@ -69,6 +83,7 @@ class DemoItemBase(SQLModel):
 
 class DemoItem(DemoItemBase, DateTimeMixin, DatabaseModel, table=True):
     """DEMO明细表"""
+
     __tablename__: Literal["demo_item"] = "demo_item"
 
     # Relationships
@@ -90,5 +105,5 @@ class DemoItemCreate(DemoItemBase):
 
 class DemoItemUpdate(DemoItemCreate):
     """DEMO明细更新模型"""
-    id: int
 
+    id: int

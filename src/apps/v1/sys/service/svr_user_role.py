@@ -7,7 +7,11 @@
 # @Software: Cursor
 # @Description: 用户角色服务
 from src.apps.v1.sys.crud.crud_user_role import crud_user_role
-from src.apps.v1.sys.models.mdl_user_role import UserRole, UserRoleCreate, UserRoleUpdate
+from src.apps.v1.sys.models.mdl_user_role import (
+    UserRole,
+    UserRoleCreate,
+    UserRoleUpdate,
+)
 from src.common.base_service import BaseService
 
 
@@ -15,6 +19,7 @@ class SvrUserRole(BaseService[UserRole, UserRoleCreate, UserRoleUpdate]):
     """
     用户角色服务
     """
+
     def __init__(self):
         self.crud = crud_user_role
 

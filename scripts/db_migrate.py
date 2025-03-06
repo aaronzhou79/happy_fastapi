@@ -22,8 +22,8 @@ def run_command(command):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         universal_newlines=True,
-        encoding='utf-8',
-        errors='replace'
+        encoding="utf-8",
+        errors="replace",
     )
 
     stdout, stderr = process.communicate()
@@ -39,7 +39,7 @@ def run_command(command):
 
 def create_migration(message):
     """创建新的迁移脚本"""
-    command = f"alembic revision --autogenerate -m \"{message}\""
+    command = f'alembic revision --autogenerate -m "{message}"'
     return run_command(command)
 
 
@@ -78,11 +78,15 @@ def main():
 
     # 升级数据库
     upgrade_parser = subparsers.add_parser("upgrade", help="升级数据库")
-    upgrade_parser.add_argument("-r", "--revision", default="head", help="目标版本，默认为最新版本")
+    upgrade_parser.add_argument(
+        "-r", "--revision", default="head", help="目标版本，默认为最新版本"
+    )
 
     # 降级数据库
     downgrade_parser = subparsers.add_parser("downgrade", help="降级数据库")
-    downgrade_parser.add_argument("-r", "--revision", default="-1", help="目标版本，默认为上一个版本")
+    downgrade_parser.add_argument(
+        "-r", "--revision", default="-1", help="目标版本，默认为上一个版本"
+    )
 
     # 显示历史
     subparsers.add_parser("history", help="显示迁移历史")

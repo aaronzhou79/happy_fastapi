@@ -14,6 +14,7 @@ from src.common.base_crud import CRUDBase
 
 class CrudTenant(CRUDBase):
     """账套相关CRUD类"""
+
     def __init__(self):
         super().__init__(
             model=Tenant,

@@ -14,6 +14,7 @@ router = APIRouter(prefix="/system-config", tags=["系统配置"])
 
 class NumericFieldConfig(BaseModel):
     """数值字段配置"""
+
     precision: int
     scale: int
     format: str
@@ -24,6 +25,7 @@ class NumericFieldConfig(BaseModel):
 
 class NumericFieldConfigResponse(BaseModel):
     """数值字段配置响应"""
+
     money: NumericFieldConfig
     weight: NumericFieldConfig
     area: NumericFieldConfig

@@ -12,9 +12,9 @@ from src.core.conf import settings
 
 from .response_code import CustomResponse, CustomResponseCode
 
-__all__ = ['ResponseModel', 'response_base']
+__all__ = ["ResponseModel", "response_base"]
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class ResponseModel(BaseModel, Generic[T]):
@@ -38,10 +38,11 @@ class ResponseModel(BaseModel, Generic[T]):
             res = CustomResponseCode.HTTP_200
             return ResponseModel(code=res.code, msg=res.msg, data={'test': 'test'})
     """
+
     model_config = ConfigDict(
-        extra='forbid',
+        extra="forbid",
         arbitrary_types_allowed=True,
-        json_encoders={datetime: lambda x: x.strftime(settings.DATETIME_FORMAT)}
+        json_encoders={datetime: lambda x: x.strftime(settings.DATETIME_FORMAT)},
     )
 
     code: int = CustomResponseCode.HTTP_200.code
@@ -65,7 +66,9 @@ class ResponseBase:
     """
 
     @staticmethod
-    def __response(*, res: CustomResponseCode | CustomResponse, data: Any | None = None) -> ResponseModel:
+    def __response(
+        *, res: CustomResponseCode | CustomResponse, data: Any | None = None
+    ) -> ResponseModel:
         """
         请求成功返回通用方法
 
@@ -108,7 +111,7 @@ class ResponseBase:
         :param data:
         :return:
         """
-        return MsgSpecJSONResponse({'code': res.code, 'msg': res.msg, 'data': data})
+        return MsgSpecJSONResponse({"code": res.code, "msg": res.msg, "data": data})
 
 
 response_base = ResponseBase()
@@ -118,5 +121,6 @@ class MsgSpecJSONResponse(JSONResponse):
     """
     JSON response using the high-performance msgspec library to serialize data to JSON.
     """
+
     def render(self, content: Any) -> bytes:
         return json.encode(content)

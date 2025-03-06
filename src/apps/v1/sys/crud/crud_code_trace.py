@@ -1,8 +1,11 @@
-
 import sqlalchemy as sa
 
 from src.apps.v1.sys.models.mdl_code_setting import CodeSetting
-from src.apps.v1.sys.models.mdl_code_trace import CodeTrace, CodeTraceCreate, CodeTraceUpdate
+from src.apps.v1.sys.models.mdl_code_trace import (
+    CodeTrace,
+    CodeTraceCreate,
+    CodeTraceUpdate,
+)
 from src.common.base_crud import CRUDBase
 from src.common.enums import CodeGenerationRule, CodeResetFrequency, DocumentType
 from src.database.db_session import AuditAsyncSession
@@ -11,6 +14,7 @@ from src.utils.timezone import TimeZone
 
 class CrudCodeTrace(CRUDBase[CodeTrace, CodeTraceCreate, CodeTraceUpdate]):
     """单据编号跟踪CRUD操作"""
+
     def __init__(self) -> None:
         super().__init__(
             model=CodeTrace,
@@ -23,7 +27,7 @@ class CrudCodeTrace(CRUDBase[CodeTrace, CodeTraceCreate, CodeTraceUpdate]):
         session: AuditAsyncSession,
         doc_type: DocumentType,
         setting: CodeSetting,
-        classify_code: str | None = None
+        classify_code: str | None = None,
     ) -> str:
         """
         获取下一个序列号。
@@ -49,7 +53,7 @@ class CrudCodeTrace(CRUDBase[CodeTrace, CodeTraceCreate, CodeTraceUpdate]):
                 getattr(self.model, "doc_type") == doc_type,
                 getattr(self.model, "year") == year,
                 getattr(self.model, "month") == month,
-                getattr(self.model, "day") == day
+                getattr(self.model, "day") == day,
             )
 
         elif setting.reset_frequency == CodeResetFrequency.MONTHLY:
@@ -64,14 +68,10 @@ class CrudCodeTrace(CRUDBase[CodeTrace, CodeTraceCreate, CodeTraceUpdate]):
                 getattr(self.model, "year") == year,
             )
         else:  # NEVER
-            stmt = stmt.where(
-                getattr(self.model, "doc_type") == doc_type
-            )
+            stmt = stmt.where(getattr(self.model, "doc_type") == doc_type)
 
         if classify_code:
-            stmt = stmt.where(
-                getattr(self.model, "classify_code") == classify_code
-            )
+            stmt = stmt.where(getattr(self.model, "classify_code") == classify_code)
 
         # 使用 SELECT FOR UPDATE 锁定记录
         stmt = stmt.with_for_update()
@@ -88,7 +88,7 @@ class CrudCodeTrace(CRUDBase[CodeTrace, CodeTraceCreate, CodeTraceUpdate]):
                 month=month,
                 day=day,
                 current_sequence=next_sequence,
-                classify_code=classify_code
+                classify_code=classify_code,
             )
             session.add(tracker)
         else:
@@ -105,7 +105,7 @@ class CrudCodeTrace(CRUDBase[CodeTrace, CodeTraceCreate, CodeTraceUpdate]):
             str_date: str = f"{year}{month:02}"
         elif setting.date_rule == CodeGenerationRule.YYYYMMDD:
             str_date: str = f"{year}{month:02}{day:02}"
-        else:   # CodeGenerationRule.NONE OR Other
+        else:  # CodeGenerationRule.NONE OR Other
             str_date: str = ""
 
         suffix_length = setting.suffix_length or 3
@@ -117,23 +117,21 @@ class CrudCodeTrace(CRUDBase[CodeTrace, CodeTraceCreate, CodeTraceUpdate]):
         session: AuditAsyncSession,
         doc_type: DocumentType,
         sequence: int,
-        classify_code: str | None = None
+        classify_code: str | None = None,
     ) -> None:
         """确认并更新序列号"""
         today = TimeZone.now().today()
         year, month, day = today.year, today.month, today.day
 
         stmt = sa.select(self.model).where(
-                getattr(self.model, "doc_type") == doc_type,
-                getattr(self.model, "year") == year,
-                getattr(self.model, "month") == month,
-                getattr(self.model, "day") == day
-            )
+            getattr(self.model, "doc_type") == doc_type,
+            getattr(self.model, "year") == year,
+            getattr(self.model, "month") == month,
+            getattr(self.model, "day") == day,
+        )
 
         if classify_code:
-            stmt = stmt.where(
-                getattr(self.model, "classify_code") == classify_code
-            )
+            stmt = stmt.where(getattr(self.model, "classify_code") == classify_code)
 
         # 使用 SELECT FOR UPDATE 锁定记录
         stmt = stmt.with_for_update()
@@ -150,7 +148,7 @@ class CrudCodeTrace(CRUDBase[CodeTrace, CodeTraceCreate, CodeTraceUpdate]):
                 month=month,
                 day=day,
                 current_sequence=current_sequence,
-                classify_code=classify_code
+                classify_code=classify_code,
             )
             session.add(tracker)
         else:

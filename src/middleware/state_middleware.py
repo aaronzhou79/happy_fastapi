@@ -22,12 +22,14 @@ class StateMiddleware(BaseHTTPMiddleware):
     def get_current_request(cls) -> int:
         """获取当前请求"""
         request = _request_ctx_var.get()
-        if request and hasattr(request, 'user_id'):
+        if request and hasattr(request, "user_id"):
             return getattr(request, "user_id", 0)
 
         return 0
 
-    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
         """
         处理请求
         """

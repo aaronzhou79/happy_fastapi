@@ -16,6 +16,7 @@ from src.database.db_session import AuditAsyncSession
 
 class CrudFactory(CRUDBase):
     """工厂信息CRUD类"""
+
     def __init__(self):
         super().__init__(
             model=Factory,

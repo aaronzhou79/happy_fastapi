@@ -19,6 +19,7 @@ class SvrFactory(BaseService[Factory, FactoryCreate, FactoryUpdate]):
     """
     工厂信息服务
     """
+
     def __init__(self):
         self.crud = crud_factory
 

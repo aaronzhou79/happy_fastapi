@@ -17,10 +17,13 @@ class SvrDemo(BaseService[Demo, DemoCreate, DemoUpdate]):
     """
     DEMO服务
     """
+
     def __init__(self):
         self.crud = crud_demo
 
-    async def get_by_custom_options(self, session: AuditAsyncSession, code: str, ignore_id: int) -> tuple[int, Sequence[Demo]]:
+    async def get_by_custom_options(
+        self, session: AuditAsyncSession, code: str, ignore_id: int
+    ) -> tuple[int, Sequence[Demo]]:
         """根据自定义选项获取对象列表和总数"""
         options = QueryOptions(
             filters=FilterGroup(
@@ -40,6 +43,7 @@ class SvrDemoItem(BaseService[DemoItem, DemoItemCreate, DemoItemUpdate]):
     """
     DEMO明细服务
     """
+
     def __init__(self):
         self.crud = crud_demo_item
 

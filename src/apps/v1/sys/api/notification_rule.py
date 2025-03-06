@@ -34,8 +34,7 @@ notification_rule_api = BaseAPI(
 
 
 @notification_rule_api.router.post("/init")
-async def init_notification_rule(
-) -> ResponseModel:
+async def init_notification_rule() -> ResponseModel:
     """初始化通知规则"""
     hardcoded_rules = {
         "/user/create": {
@@ -43,7 +42,7 @@ async def init_notification_rule(
             "type": "SYSTEM",
             "title_template": "用户创建通知",
             "content_template": "新用户已创建",
-            "condition": "success"
+            "condition": "success",
         },
         # 可以添加更多硬编码的规则
     }
@@ -53,7 +52,9 @@ async def init_notification_rule(
         existing_rules = await svr_notification_rule.get_all_notification_rules(session)
 
         if existing_rules:
-            return response_base.fail(data=f"数据库中已存在 {len(existing_rules)} 条通知规则配置，跳过迁移")
+            return response_base.fail(
+                data=f"数据库中已存在 {len(existing_rules)} 条通知规则配置，跳过迁移"
+            )
 
         # 插入硬编码的规则配置
         for path, config in hardcoded_rules.items():
@@ -64,8 +65,10 @@ async def init_notification_rule(
                 title_template=config["title_template"],
                 content_template=config["content_template"],
                 condition=NotificationCondition(config["condition"]),
-                recipient_id_field=config.get("recipient_id_field")
+                recipient_id_field=config.get("recipient_id_field"),
             )
             await svr_notification_rule.create(session, rule)
 
-    return response_base.success(data=f"成功迁移 {len(hardcoded_rules)} 条通知规则配置到数据库，重启服务后生效！")
+    return response_base.success(
+        data=f"成功迁移 {len(hardcoded_rules)} 条通知规则配置到数据库，重启服务后生效！"
+    )

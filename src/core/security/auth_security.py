@@ -19,7 +19,7 @@ from ..exceptions.errors import AuthorizationError, TokenError
 if TYPE_CHECKING:
     from src.apps.v1.sys.models.mdl_user import UserGetWithRelations
 
-pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 # JWT authorizes dependency injection
@@ -58,14 +58,16 @@ async def create_access_token(sub: str, multi_login: bool) -> AccessToken:
     expire = TimeZone.now() + timedelta(seconds=settings.TOKEN_EXPIRE_SECONDS)
     expire_seconds = settings.TOKEN_EXPIRE_SECONDS
 
-    to_encode = {'exp': expire, 'sub': sub}
-    access_token = jwt.encode(to_encode, settings.TOKEN_SECRET_KEY, settings.TOKEN_ALGORITHM)
+    to_encode = {"exp": expire, "sub": sub}
+    access_token = jwt.encode(
+        to_encode, settings.TOKEN_SECRET_KEY, settings.TOKEN_ALGORITHM
+    )
 
     if multi_login is False:
-        key_prefix = f'{settings.TOKEN_REDIS_PREFIX}:{sub}'
+        key_prefix = f"{settings.TOKEN_REDIS_PREFIX}:{sub}"
         await redis_client.delete_prefix(key_prefix)
 
-    key = f'{settings.TOKEN_REDIS_PREFIX}:{sub}:{access_token}'
+    key = f"{settings.TOKEN_REDIS_PREFIX}:{sub}:{access_token}"
     await redis_client.setex(key, expire_seconds, access_token)
     return AccessToken(access_token=access_token, access_token_expire_time=expire)
 
@@ -81,19 +83,23 @@ async def create_refresh_token(sub: str, multi_login: bool) -> RefreshToken:
     expire = TimeZone.now() + timedelta(seconds=settings.TOKEN_REFRESH_EXPIRE_SECONDS)
     expire_seconds = settings.TOKEN_REFRESH_EXPIRE_SECONDS
 
-    to_encode = {'exp': expire, 'sub': sub}
-    refresh_token = jwt.encode(to_encode, settings.TOKEN_SECRET_KEY, settings.TOKEN_ALGORITHM)
+    to_encode = {"exp": expire, "sub": sub}
+    refresh_token = jwt.encode(
+        to_encode, settings.TOKEN_SECRET_KEY, settings.TOKEN_ALGORITHM
+    )
 
     if multi_login is False:
-        key_prefix = f'{settings.TOKEN_REFRESH_REDIS_PREFIX}:{sub}'
+        key_prefix = f"{settings.TOKEN_REFRESH_REDIS_PREFIX}:{sub}"
         await redis_client.delete_prefix(key_prefix)
 
-    key = f'{settings.TOKEN_REFRESH_REDIS_PREFIX}:{sub}:{refresh_token}'
+    key = f"{settings.TOKEN_REFRESH_REDIS_PREFIX}:{sub}:{refresh_token}"
     await redis_client.setex(key, expire_seconds, refresh_token)
     return RefreshToken(refresh_token=refresh_token, refresh_token_expire_time=expire)
 
 
-async def create_new_token(sub: str, token: str, refresh_token: str, multi_login: bool) -> NewToken:
+async def create_new_token(
+    sub: str, token: str, refresh_token: str, multi_login: bool
+) -> NewToken:
     """
     生成新令牌
 
@@ -103,15 +109,17 @@ async def create_new_token(sub: str, token: str, refresh_token: str, multi_login
     :param multi_login:
     :return:
     """
-    redis_refresh_token = await redis_client.get(f'{settings.TOKEN_REFRESH_REDIS_PREFIX}:{sub}:{refresh_token}')
+    redis_refresh_token = await redis_client.get(
+        f"{settings.TOKEN_REFRESH_REDIS_PREFIX}:{sub}:{refresh_token}"
+    )
     if not redis_refresh_token or redis_refresh_token != refresh_token:
-        raise TokenError(msg='Refresh Token 已过期')
+        raise TokenError(msg="Refresh Token 已过期")
 
     new_access_token = await create_access_token(sub, multi_login)
     new_refresh_token = await create_refresh_token(sub, multi_login)
 
-    token_key = f'{settings.TOKEN_REDIS_PREFIX}:{sub}:{token}'
-    refresh_token_key = f'{settings.TOKEN_REFRESH_REDIS_PREFIX}:{sub}:{refresh_token}'
+    token_key = f"{settings.TOKEN_REDIS_PREFIX}:{sub}:{token}"
+    refresh_token_key = f"{settings.TOKEN_REFRESH_REDIS_PREFIX}:{sub}:{refresh_token}"
     await redis_client.delete(token_key)
     await redis_client.delete(refresh_token_key)
     return NewToken(
@@ -128,14 +136,14 @@ async def get_token(request: Request) -> str:
 
     :return:
     """
-    authorization = request.headers.get('Authorization')
+    authorization = request.headers.get("Authorization")
     scheme, token = get_authorization_scheme_param(authorization)
-    if not authorization or scheme.lower() != 'bearer':
-        raise TokenError(msg='Token 无效')
+    if not authorization or scheme.lower() != "bearer":
+        raise TokenError(msg="Token 无效")
     return token
 
 
-def _raise_token_error(msg: str = 'Token 无效') -> None:
+def _raise_token_error(msg: str = "Token 无效") -> None:
     raise TokenError(msg=msg)
 
 
@@ -147,13 +155,15 @@ def jwt_decode(token: str) -> int:
     :return:
     """
     try:
-        payload = jwt.decode(token, settings.TOKEN_SECRET_KEY, algorithms=[settings.TOKEN_ALGORITHM])
-        sub = payload.get('sub')
+        payload = jwt.decode(
+            token, settings.TOKEN_SECRET_KEY, algorithms=[settings.TOKEN_ALGORITHM]
+        )
+        sub = payload.get("sub")
         if not sub:
             _raise_token_error()
         user_id = int(str(sub))
     except ExpiredSignatureError:
-        _raise_token_error('Token 已过期')
+        _raise_token_error("Token 已过期")
     except (JWTError, Exception):
         _raise_token_error()
     return user_id
@@ -167,10 +177,10 @@ async def jwt_authentication(token: str) -> int:
     :return:
     """
     user_id = jwt_decode(token)
-    key = f'{settings.TOKEN_REDIS_PREFIX}:{user_id}:{token}'
+    key = f"{settings.TOKEN_REDIS_PREFIX}:{user_id}:{token}"
     token_verify = await redis_client.get(key)
     if not token_verify:
-        raise TokenError(msg='Token 已过期')
+        raise TokenError(msg="Token 已过期")
     return user_id
 
 
@@ -192,11 +202,12 @@ async def get_current_user(request: Request) -> "UserGetWithRelations":
     获取当前用户
     """
     from src.apps.v1.sys.models.mdl_user import UserGetWithRelations
-    token = request.headers.get('Authorization')
+
+    token = request.headers.get("Authorization")
     if not token:
         raise AuthorizationError(msg="用户未登录")
     user_id = jwt_decode(token)
-    user = await redis_client.get(f'{settings.TOKEN_REDIS_PREFIX}:{user_id}:{token}')
+    user = await redis_client.get(f"{settings.TOKEN_REDIS_PREFIX}:{user_id}:{token}")
     if not user:
         raise AuthorizationError(msg="用户未登录")
     return UserGetWithRelations(**user)

@@ -6,7 +6,12 @@
 # @File    : tenant.py
 # @Software: Cursor
 # @Description: 账套管理API
-from src.apps.v1.sys.models.mdl_tenant import Tenant, TenantBase, TenantCreate, TenantUpdate
+from src.apps.v1.sys.models.mdl_tenant import (
+    Tenant,
+    TenantBase,
+    TenantCreate,
+    TenantUpdate,
+)
 from src.apps.v1.sys.service.svr_tenant import svr_tenant
 from src.common.base_api import BaseAPI
 

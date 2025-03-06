@@ -2,7 +2,11 @@ from typing import Sequence
 
 from fastapi import APIRouter, Request
 
-from src.apps.v1.sys.models.mdl_permission_rule import PermissionRule, PermissionRuleCreate, PermissionRuleUpdate
+from src.apps.v1.sys.models.mdl_permission_rule import (
+    PermissionRule,
+    PermissionRuleCreate,
+    PermissionRuleUpdate,
+)
 from src.apps.v1.sys.service.svr_permission_rule import svr_permission_rule
 from src.common.base_api import BaseAPI
 from src.core.security.auth_security import DependsJwtAuth
@@ -28,18 +32,15 @@ permission_rule_api = BaseAPI(
     "/rules",
     dependencies=[
         DependsJwtAuth,
-    ]
+    ],
 )
 async def get_rules(
-    request: Request,
-    *,
-    permission_id: int | None = None
+    request: Request, *, permission_id: int | None = None
 ) -> Sequence[PermissionRule]:
     """获取权限规则列表"""
     async with async_audit_session(async_session(), request=request) as session:
         if permission_id:
             return await svr_permission_rule.get_by_permission(
-                session=session,
-                permission_id=permission_id
+                session=session, permission_id=permission_id
             )
         return await svr_permission_rule.get_by_fields(session=session)

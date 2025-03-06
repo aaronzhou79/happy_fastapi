@@ -21,6 +21,7 @@ class CrudUser(CRUDBase[User, UserCreate, UserUpdate]):
     """
     用户CRUD类
     """
+
     def __init__(self) -> None:
         super().__init__(
             model=User,
@@ -59,10 +60,10 @@ class CrudUser(CRUDBase[User, UserCreate, UserUpdate]):
             obj_in={
                 "id": current_user.id,
                 "salt": salt,
-                "password": get_hash_password(f'{password}{salt}'),
+                "password": get_hash_password(f"{password}{salt}"),
                 "username": username,
                 "is_user": True,
-            }
+            },
         )
 
         # 清空用户原有角色
@@ -76,12 +77,8 @@ class CrudUser(CRUDBase[User, UserCreate, UserUpdate]):
                 raise errors.RequestError(data=f"角色ID不存在: {not_exist_roles}")
             for role_id in roles:
                 await crud_user_role.create(
-                    session=session,
-                    obj_in={
-                            "user_id": id,
-                            "role_id": role_id
-                        }
-                    )
+                    session=session, obj_in={"user_id": id, "role_id": role_id}
+                )
         await session.flush()
         return current_user
 

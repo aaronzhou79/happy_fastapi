@@ -27,28 +27,25 @@ class SvrUser(BaseService[User, UserCreate, UserUpdate]):
     """
     用户服务
     """
+
     def __init__(self):
         self.crud = crud_user
         # Register hook
         self.crud.hook_manager.add_hook(
-            hook_type=HookTypeEnum.before_create,
-            func=self._create_password,
-            priority=1
+            hook_type=HookTypeEnum.before_create, func=self._create_password, priority=1
         )
 
         self.crud.hook_manager.add_hook(
-            hook_type=HookTypeEnum.after_create,
-            func=self._handle_roles,
-            priority=1
+            hook_type=HookTypeEnum.after_create, func=self._handle_roles, priority=1
         )
 
     async def _handle_roles(self, context: HookContext) -> None:
         """处理用户角色关联"""
-        db_obj = context.params['db_obj']
-        obj_in = context.params['obj_in']
+        db_obj = context.params["db_obj"]
+        obj_in = context.params["obj_in"]
         session = context.session
 
-        if hasattr(obj_in, 'roles') and obj_in.roles:
+        if hasattr(obj_in, "roles") and obj_in.roles:
             # 验证所有role_id是否存在
             invalid_roles = []
             for role_id in obj_in.roles:
@@ -63,17 +60,14 @@ class SvrUser(BaseService[User, UserCreate, UserUpdate]):
             for role_id in obj_in.roles:
                 await crud_user_role.create(
                     session=session,
-                    obj_in=UserRoleCreate(
-                        user_id=db_obj.id,
-                        role_id=role_id
-                    )
+                    obj_in=UserRoleCreate(user_id=db_obj.id, role_id=role_id),
                 )
 
     async def _create_password(self, context: HookContext) -> HookContext:
         """创建用户"""
         # 生成盐值和密码哈希
         salt = generate_salt()
-        obj_in = context.params['obj_in']
+        obj_in = context.params["obj_in"]
         if obj_in.password:
             password_hash = hash_password(obj_in.password, salt)
             obj_in.password = password_hash
@@ -81,13 +75,17 @@ class SvrUser(BaseService[User, UserCreate, UserUpdate]):
         else:
             raise errors.RequestError(data="密码不能为空")
 
-        context.results['modified_data'] = obj_in
+        context.results["modified_data"] = obj_in
 
         return context
 
-    async def get_permissions(self, session: AuditAsyncSession, user_id: int, is_superuser: bool) -> Sequence[Permission]:
+    async def get_permissions(
+        self, session: AuditAsyncSession, user_id: int, is_superuser: bool
+    ) -> Sequence[Permission]:
         """获取用户权限"""
-        return await crud_permission.get_permissions_by_user(session=session, user_id=user_id, is_superuser=is_superuser)
+        return await crud_permission.get_permissions_by_user(
+            session=session, user_id=user_id, is_superuser=is_superuser
+        )
 
 
 svr_user = SvrUser()

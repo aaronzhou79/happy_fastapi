@@ -11,7 +11,12 @@ from typing import Annotated
 
 from fastapi import Body, Depends, Request
 
-from src.apps.v1.sys.models.mdl_factory_user import FactoryUser, FactoryUserBase, FactoryUserCreate, FactoryUserUpdate
+from src.apps.v1.sys.models.mdl_factory_user import (
+    FactoryUser,
+    FactoryUserBase,
+    FactoryUserCreate,
+    FactoryUserUpdate,
+)
 from src.apps.v1.sys.service.svr_factory_user import svr_factory_user
 from src.common.base_api import BaseAPI
 from src.core.responses.response_schema import ResponseModel, response_base
@@ -34,29 +39,36 @@ factory_user_api = BaseAPI(
 )
 
 
-@factory_user_api.router.get("/get_by_factory_id",
+@factory_user_api.router.get(
+    "/get_by_factory_id",
     description="获取工厂用户",
     dependencies=[
         DependsJwtAuth,
-    ])
-async def get_by_factory_id(session: CurrentSession,
-                            factory_id: int, is_factory_user: bool) -> ResponseModel:
+    ],
+)
+async def get_by_factory_id(
+    session: CurrentSession, factory_id: int, is_factory_user: bool
+) -> ResponseModel:
     """
     获取工厂用户
 
     :param factory_id: 工厂id
     :param is_factory_user: 是否当前工厂用户
     """
-    data = await svr_factory_user.get_by_factory_id(session, factory_id, is_factory_user)
+    data = await svr_factory_user.get_by_factory_id(
+        session, factory_id, is_factory_user
+    )
 
     return response_base.success(data=data)
 
 
-@factory_user_api.router.get("/get_by_user_id",
+@factory_user_api.router.get(
+    "/get_by_user_id",
     description="获取用户工厂",
     dependencies=[
         DependsJwtAuth,
-    ])
+    ],
+)
 async def get_by_user_id(session: CurrentSession, user_id: int) -> ResponseModel:
     """
     获取用户工厂
@@ -73,8 +85,8 @@ async def get_by_user_id(session: CurrentSession, user_id: int) -> ResponseModel
     description="清除工厂用户, 权限码：sys:factory_users:clear_factory_users",
     dependencies=[
         DependsJwtAuth,
-        Depends(RequestPermission("sys:factory_users:clear_factory_users"))
-    ]
+        Depends(RequestPermission("sys:factory_users:clear_factory_users")),
+    ],
 )
 async def clear_factory_users(
     request: Request,

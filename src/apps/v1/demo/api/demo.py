@@ -4,7 +4,13 @@ from fastapi import Header
 from sqlmodel import select
 
 from src.apps.v1.demo.models import mdl_demo
-from src.apps.v1.demo.models.mdl_demo import Demo, DemoBase, DemoCreate, DemoItem, DemoUpdate
+from src.apps.v1.demo.models.mdl_demo import (
+    Demo,
+    DemoBase,
+    DemoCreate,
+    DemoItem,
+    DemoUpdate,
+)
 from src.apps.v1.demo.service.svr_demo import svr_demo
 from src.common.base_api import BaseAPI
 from src.core.context import set_tenant_id
@@ -14,6 +20,7 @@ from src.database.db_session import CurrentSession
 
 class UniqueConstraintViolationError(Exception):
     """唯一约束冲突异常"""
+
     pass
 
 
@@ -40,7 +47,7 @@ demo_api = BaseAPI(
 async def test(
     session: CurrentSession,
     id: int,
-    x_tenant_id: Annotated[int, Header(..., description="租户ID")]
+    x_tenant_id: Annotated[int, Header(..., description="租户ID")],
 ):
     """测试"""
     set_tenant_id(x_tenant_id)
@@ -58,7 +65,7 @@ async def test2(session: CurrentSession) -> ResponseModel:
         await _check_unique_constraints(
             session,
             conflict_info,
-            {"demo_id": 1, "product_name": "test", "product_code": "test"}
+            {"demo_id": 1, "product_name": "test", "product_code": "test"},
         )
 
     return response_base.success(data=conflict_info)
@@ -68,7 +75,7 @@ async def _check_unique_constraints(
     session: CurrentSession,
     unique_fields: list[dict],
     row_data: dict,
-    model_class=DemoItem
+    model_class=DemoItem,
 ) -> dict | None:
     """检查现有数据中的冲突"""
     import sqlalchemy as sa
@@ -113,7 +120,9 @@ async def _check_unique_constraints(
         return None
 
     # 构建完整的SQL查询
-    sql_query = f"SELECT {table_name}.id FROM {table_name} WHERE {' OR '.join(sql_parts)}"
+    sql_query = (
+        f"SELECT {table_name}.id FROM {table_name} WHERE {' OR '.join(sql_parts)}"
+    )
 
     # 执行查询
     result = await session.execute(text(sql_query), params)
@@ -123,15 +132,19 @@ async def _check_unique_constraints(
         return None
     elif len(existing_records) > 1:
         # 处理多条记录的情况
-        unique_field_names = [", ".join(field.get("columns", [])) for field in unique_fields]
-        raise UniqueConstraintViolationError(f"找到多条记录，违反唯一约束: {', '.join(unique_field_names)}")
+        unique_field_names = [
+            ", ".join(field.get("columns", [])) for field in unique_fields
+        ]
+        raise UniqueConstraintViolationError(
+            f"找到多条记录，违反唯一约束: {', '.join(unique_field_names)}"
+        )
     elif existing_records:
         # 处理找到一条记录的情况
-        unique_field_names = [", ".join(field.get("columns", [])) for field in unique_fields]
+        unique_field_names = [
+            ", ".join(field.get("columns", [])) for field in unique_fields
+        ]
         return {
-            'error_message': f'数据已存在，违反唯一约束: {", ".join(unique_field_names)}'
+            "error_message": f'数据已存在，违反唯一约束: {", ".join(unique_field_names)}'
         }
 
     return None
-
-

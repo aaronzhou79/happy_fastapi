@@ -15,6 +15,7 @@ class SvrTenant(BaseService[Tenant, TenantCreate, TenantUpdate]):
     """
     账套服务
     """
+
     def __init__(self):
         self.crud = crud_tenant
 

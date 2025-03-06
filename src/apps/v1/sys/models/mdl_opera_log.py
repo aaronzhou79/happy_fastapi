@@ -12,6 +12,7 @@ from src.utils.timezone import TimeZone
 
 class OperaLogBase(SQLModel):
     """操作日志基类"""
+
     trace_id: str = Field(max_length=64, index=True)
     username: str | None = Field(default=None, max_length=32, index=True)
     method: str = Field(max_length=10)  # GET, POST, PUT, DELETE etc
@@ -33,17 +34,18 @@ class OperaLogBase(SQLModel):
     opera_time: datetime = Field(
         default_factory=TimeZone.now,
         sa_type=sa.TIMESTAMP(timezone=True),  # type: ignore
-        index=True
+        index=True,
     )
 
 
 class OperaLog(OperaLogBase, DatabaseModel, table=True):
     """操作日志表"""
+
     __tablename__: Literal["sys_opera_log"] = "sys_opera_log"
     # OperaLog 模型
     __table_args__ = (
-        sa.Index('idx_opera_log_status', 'status'),
-        sa.Index('idx_opera_log_composite', 'username', 'status', 'opera_time'),
+        sa.Index("idx_opera_log_status", "status"),
+        sa.Index("idx_opera_log_composite", "username", "status", "opera_time"),
     )
 
 
@@ -53,4 +55,5 @@ class OperaLogCreate(OperaLogBase):
 
 class OperaLogUpdate(OperaLogBase):
     """操作日志更新模型"""
+
     id: int
