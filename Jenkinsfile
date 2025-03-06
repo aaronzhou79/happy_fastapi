@@ -20,12 +20,6 @@ pipeline {
         stage('检查环境') {
             steps {
                 sh '''
-                    # 检查 Docker 是否可用
-                    if ! command -v docker &> /dev/null; then
-                        echo "错误: Docker 未安装或不在 PATH 中"
-                        exit 1
-                    fi
-
                     # 显示 Docker 版本
                     docker --version
 
