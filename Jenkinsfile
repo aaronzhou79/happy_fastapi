@@ -1,7 +1,5 @@
 pipeline {
-    agent {
-        label 'NAS-Docker'
-    }
+    agent any
 
     environment {
         // 项目名称
