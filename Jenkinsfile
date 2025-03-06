@@ -17,14 +17,6 @@ pipeline {
     }
 
     stages {
-        stage('检出代码') {
-            steps {
-                checkout scm
-                sh 'echo "当前构建分支: ${GIT_BRANCH}"'
-                sh 'echo "当前提交ID: ${GIT_COMMIT}"'
-            }
-        }
-
         stage('安装依赖') {
             steps {
                 sh 'pip install --no-cache-dir -r requirements.txt'
@@ -36,6 +28,28 @@ pipeline {
             steps {
                 sh 'ruff check src/'
                 sh 'mypy src/'
+            }
+        }
+
+        stage('Build and Deploy') {
+            steps {
+                script {
+                    // 跳转到指定目录
+                    dir("${env.WORKSPACE}") {
+                        // 检查容器是否已存在，如果存在则先停止并移除
+                        sh '''
+                            if docker-compose -f deploy/docker-compose.yml ps | grep -q "Up\\|Exit"; then
+                                echo "检测到已存在的容器，执行 docker-compose down..."
+                                docker-compose -f deploy/docker-compose.yml down
+                            else
+                                echo "未检测到已存在的容器，直接部署..."
+                            fi
+
+                            # 启动容器
+                            docker-compose -f deploy/docker-compose.yml up -d
+                        '''
+                    }
+                }
             }
         }
 
@@ -51,54 +65,54 @@ pipeline {
         //     }
         // }
 
-        stage('构建Docker镜像') {
-            steps {
-                sh 'cp .env.${DEPLOY_ENV} .env'
-                sh 'docker build -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG} .'
-            }
-        }
+        // stage('构建Docker镜像') {
+        //     steps {
+        //         sh 'cp .env.${DEPLOY_ENV} .env'
+        //         sh 'docker build -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG} .'
+        //     }
+        // }
 
-        stage('推送Docker镜像') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'docker-registry-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                    sh 'echo ${DOCKER_PASSWORD} | docker login ${DOCKER_REGISTRY} -u ${DOCKER_USERNAME} --password-stdin'
-                    sh 'docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG}'
-                    sh 'docker tag ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:latest'
-                    sh 'docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:latest'
-                }
-            }
-        }
+        // stage('推送Docker镜像') {
+        //     steps {
+        //         withCredentials([usernamePassword(credentialsId: 'docker-registry-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+        //             sh 'echo ${DOCKER_PASSWORD} | docker login ${DOCKER_REGISTRY} -u ${DOCKER_USERNAME} --password-stdin'
+        //             sh 'docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG}'
+        //             sh 'docker tag ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:latest'
+        //             sh 'docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:latest'
+        //         }
+        //     }
+        // }
 
-        stage('部署应用') {
-            when {
-                expression { return env.GIT_BRANCH == 'main' || env.GIT_BRANCH == 'master' }
-            }
-            steps {
-                sshagent(['deploy-server-credentials']) {
-                    sh '''
-                        ssh user@deploy-server "cd /path/to/deployment && \
-                        export DOCKER_IMAGE=${DOCKER_REGISTRY}/${DOCKER_IMAGE} && \
-                        export DOCKER_TAG=${DOCKER_TAG} && \
-                        docker-compose -f deploy/docker-compose.yml pull && \
-                        docker-compose -f deploy/docker-compose.yml up -d"
-                    '''
-                }
-            }
-        }
+        // stage('部署应用') {
+        //     when {
+        //         expression { return env.GIT_BRANCH == 'main' || env.GIT_BRANCH == 'master' }
+        //     }
+        //     steps {
+        //         sshagent(['deploy-server-credentials']) {
+        //             sh '''
+        //                 ssh user@deploy-server "cd /path/to/deployment && \
+        //                 export DOCKER_IMAGE=${DOCKER_REGISTRY}/${DOCKER_IMAGE} && \
+        //                 export DOCKER_TAG=${DOCKER_TAG} && \
+        //                 docker-compose -f deploy/docker-compose.yml pull && \
+        //                 docker-compose -f deploy/docker-compose.yml up -d"
+        //             '''
+        //         }
+        //     }
+        // }
 
-        stage('数据库迁移') {
-            when {
-                expression { return env.GIT_BRANCH == 'main' || env.GIT_BRANCH == 'master' }
-            }
-            steps {
-                sshagent(['deploy-server-credentials']) {
-                    sh '''
-                        ssh user@deploy-server "cd /path/to/deployment && \
-                        docker-compose -f deploy/docker-compose.yml exec -T fastapi_app alembic upgrade head"
-                    '''
-                }
-            }
-        }
+        // stage('数据库迁移') {
+        //     when {
+        //         expression { return env.GIT_BRANCH == 'main' || env.GIT_BRANCH == 'master' }
+        //     }
+        //     steps {
+        //         sshagent(['deploy-server-credentials']) {
+        //             sh '''
+        //                 ssh user@deploy-server "cd /path/to/deployment && \
+        //                 docker-compose -f deploy/docker-compose.yml exec -T fastapi_app alembic upgrade head"
+        //             '''
+        //         }
+        //     }
+        // }
     }
 
     post {
