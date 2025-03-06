@@ -34,6 +34,7 @@
     "words": [
         "aiocache",
         "asgi",
+        "dotenv",
         "fastapi",
         "gbase",
         "gunicorn",

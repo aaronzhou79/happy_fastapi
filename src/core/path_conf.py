@@ -4,12 +4,9 @@ import os
 
 from pathlib import Path
 
-# 获取项目根目录
-# 或使用绝对路径，指到src目录为止，例如windows：BasePath = D:\happy_fastapi
-BasePath = Path(__file__).resolve().parent.parent
-
-# alembic 迁移文件存放路径
-ALEMBIC_Versions_DIR = os.path.join(BasePath, 'alembic', 'versions')
+# 获取项目根目录的绝对路径
+BasePath = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+print(f"BasePath: {BasePath}")
 
 # 日志文件路径
 LOG_DIR = os.path.join(BasePath, 'log')

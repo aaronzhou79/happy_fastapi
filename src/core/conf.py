@@ -1,13 +1,21 @@
+import os
+
 from functools import lru_cache
 from typing import Literal
 
+from dotenv import load_dotenv
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from src.core.path_conf import BasePath
 
+# 在类定义外先加载环境变量
+env_path = os.path.join(BasePath, ".env")
+load_dotenv(env_path, override=True)  # 添加 override=True 强制覆盖已存在的环境变量
+
 
 class Settings(BaseSettings):
     """Global Settings"""
+
     model_config = SettingsConfigDict(
         env_file=f'{BasePath}/.env',
         env_file_encoding='utf-8',
@@ -15,13 +23,13 @@ class Settings(BaseSettings):
     )
 
     # 项目名称
-    PROJECT_NAME: str = "FastAPI"
+    PROJECT_NAME: str = os.getenv("PROJECT_NAME", "FastAPI")
     # 项目版本
-    VERSION: str = "1.0.0"
+    VERSION: str = os.getenv("VERSION", "1.0.0")
     # 项目描述
-    DESCRIPTION: str = "FastAPI"
+    DESCRIPTION: str = os.getenv("DESCRIPTION", "FastAPI")
     # 项目API版本
-    API_PATH: str = "/api"
+    API_PATH: str = os.getenv("API_PATH", "/api")
     # 项目文档地址
     DOCS_URL: str = f"{API_PATH}/docs"
     # 项目文档地址
