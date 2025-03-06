@@ -12,7 +12,7 @@ from sqlmodel import insert, select
 
 from src.common.base_models.database_mixin import CreateModelType, ModelType, UpdateModelType
 from src.common.enums import HookTypeEnum
-from src.common.query_fields import QueryOptions, SortOrder
+from src.common.query_fields import FilterGroup, QueryOptions, SortOrder
 from src.core.context import get_tenant_id
 from src.core.exceptions import errors
 from src.database.db_session import AuditAsyncSession
@@ -211,16 +211,14 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         self,
         session: AuditAsyncSession,
         *,
+        filters: FilterGroup | None = None,
         skip: int = 0,
         limit: int = 100,
-        filters: Dict | None = None
     ) -> Sequence[ModelType]:
         """获取列表对象"""
         statement = select(self.model)
         if filters:
-            for field, value in filters.items():
-                if hasattr(self.model, field):
-                    statement = statement.where(getattr(self.model, field) == value)
+            statement = statement.where(filters.build_query(self.model))
 
         if hasattr(self.model, 'tenant_id'):
             statement = statement.where(getattr(self.model, 'tenant_id') == get_tenant_id())
