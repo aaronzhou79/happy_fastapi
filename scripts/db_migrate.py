@@ -4,9 +4,8 @@
 
 import argparse
 import os
-import subprocess
+import subprocess  # noqa: S404
 import sys
-from datetime import datetime
 
 # 将项目根目录添加到sys.path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -22,7 +21,9 @@ def run_command(command):
         shell=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        universal_newlines=True
+        universal_newlines=True,
+        encoding='utf-8',
+        errors='replace'
     )
 
     stdout, stderr = process.communicate()
@@ -31,7 +32,7 @@ def run_command(command):
         print(stdout)
 
     if stderr:
-        print(f"错误信息: \r\n{stderr}")
+        print(f"命令执行结果: \r\n{stderr}")
 
     return process.returncode
 

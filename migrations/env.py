@@ -39,8 +39,8 @@ try:
 
     # 导入所有模型以确保它们被注册到SQLModel的元数据中
     try:
-        from src.apps.v1.sys.models import *
-        print("成功导入模型")
+        from migrations.models_config import *
+        print("========== 成功导入模型 ==========")
         print(f"数据库类型：{settings.DB_TYPE}")
         print(f"数据库连接：{SQLALCHEMY_DATABASE_URL}")
     except ImportError as e:

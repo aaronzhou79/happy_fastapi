@@ -12,10 +12,10 @@ print(f"BasePath: {BasePath}")
 LOG_DIR = os.path.join(BasePath, 'log')
 
 # 离线 IP 数据库路径
-IP2REGION_XDB = os.path.join(BasePath, 'static', 'ip2region.xdb')
+IP2REGION_XDB = os.path.join(BasePath, 'src', 'static', 'ip2region.xdb')
 
 # 挂载静态目录
-STATIC_DIR = os.path.join(BasePath, 'static')
+STATIC_DIR = os.path.join(BasePath, 'src', 'static')
 UPLOAD_DIR = os.path.join(BasePath, 'upload')
 
 # jinja2 模版文件路径
