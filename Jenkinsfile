@@ -1,9 +1,6 @@
 pipeline {
     agent {
-        docker {
-            image 'dockerhub.sz-alion.com/python:3.12-slim'
-            args '-v /var/run/docker.sock:/var/run/docker.sock'
-        }
+        label 'NAS-Docker'
     }
 
     environment {
