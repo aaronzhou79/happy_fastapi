@@ -40,7 +40,7 @@ pipeline {
                         echo "警告: 未找到 docker-compose 或 docker compose 插件，尝试安装..."
                         # 尝试安装 docker-compose 到用户目录
                         mkdir -p ${HOME}/bin
-                        curl -L "https://github.com/docker/compose/releases/download/v2.23.3/docker-compose-$(uname -s)-$(uname -m)" -o ${HOME}/bin/docker-compose
+                        curl -L "https://github.com/docker/compose/releases/download/v2.33.0/docker-compose-$(uname -s)-$(uname -m)" -o ${HOME}/bin/docker-compose
                         chmod +x ${HOME}/bin/docker-compose
                         export PATH="${HOME}/bin:${PATH}"
 
