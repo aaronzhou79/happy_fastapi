@@ -17,6 +17,45 @@ pipeline {
     }
 
     stages {
+        stage('检查环境') {
+            steps {
+                sh '''
+                    # 检查 Docker 是否可用
+                    if ! command -v docker &> /dev/null; then
+                        echo "错误: Docker 未安装或不在 PATH 中"
+                        exit 1
+                    fi
+
+                    # 显示 Docker 版本
+                    docker --version
+
+                    # 检查 docker-compose 或 docker compose 是否可用
+                    if command -v docker-compose &> /dev/null; then
+                        echo "使用 docker-compose 命令"
+                        docker-compose --version
+                    elif docker compose version &> /dev/null; then
+                        echo "使用 docker compose 插件"
+                        docker compose version
+                    else
+                        echo "警告: 未找到 docker-compose 或 docker compose 插件，尝试安装..."
+                        # 尝试安装 docker-compose 到用户目录
+                        mkdir -p ${HOME}/bin
+                        curl -L "https://github.com/docker/compose/releases/download/v2.23.3/docker-compose-$(uname -s)-$(uname -m)" -o ${HOME}/bin/docker-compose
+                        chmod +x ${HOME}/bin/docker-compose
+                        export PATH="${HOME}/bin:${PATH}"
+
+                        if ${HOME}/bin/docker-compose --version; then
+                            echo "docker-compose 安装成功到用户目录"
+                            # 创建符号链接到工作目录，以便在脚本中使用
+                            ln -sf ${HOME}/bin/docker-compose ${WORKSPACE}/docker-compose
+                        else
+                            echo "安装 docker-compose 失败，将使用 docker compose 命令"
+                        fi
+                    fi
+                '''
+            }
+        }
+
         // stage('安装依赖') {
         //     steps {
         //         sh 'pip install --no-cache-dir -r requirements.txt'
@@ -36,17 +75,32 @@ pipeline {
                 script {
                     // 跳转到指定目录
                     dir("${env.WORKSPACE}") {
-                        // 检查容器是否已存在，如果存在则先停止并移除
+                        // 检查 Docker Compose 是否可用，如果不可用则尝试使用 docker compose 命令
                         sh '''
-                            if docker-compose -f deploy/docker-compose.yml ps | grep -q "Up\\|Exit"; then
-                                echo "检测到已存在的容器，执行 docker-compose down..."
-                                docker-compose -f deploy/docker-compose.yml down
+                            # 设置 DOCKER_COMPOSE 变量
+                            if command -v docker-compose &> /dev/null; then
+                                DOCKER_COMPOSE="docker-compose"
+                            elif [ -f "${WORKSPACE}/docker-compose" ] && [ -x "${WORKSPACE}/docker-compose" ]; then
+                                DOCKER_COMPOSE="${WORKSPACE}/docker-compose"
+                            elif docker compose version &> /dev/null; then
+                                DOCKER_COMPOSE="docker compose"
+                            else
+                                echo "错误: 无法找到可用的 docker-compose 或 docker compose 命令"
+                                exit 1
+                            fi
+
+                            echo "使用命令: $DOCKER_COMPOSE"
+
+                            # 检查容器是否已存在
+                            if $DOCKER_COMPOSE -f deploy/docker-compose.yml ps | grep -q "Up\\|Exit"; then
+                                echo "检测到已存在的容器，执行 down 命令..."
+                                $DOCKER_COMPOSE -f deploy/docker-compose.yml down
                             else
                                 echo "未检测到已存在的容器，直接部署..."
                             fi
 
                             # 启动容器
-                            docker-compose -f deploy/docker-compose.yml up -d
+                            $DOCKER_COMPOSE -f deploy/docker-compose.yml up -d
                         '''
                     }
                 }
