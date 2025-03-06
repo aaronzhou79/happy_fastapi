@@ -223,6 +223,13 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         if hasattr(self.model, 'tenant_id'):
             statement = statement.where(getattr(self.model, 'tenant_id') == get_tenant_id())
 
+        if hasattr(self.model, '__relation_info__'):
+            for relation_name, _ in self.model.__relation_info__.items():
+                # 使用 getattr 获取关系属性
+                relation_attr = getattr(self.model, relation_name, None)
+                if relation_attr is not None:
+                    statement = statement.options(selectinload(relation_attr))
+
         if hasattr(self.model, "sort_order"):
             statement = statement.order_by(getattr(self.model, "sort_order").asc())
         else:
