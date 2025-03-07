@@ -38,6 +38,7 @@ pipeline {
                     // 打印工作目录
                     echo "Jenkins Workspace: ${env.WORKSPACE}"
                 }
+                sh 'ls -la'
             }
         }
 
