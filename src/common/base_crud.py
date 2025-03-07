@@ -1,5 +1,3 @@
-import inspect
-
 from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
@@ -7,7 +5,8 @@ from typing import Any, AsyncGenerator, Callable, Dict, Generic, Sequence
 
 import sqlalchemy as sa
 
-from sqlalchemy.orm import selectinload
+from sqlalchemy import Select, inspect
+from sqlalchemy.orm import load_only, selectinload
 from sqlmodel import insert, select
 
 from src.common.base_models.database_mixin import (
@@ -269,6 +268,48 @@ class CRUDBase(Generic[ModelType, CreateModelType, UpdateModelType]):
         statement = statement.offset(skip).limit(limit)
         result = await session.execute(statement)
         return result.scalars().all()
+
+    @abstractmethod
+    async def build_select(
+        self, fields: Sequence[str] = [], **kwargs
+    ) -> Select:
+        """
+        构建选择指定字段的查询
+
+        Args:
+            fields: 要查询的字段列表，如果为空则查询所有字段
+            kwargs: 过滤条件，如 id=1, name='test'
+
+        Returns:
+            SQLAlchemy Select 对象
+        """
+        if not fields:
+            # 如果字段列表为空，获取所有列
+            mapper = inspect(self.model)
+            fields = [column.key for column in mapper.columns]
+
+        # 获取模型的属性对象
+        model_attrs = []
+        for field in fields:
+            if hasattr(self.model, field):
+                model_attrs.append(getattr(self.model, field))
+            else:
+                raise ValueError(f"字段 '{field}' 在模型 {self.model.__name__} 中不存在")
+
+        # 构建查询
+        stmt = select(*model_attrs)
+
+        # 添加过滤条件
+        if kwargs:
+            conditions = []
+            for key, value in kwargs.items():
+                if hasattr(self.model, key):
+                    conditions.append(getattr(self.model, key) == value)
+            if conditions:
+                for condition in conditions:
+                    stmt = stmt.where(condition)
+
+        return stmt
 
     @abstractmethod
     async def update(
