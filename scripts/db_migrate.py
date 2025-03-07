@@ -43,15 +43,32 @@ def create_migration(message):
     return run_command(command)
 
 
-def upgrade(revision="head"):
-    """升级数据库到指定版本"""
+def upgrade(revision="head", checkfirst=False):
+    """升级数据库到指定版本
+
+    Args:
+        revision: 目标版本，默认为最新版本
+        checkfirst: 是否在创建对象前检查是否已存在
+    """
     command = f"alembic upgrade {revision}"
+    if checkfirst:
+        # 设置环境变量，让alembic知道需要检查对象是否存在
+        os.environ["ALEMBIC_CHECKFIRST"] = "1"
+        print("已启用checkfirst模式，将在创建对象前检查是否已存在")
     return run_command(command)
 
 
-def downgrade(revision="-1"):
-    """降级数据库到指定版本"""
+def downgrade(revision="-1", checkfirst=False):
+    """降级数据库到指定版本
+
+    Args:
+        revision: 目标版本，默认为上一个版本
+        checkfirst: 是否在创建对象前检查是否已存在
+    """
     command = f"alembic downgrade {revision}"
+    if checkfirst:
+        os.environ["ALEMBIC_CHECKFIRST"] = "1"
+        print("已启用checkfirst模式，将在创建对象前检查是否已存在")
     return run_command(command)
 
 
@@ -81,11 +98,17 @@ def main():
     upgrade_parser.add_argument(
         "-r", "--revision", default="head", help="目标版本，默认为最新版本"
     )
+    upgrade_parser.add_argument(
+        "--checkfirst", action="store_true", help="在创建对象前检查是否已存在"
+    )
 
     # 降级数据库
     downgrade_parser = subparsers.add_parser("downgrade", help="降级数据库")
     downgrade_parser.add_argument(
         "-r", "--revision", default="-1", help="目标版本，默认为上一个版本"
+    )
+    downgrade_parser.add_argument(
+        "--checkfirst", action="store_true", help="在创建对象前检查是否已存在"
     )
 
     # 显示历史
@@ -95,16 +118,19 @@ def main():
     subparsers.add_parser("current", help="显示当前版本")
 
     # 初始化数据库
-    subparsers.add_parser("init", help="初始化数据库")
+    init_parser = subparsers.add_parser("init", help="初始化数据库")
+    init_parser.add_argument(
+        "--checkfirst", action="store_true", help="在创建对象前检查是否已存在"
+    )
 
     args = parser.parse_args()
 
     if args.command == "create":
         return create_migration(args.message)
     elif args.command == "upgrade":
-        return upgrade(args.revision)
+        return upgrade(args.revision, getattr(args, "checkfirst", False))
     elif args.command == "downgrade":
-        return downgrade(args.revision)
+        return downgrade(args.revision, getattr(args, "checkfirst", False))
     elif args.command == "history":
         return show_history()
     elif args.command == "current":
@@ -112,7 +138,7 @@ def main():
     elif args.command == "init":
         # 初始化数据库
         print(f"初始化数据库: {settings.DB_NAME}")
-        return upgrade()
+        return upgrade(checkfirst=getattr(args, "checkfirst", False))
     else:
         parser.print_help()
         return 1
