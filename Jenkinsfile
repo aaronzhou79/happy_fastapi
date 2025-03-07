@@ -66,6 +66,98 @@ pipeline {
             }
         }
 
+        stage('准备部署环境') {
+            steps {
+                script {
+                    dir("${env.WORKSPACE}") {
+                        sh '''
+                            # 显示工作目录结构
+                            echo "当前工作目录: $(pwd)"
+                            ls -la
+
+                            # 检查并创建必要的目录
+                            echo "创建必要的目录结构..."
+                            mkdir -p deploy/traefik/config
+                            mkdir -p deploy/traefik/certs
+                            mkdir -p logs/traefik
+
+                            # 创建 Traefik 配置文件
+                            echo "创建 Traefik 配置文件..."
+                            cat > deploy/traefik/traefik.yml << 'EOF'
+api:
+  dashboard: true
+  insecure: true
+
+entryPoints:
+  web:
+    address: ":80"
+  websecure:
+    address: ":443"
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+  file:
+    directory: "/etc/traefik/dynamic"
+    watch: true
+
+log:
+  level: "INFO"
+  filePath: "/var/log/traefik/traefik.log"
+
+accessLog:
+  filePath: "/var/log/traefik/access.log"
+
+ping:
+  entryPoint: "web"
+EOF
+
+                            # 创建 Traefik 仪表盘配置
+                            cat > deploy/traefik/config/dashboard.yml << 'EOF'
+http:
+  routers:
+    dashboard:
+      rule: Host(`traefik.docker.localhost`)
+      service: api@internal
+      entryPoints:
+        - web
+EOF
+
+                            # 显示创建的文件
+                            echo "验证创建的文件..."
+                            ls -la deploy/traefik/
+                            ls -la deploy/traefik/config/
+
+                            # 显示配置文件内容
+                            echo "Traefik 配置文件内容:"
+                            cat deploy/traefik/traefik.yml
+
+                            # 设置正确的文件权限
+                            echo "设置文件权限..."
+                            chmod -R 755 deploy/traefik
+                            chmod -R 755 logs/traefik
+
+                            # 检查文件所有者
+                            echo "文件所有者信息:"
+                            ls -la deploy/traefik/
+
+                            # 确保 Docker 可以访问这些文件
+                            echo "确保 Docker 可以访问这些文件..."
+                            if command -v id &> /dev/null && command -v getent &> /dev/null; then
+                                DOCKER_GID=$(getent group docker | cut -d: -f3)
+                                if [ ! -z "$DOCKER_GID" ]; then
+                                    echo "Docker 组 ID: $DOCKER_GID"
+                                    # 尝试将文件组设置为 docker 组
+                                    chgrp -R $DOCKER_GID deploy/traefik logs/traefik 2>/dev/null || true
+                                fi
+                            fi
+                        '''
+                    }
+                }
+            }
+        }
+
         // stage('安装依赖') {
         //     steps {
         //         sh 'pip install --no-cache-dir -r requirements.txt'
@@ -110,6 +202,12 @@ pipeline {
                                 if [ ! -f "deploy/docker-compose.yml" ]; then
                                     echo "错误: deploy/docker-compose.yml 文件不存在"
                                     ls -la deploy/
+                                    exit 1
+                                fi
+
+                                # 检查 Traefik 配置文件是否存在
+                                if [ ! -f "deploy/traefik/traefik.yml" ]; then
+                                    echo "错误: Traefik 配置文件不存在，请确保 '准备部署环境' 阶段已成功执行"
                                     exit 1
                                 fi
 
