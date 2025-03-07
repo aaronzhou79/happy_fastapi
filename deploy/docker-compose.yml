@@ -20,7 +20,7 @@ services:
     restart: unless-stopped
     # 添加健康检查
     healthcheck:
-      test: wget --no-verbose --tries=1 --spider http://localhost:8080/api/overview || exit 1
+      test: wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
       interval: 30s
       timeout: 10s
       retries: 3
