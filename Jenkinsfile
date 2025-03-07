@@ -30,14 +30,17 @@ pipeline {
     }
 
     stages {
-        stage('Print Workspace') {
+        stage('检出代码') {
             steps {
+                checkout scm
+                sh 'echo "检出代码完成"'
                 script {
                     // 打印工作目录
                     echo "Jenkins Workspace: ${env.WORKSPACE}"
                 }
             }
         }
+
 
 
         // stage('单元测试') {
