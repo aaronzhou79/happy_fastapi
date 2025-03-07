@@ -16,6 +16,8 @@ entryPoints:
 
   # websecure:
   #   address: ":1443"
+  insecure:
+    address: ":1181"
 
 ## API和仪表盘配置
 api:
