@@ -5,6 +5,7 @@ import sqlalchemy as sa
 
 from sqlmodel import Field, Relationship, SQLModel
 
+from src.apps.v1.demo.demo_enum import DemoStatus
 from src.common.base_models.database_mixin import DatabaseModel
 from src.common.base_models.datetime_mixin import DateTimeMixin
 from src.common.base_models.numeric_mixin import (
@@ -30,7 +31,7 @@ class DemoBase(SQLModel):
     # 使用自定义百分比字段
     tax_rate: Decimal = PercentageField(description="税率")
     discount_rate: Decimal = PercentageField(description="折扣率")
-    status: str = Field(..., max_length=32, description="状态")
+    status: DemoStatus = Field(..., description="状态")
 
 
 class Demo(DemoBase, TenantMixin, DateTimeMixin, DatabaseModel, table=True):
