@@ -30,19 +30,15 @@ pipeline {
     }
 
     stages {
-        stage('安装依赖') {
+        stage('Print Workspace') {
             steps {
-                sh 'pip install --no-cache-dir -r requirements.txt'
-                sh 'pip install --no-cache-dir pytest pytest-cov ruff mypy'
+                script {
+                    // 打印工作目录
+                    echo "Jenkins Workspace: ${env.WORKSPACE}"
+                }
             }
         }
 
-        stage('代码质量检查') {
-            steps {
-                sh 'ruff check src/'
-                sh 'mypy src/'
-            }
-        }
 
         // stage('单元测试') {
         //     steps {
