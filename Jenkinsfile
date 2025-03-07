@@ -107,12 +107,12 @@ pipeline {
     }
 
     post {
-        always {
-            // 清理工作区
-            cleanWs()
-            // 清理未使用的Docker镜像
-            // sh 'docker system prune -f || true'
-        }
+        // always {
+        //     // 清理工作区
+        //     cleanWs()
+        //     // 清理未使用的Docker镜像
+        //     // sh 'docker system prune -f || true'
+        // }
 
         success {
             // 发送成功通知
