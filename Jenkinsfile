@@ -1,6 +1,19 @@
 pipeline {
     agent any
 
+    options {
+        // 设置构建超时时间为30分钟
+        timeout(time: 30, unit: 'MINUTES')
+        // 禁用并发构建
+        disableConcurrentBuilds()
+        // 保留最近10次构建记录
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        // 添加时间戳到控制台输出
+        timestamps()
+        // 设置心跳检查间隔，解决 JENKINS-48300 问题
+        durabilityHint('PERFORMANCE_OPTIMIZED')
+    }
+
     environment {
         // 项目名称
         PROJECT_NAME = 'happy_fastapi'
@@ -19,34 +32,37 @@ pipeline {
     stages {
         stage('检查环境') {
             steps {
-                sh '''
-                    # 显示 Docker 版本
-                    docker --version
+                // 添加重试机制
+                retry(3) {
+                    sh '''
+                        # 显示 Docker 版本
+                        docker --version
 
-                    # 检查 docker-compose 或 docker compose 是否可用
-                    if command -v docker-compose &> /dev/null; then
-                        echo "使用 docker-compose 命令"
-                        docker-compose --version
-                    elif docker compose version &> /dev/null; then
-                        echo "使用 docker compose 插件"
-                        docker compose version
-                    else
-                        echo "警告: 未找到 docker-compose 或 docker compose 插件，尝试安装..."
-                        # 尝试安装 docker-compose 到用户目录
-                        mkdir -p ${HOME}/bin
-                        curl -L "https://github.com/docker/compose/releases/download/v2.33.0/docker-compose-$(uname -s)-$(uname -m)" -o ${HOME}/bin/docker-compose
-                        chmod +x ${HOME}/bin/docker-compose
-                        export PATH="${HOME}/bin:${PATH}"
-
-                        if ${HOME}/bin/docker-compose --version; then
-                            echo "docker-compose 安装成功到用户目录"
-                            # 创建符号链接到工作目录，以便在脚本中使用
-                            ln -sf ${HOME}/bin/docker-compose ${WORKSPACE}/docker-compose
+                        # 检查 docker-compose 或 docker compose 是否可用
+                        if command -v docker-compose &> /dev/null; then
+                            echo "使用 docker-compose 命令"
+                            docker-compose --version
+                        elif docker compose version &> /dev/null; then
+                            echo "使用 docker compose 插件"
+                            docker compose version
                         else
-                            echo "安装 docker-compose 失败，将使用 docker compose 命令"
+                            echo "警告: 未找到 docker-compose 或 docker compose 插件，尝试安装..."
+                            # 尝试安装 docker-compose 到用户目录
+                            mkdir -p ${HOME}/bin
+                            curl -L "https://github.com/docker/compose/releases/download/v2.33.0/docker-compose-$(uname -s)-$(uname -m)" -o ${HOME}/bin/docker-compose
+                            chmod +x ${HOME}/bin/docker-compose
+                            export PATH="${HOME}/bin:${PATH}"
+
+                            if ${HOME}/bin/docker-compose --version; then
+                                echo "docker-compose 安装成功到用户目录"
+                                # 创建符号链接到工作目录，以便在脚本中使用
+                                ln -sf ${HOME}/bin/docker-compose ${WORKSPACE}/docker-compose
+                            else
+                                echo "安装 docker-compose 失败，将使用 docker compose 命令"
+                            fi
                         fi
-                    fi
-                '''
+                    '''
+                }
             }
         }
 
@@ -65,102 +81,87 @@ pipeline {
         // }
 
         stage('Build and Deploy') {
+            // 添加超时设置
+            options {
+                timeout(time: 10, unit: 'MINUTES')
+            }
             steps {
                 script {
                     // 跳转到指定目录
                     dir("${env.WORKSPACE}") {
-                        // 检查 Docker Compose 是否可用，如果不可用则尝试使用 docker compose 命令
-                        sh '''
-                            # 设置 DOCKER_COMPOSE 变量
-                            if command -v docker-compose &> /dev/null; then
-                                DOCKER_COMPOSE="docker-compose"
-                            elif [ -f "${WORKSPACE}/docker-compose" ] && [ -x "${WORKSPACE}/docker-compose" ]; then
-                                DOCKER_COMPOSE="${WORKSPACE}/docker-compose"
-                            elif docker compose version &> /dev/null; then
-                                DOCKER_COMPOSE="docker compose"
-                            else
-                                echo "错误: 无法找到可用的 docker-compose 或 docker compose 命令"
-                                exit 1
-                            fi
-
-                            echo "使用命令: $DOCKER_COMPOSE"
-
-                            # 检查关键端口是否被占用
-                            echo "检查端口占用情况..."
-                            PORT_80=$(netstat -tuln | grep ":80 " || ss -tuln | grep ":80 " || echo "")
-                            PORT_443=$(netstat -tuln | grep ":443 " || ss -tuln | grep ":443 " || echo "")
-                            PORT_8080=$(netstat -tuln | grep ":8080 " || ss -tuln | grep ":8080 " || echo "")
-
-                            if [ ! -z "$PORT_80" ]; then
-                                echo "警告: 端口 80 已被占用:"
-                                echo "$PORT_80"
-                                echo "尝试查找占用进程..."
-                                lsof -i :80 || echo "无法获取占用进程信息"
-                            fi
-
-                            if [ ! -z "$PORT_443" ]; then
-                                echo "警告: 端口 443 已被占用:"
-                                echo "$PORT_443"
-                                echo "尝试查找占用进程..."
-                                lsof -i :443 || echo "无法获取占用进程信息"
-
-                                echo "尝试修改 docker-compose.yml 中的 443 端口映射..."
-                                # 备份原始文件
-                                cp deploy/docker-compose.yml deploy/docker-compose.yml.bak
-                                # 将 443:443 修改为 4443:443
-                                sed -i 's/443:443/4443:443/g' deploy/docker-compose.yml
-                                echo "已将 443 端口映射修改为 4443:443"
-                            fi
-
-                            if [ ! -z "$PORT_8080" ]; then
-                                echo "警告: 端口 8080 已被占用:"
-                                echo "$PORT_8080"
-                                echo "尝试查找占用进程..."
-                                lsof -i :8080 || echo "无法获取占用进程信息"
-
-                                echo "尝试修改 docker-compose.yml 中的 8080 端口映射..."
-                                # 如果还没有备份，则备份原始文件
-                                if [ ! -f deploy/docker-compose.yml.bak ]; then
-                                    cp deploy/docker-compose.yml deploy/docker-compose.yml.bak
+                        // 添加重试机制
+                        retry(2) {
+                            sh '''
+                                # 设置 DOCKER_COMPOSE 变量
+                                if command -v docker-compose &> /dev/null; then
+                                    DOCKER_COMPOSE="docker-compose"
+                                elif [ -f "${WORKSPACE}/docker-compose" ] && [ -x "${WORKSPACE}/docker-compose" ]; then
+                                    DOCKER_COMPOSE="${WORKSPACE}/docker-compose"
+                                elif docker compose version &> /dev/null; then
+                                    DOCKER_COMPOSE="docker compose"
+                                else
+                                    echo "错误: 无法找到可用的 docker-compose 或 docker compose 命令"
+                                    exit 1
                                 fi
-                                # 将 8080:8080 修改为 18080:8080
-                                sed -i 's/8080:8080/18080:8080/g' deploy/docker-compose.yml
-                                echo "已将 8080 端口映射修改为 18080:8080"
-                            fi
 
-                            # 检查容器是否已存在
-                            if $DOCKER_COMPOSE -f deploy/docker-compose.yml ps | grep -q "Up\\|Exit"; then
-                                echo "检测到已存在的容器，执行 down 命令..."
-                                $DOCKER_COMPOSE -f deploy/docker-compose.yml down
-                            else
-                                echo "未检测到已存在的容器，直接部署..."
-                            fi
+                                echo "使用命令: $DOCKER_COMPOSE"
 
-                            # 尝试停止可能占用端口的容器
-                            echo "尝试停止可能占用端口的容器..."
-                            docker ps | grep -E '(80/tcp|443/tcp|8080/tcp)' | awk '{print $1}' | xargs -r docker stop
+                                # 检查 docker-compose.yml 文件是否存在
+                                if [ ! -f "deploy/docker-compose.yml" ]; then
+                                    echo "错误: deploy/docker-compose.yml 文件不存在"
+                                    ls -la deploy/
+                                    exit 1
+                                fi
 
-                            # 启动容器
-                            echo "开始部署容器..."
-                            $DOCKER_COMPOSE -f deploy/docker-compose.yml up -d
+                                # 检查容器是否已存在
+                                echo "检查现有容器..."
+                                $DOCKER_COMPOSE -f deploy/docker-compose.yml ps || true
 
-                            # 如果部署成功，显示服务状态
-                            if [ $? -eq 0 ]; then
-                                echo "部署成功，显示服务状态:"
+                                # 停止并移除现有容器
+                                echo "停止并移除现有容器..."
+                                $DOCKER_COMPOSE -f deploy/docker-compose.yml down || true
+
+                                # 清理可能占用端口的容器
+                                echo "清理可能占用端口的容器..."
+                                for port in 1180 1443 18080; do
+                                    pid=$(lsof -t -i :$port 2>/dev/null || echo "")
+                                    if [ ! -z "$pid" ]; then
+                                        echo "端口 $port 被进程 $pid 占用，尝试停止..."
+                                        kill -15 $pid 2>/dev/null || true
+                                        sleep 2
+                                    fi
+                                done
+
+                                # 启动容器
+                                echo "开始部署容器..."
+                                $DOCKER_COMPOSE -f deploy/docker-compose.yml up -d
+
+                                # 检查部署状态
+                                echo "检查部署状态..."
+                                sleep 5
                                 $DOCKER_COMPOSE -f deploy/docker-compose.yml ps
 
-                                # 如果修改了端口，提示用户
-                                if [ -f deploy/docker-compose.yml.bak ]; then
-                                    echo "注意: 由于端口冲突，已修改以下端口映射:"
-                                    diff deploy/docker-compose.yml.bak deploy/docker-compose.yml | grep -E '(443|8080)'
-                                fi
-                            else
-                                echo "部署失败，请检查日志"
-                                $DOCKER_COMPOSE -f deploy/docker-compose.yml logs
-                                exit 1
-                            fi
-                        '''
+                                # 检查服务健康状态
+                                echo "检查服务健康状态..."
+                                for i in {1..5}; do
+                                    if $DOCKER_COMPOSE -f deploy/docker-compose.yml ps | grep -q "healthy"; then
+                                        echo "服务已成功启动并健康"
+                                        break
+                                    fi
+                                    echo "等待服务健康检查通过... ($i/5)"
+                                    sleep 10
+                                done
+                            '''
+                        }
                     }
+                }
+            }
+            post {
+                success {
+                    echo "部署成功，服务已启动"
+                }
+                failure {
+                    echo "部署失败，请检查日志"
                 }
             }
         }
@@ -232,7 +233,7 @@ pipeline {
             // 清理工作区
             cleanWs()
             // 清理未使用的Docker镜像
-            sh 'docker system prune -f'
+            sh 'docker system prune -f || true'
         }
 
         success {
@@ -243,6 +244,10 @@ pipeline {
         failure {
             // 发送失败通知
             echo '构建失败！'
+        }
+
+        aborted {
+            echo '构建被中断！'
         }
     }
 }
