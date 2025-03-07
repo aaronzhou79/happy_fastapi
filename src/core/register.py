@@ -108,7 +108,7 @@ async def register_init(app: FastAPI) -> AsyncIterator[None]:
     try:
         # # 初始化 Redis
         await redis_client.open()
-        await create_table()
+        # await create_table()
         # 初始化限流器
         await init_limiter()
         # 先同步初始化通知规则配置
