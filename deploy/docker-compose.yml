@@ -91,32 +91,6 @@ services:
   #     retries: 3
   #     start_period: 10s
 
-  jenkins:
-    image: jenkins/jenkins:lts
-    container_name: jenkins
-    user: root
-    restart: always
-    ports:
-      - "9081:8080"
-      - "50000:50000"
-    volumes:
-      - ./data:/var/jenkins_home
-      - /usr/local/bin/docker-compose:/usr/local/bin/docker-compose
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /usr/local/bin/docker:/usr/bin/docker
-      # 挂载宿主机的 Python 可执行文件
-      - /usr/bin/python3:/usr/bin/python3
-      - /usr/bin/pip3:/usr/bin/pip3
-      # 挂载 Python 库路径
-      - /usr/lib/python3:/usr/lib/python3
-      - /usr/local/lib/python3:/usr/local/lib/python3
-      # 挂载 Python 包路径
-      - /usr/lib/python3/dist-packages:/usr/lib/python3/dist-packages
-      - /usr/local/lib/python3/dist-packages:/usr/local/lib/python3/dist-packages
-    environment:
-      # 设置 Python 路径环境变量
-      - PYTHONPATH=/usr/lib/python3:/usr/local/lib/python3:/usr/lib/python3/dist-packages:/usr/local/lib/python3/dist-packages
-
 networks:
   app-network:
     name: app-network  # 显式指定网络名称，避免Docker Compose自动添加项目前缀

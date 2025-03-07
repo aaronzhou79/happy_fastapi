@@ -30,19 +30,19 @@ pipeline {
     }
 
     stages {
-        // stage('安装依赖') {
-        //     steps {
-        //         sh 'pip install --no-cache-dir -r requirements.txt'
-        //         sh 'pip install --no-cache-dir pytest pytest-cov ruff mypy'
-        //     }
-        // }
+        stage('安装依赖') {
+            steps {
+                sh 'pip install --no-cache-dir -r requirements.txt'
+                sh 'pip install --no-cache-dir pytest pytest-cov ruff mypy'
+            }
+        }
 
-        // stage('代码质量检查') {
-        //     steps {
-        //         sh 'ruff check src/'
-        //         sh 'mypy src/'
-        //     }
-        // }
+        stage('代码质量检查') {
+            steps {
+                sh 'ruff check src/'
+                sh 'mypy src/'
+            }
+        }
 
         // stage('单元测试') {
         //     steps {

@@ -129,30 +129,65 @@ def register_app() -> FastAPI:
 
     # 获取环境变量中的ROOT_PATH，用于API网关代理
     import os
+    from fastapi.staticfiles import StaticFiles
+    from pathlib import Path
+    from fastapi.openapi.docs import get_swagger_ui_html
 
     root_path = os.environ.get("ROOT_PATH", "")
     log.info("🟢 应用根路径: {}", root_path)
+
+    # 考虑 root_path 的影响，确保静态文件路径正确
+    static_path = f"{root_path}/static" if root_path else "/static"
+    swagger_js_url = f"{static_path}/swagger-ui/swagger-ui-bundle.js"
+    swagger_css_url = f"{static_path}/swagger-ui/swagger-ui.css"
 
     app = FastAPI(
         title=settings.PROJECT_NAME,
         version=settings.VERSION,
         description=settings.DESCRIPTION,
-        docs_url=settings.DOCS_URL,
+        docs_url=None,  # 设置为 None，使用自定义路由
         redoc_url=settings.REDOC_URL,
         openapi_url=settings.OPENAPI_URL,
         default_response_class=MsgSpecJSONResponse,
         lifespan=register_init,
         root_path=root_path,  # 添加root_path参数
-        swagger_ui_parameters={
-            "docExpansion": "none",
-            "defaultModelsExpandDepth": 0,
-            "persistAuthorization": True,
-            "displayRequestDuration": True,
-            "filter": True,
-            "tryItOutEnabled": True,
-            "syntaxHighlight.theme": "monokai",
-        },
     )
+
+    # 设置 OAuth2 重定向 URL
+    app.swagger_ui_oauth2_redirect_url = f"{settings.DOCS_URL}/oauth2-redirect"
+
+    # 挂载静态文件目录
+    app.mount("/static", StaticFiles(directory=str(Path(__file__).parent.parent / "static")), name="static")
+
+    # 自定义 Swagger UI 路由
+    @app.get(settings.DOCS_URL, include_in_schema=False)
+    async def custom_swagger_ui_html():
+        openapi_url = app.openapi_url
+        if openapi_url is None:
+            openapi_url = f"{root_path}{settings.OPENAPI_URL}" if root_path else settings.OPENAPI_URL
+
+        return get_swagger_ui_html(
+            openapi_url=openapi_url,
+            title=f"{app.title} - Swagger UI",
+            oauth2_redirect_url=app.swagger_ui_oauth2_redirect_url,
+            swagger_js_url=swagger_js_url,
+            swagger_css_url=swagger_css_url,
+            swagger_ui_parameters={
+                "docExpansion": "none",
+                "defaultModelsExpandDepth": 0,
+                "persistAuthorization": True,
+                "displayRequestDuration": True,
+                "filter": True,
+                "tryItOutEnabled": True,
+                "syntaxHighlight.theme": "monokai",
+            },
+        )
+
+    # 添加 OAuth2 重定向路由
+    @app.get(f"{settings.DOCS_URL}/oauth2-redirect", include_in_schema=False)
+    async def swagger_ui_redirect():
+        from fastapi.openapi.docs import get_swagger_ui_oauth2_redirect_html
+        return get_swagger_ui_oauth2_redirect_html()
 
     register_middleware(app)
 
