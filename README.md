@@ -131,8 +131,8 @@ python scripts/db_migrate.py -h
 # 创建新的迁移脚本
 python scripts/db_migrate.py create -m "迁移说明"
 
-# 升级数据库到最新版本
-python scripts/db_migrate.py upgrade
+# 升级数据库到最新版本 --checkfirst 跳过已存在的数据库变更
+python scripts/db_migrate.py upgrade --checkfirst
 
 # 升级数据库到指定版本
 python scripts/db_migrate.py upgrade -r <revision>
