@@ -14,7 +14,7 @@ services:
   #     - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro  # 挂载主配置文件
   #     - ./traefik/config:/etc/traefik/dynamic:ro  # 挂载动态配置目录
   #     - ./traefik/certs:/etc/traefik/certs:ro  # 挂载证书目录
-  #     - ../logs/traefik:/var/log/traefik  # 挂载日志目录
+  #     - ../logs/traefik:/var/logs/traefik  # 挂载日志目录
   #   networks:
   #     - app-network
   #   restart: unless-stopped
@@ -35,7 +35,7 @@ services:
       - TZ=Asia/Shanghai
       - ROOT_PATH=/api  # 添加ROOT_PATH环境变量，使FastAPI知道它运行在/api前缀下
     volumes:
-      - ../logs:/var/log/fastapi_server  # 挂载日志目录
+      - ../logs:/var/logs/fastapi_server  # 挂载日志目录
     expose:
       - "8000"  # 仅在内部网络暴露端口
     networks:

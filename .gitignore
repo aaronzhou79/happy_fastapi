@@ -43,8 +43,8 @@ poetry.lock
 
 # logs
 *.log
-src/log/*
-log/*
+src/logs/*
+logs/*
 
 # FastAPI
 *.env

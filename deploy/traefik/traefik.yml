@@ -43,7 +43,7 @@ log:
 
 accessLog:
   format: "common"
-  filePath: "/var/log/traefik/access.log"
+  filePath: "/var/logs/traefik/access.log"
   bufferingSize: 100
 
 ## 指标配置

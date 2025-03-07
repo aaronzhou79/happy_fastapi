@@ -9,7 +9,7 @@ BasePath = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 print(f"BasePath: {BasePath}")
 
 # 日志文件路径
-LOG_DIR = os.path.join(BasePath, "log")
+LOG_DIR = os.path.join(BasePath, "logs")
 
 # 离线 IP 数据库路径
 IP2REGION_XDB = os.path.join(BasePath, "src", "static", "ip2region.xdb")

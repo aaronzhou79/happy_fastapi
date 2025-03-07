@@ -14,9 +14,9 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # 创建必要的目录并设置权限
-RUN mkdir -p /var/log/supervisor && \
-    chown -R root:root /var/log/supervisor && \
-    chmod 755 /var/log/supervisor
+RUN mkdir -p /var/logs/supervisor && \
+    chown -R root:root /var/logs/supervisor && \
+    chmod 755 /var/logs/supervisor
 
 # 安装Python依赖
 COPY requirements.txt .
@@ -26,7 +26,7 @@ RUN pip install --no-cache-dir gunicorn uvicorn
 
 ENV TZ=Asia/Shanghai
 
-RUN mkdir -p /var/log/fastapi_server
+RUN mkdir -p /var/logs/fastapi_server
 
 # 复制配置文件
 COPY deploy/fastapi_server.conf /etc/supervisor/conf.d/
@@ -46,8 +46,8 @@ ENV PYTHONPATH=/happy_app \
 # 创建非root用户
 RUN adduser --disabled-password --gecos "" appuser && \
     chown -R appuser:appuser /happy_app && \
-    chown -R appuser:appuser /var/log/supervisor && \
-    chown -R appuser:appuser /var/log/fastapi_server
+    chown -R appuser:appuser /var/logs/supervisor && \
+    chown -R appuser:appuser /var/logs/fastapi_server
 
 # # 切换到非root用户
 # USER appuser
