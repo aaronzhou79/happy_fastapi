@@ -1,30 +1,30 @@
 services:
-  # Traefik - API网关
-  traefik:
-    image: traefik:latest
-    container_name: traefik
-    command:
-      - "--configfile=/etc/traefik/traefik.yml"
-    ports:
-      - "1180:80"      # HTTP
-      - "1443:443"    # HTTPS
-      - "18080:8080"  # Traefik Dashboard
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro  # 挂载Docker socket以监控容器
-      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro  # 挂载主配置文件
-      - ./traefik/config:/etc/traefik/dynamic:ro  # 挂载动态配置目录
-      - ./traefik/certs:/etc/traefik/certs:ro  # 挂载证书目录
-      - ../logs/traefik:/var/log/traefik  # 挂载日志目录
-    networks:
-      - app-network
-    restart: unless-stopped
-    # 添加健康检查
-    healthcheck:
-      test: wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+  # # Traefik - API网关
+  # traefik:
+  #   image: traefik:latest
+  #   container_name: traefik
+  #   command:
+  #     - "--configfile=/etc/traefik/traefik.yml"
+  #   ports:
+  #     - "1180:80"      # HTTP
+  #     - "1443:443"    # HTTPS
+  #     - "18080:8080"  # Traefik Dashboard
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock:ro  # 挂载Docker socket以监控容器
+  #     - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro  # 挂载主配置文件
+  #     - ./traefik/config:/etc/traefik/dynamic:ro  # 挂载动态配置目录
+  #     - ./traefik/certs:/etc/traefik/certs:ro  # 挂载证书目录
+  #     - ../logs/traefik:/var/log/traefik  # 挂载日志目录
+  #   networks:
+  #     - app-network
+  #   restart: unless-stopped
+  #   # 添加健康检查
+  #   healthcheck:
+  #     test: wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 10s
 
   # FastAPI应用服务
   fastapi_app:
@@ -49,20 +49,20 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
-    labels:
-      - "traefik.enable=true"  # 启用Traefik
-      - "traefik.http.routers.api.rule=Host(`api.docker.localhost`) || PathPrefix(`/api`)"  # 域名规则和路径前缀
-      - "traefik.http.routers.api.entrypoints=web"  # 使用web入口点
-      - "traefik.http.services.api.loadbalancer.server.port=8000"  # 后端服务端口
-      # 健康检查配置
-      - "traefik.http.services.api.loadbalancer.healthcheck.path=/health"
-      - "traefik.http.services.api.loadbalancer.healthcheck.interval=30s"
-      - "traefik.http.services.api.loadbalancer.healthcheck.timeout=10s"
-      # 添加负载均衡配置
-      - "traefik.http.services.api.loadbalancer.sticky=true"
-      - "traefik.http.services.api.loadbalancer.sticky.cookie.name=sticky_session"
-      - "traefik.http.services.api.loadbalancer.sticky.cookie.secure=true"
-      - "traefik.http.services.api.loadbalancer.sticky.cookie.httpOnly=true"
+    # labels:
+    #   - "traefik.enable=true"  # 启用Traefik
+    #   - "traefik.http.routers.api.rule=Host(`api.docker.localhost`) || PathPrefix(`/api`)"  # 域名规则和路径前缀
+    #   - "traefik.http.routers.api.entrypoints=web"  # 使用web入口点
+    #   - "traefik.http.services.api.loadbalancer.server.port=8000"  # 后端服务端口
+    #   # 健康检查配置
+    #   - "traefik.http.services.api.loadbalancer.healthcheck.path=/health"
+    #   - "traefik.http.services.api.loadbalancer.healthcheck.interval=30s"
+    #   - "traefik.http.services.api.loadbalancer.healthcheck.timeout=10s"
+    #   # 添加负载均衡配置
+    #   - "traefik.http.services.api.loadbalancer.sticky=true"
+    #   - "traefik.http.services.api.loadbalancer.sticky.cookie.name=sticky_session"
+    #   - "traefik.http.services.api.loadbalancer.sticky.cookie.secure=true"
+    #   - "traefik.http.services.api.loadbalancer.sticky.cookie.httpOnly=true"
 
   # # PostgreSQL数据库
   # postgres:
