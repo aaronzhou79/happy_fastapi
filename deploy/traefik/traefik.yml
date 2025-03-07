@@ -6,7 +6,7 @@ global:
 ## 入口点配置
 entryPoints:
   web:
-    address: ":1180"
+    address: ":80"
     # HTTP重定向到HTTPS（生产环境使用）
     # http:
     #   redirections:
@@ -14,10 +14,10 @@ entryPoints:
     #       to: websecure
     #       scheme: https
 
-  # websecure:
-  #   address: ":1443"
+  websecure:
+    address: ":443"
   insecure:
-    address: ":1181"
+    address: ":8080"
 
 ## API和仪表盘配置
 api:

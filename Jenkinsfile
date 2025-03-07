@@ -85,6 +85,49 @@ pipeline {
 
                             echo "使用命令: $DOCKER_COMPOSE"
 
+                            # 检查关键端口是否被占用
+                            echo "检查端口占用情况..."
+                            PORT_80=$(netstat -tuln | grep ":80 " || ss -tuln | grep ":80 " || echo "")
+                            PORT_443=$(netstat -tuln | grep ":443 " || ss -tuln | grep ":443 " || echo "")
+                            PORT_8080=$(netstat -tuln | grep ":8080 " || ss -tuln | grep ":8080 " || echo "")
+
+                            if [ ! -z "$PORT_80" ]; then
+                                echo "警告: 端口 80 已被占用:"
+                                echo "$PORT_80"
+                                echo "尝试查找占用进程..."
+                                lsof -i :80 || echo "无法获取占用进程信息"
+                            fi
+
+                            if [ ! -z "$PORT_443" ]; then
+                                echo "警告: 端口 443 已被占用:"
+                                echo "$PORT_443"
+                                echo "尝试查找占用进程..."
+                                lsof -i :443 || echo "无法获取占用进程信息"
+
+                                echo "尝试修改 docker-compose.yml 中的 443 端口映射..."
+                                # 备份原始文件
+                                cp deploy/docker-compose.yml deploy/docker-compose.yml.bak
+                                # 将 443:443 修改为 4443:443
+                                sed -i 's/443:443/4443:443/g' deploy/docker-compose.yml
+                                echo "已将 443 端口映射修改为 4443:443"
+                            fi
+
+                            if [ ! -z "$PORT_8080" ]; then
+                                echo "警告: 端口 8080 已被占用:"
+                                echo "$PORT_8080"
+                                echo "尝试查找占用进程..."
+                                lsof -i :8080 || echo "无法获取占用进程信息"
+
+                                echo "尝试修改 docker-compose.yml 中的 8080 端口映射..."
+                                # 如果还没有备份，则备份原始文件
+                                if [ ! -f deploy/docker-compose.yml.bak ]; then
+                                    cp deploy/docker-compose.yml deploy/docker-compose.yml.bak
+                                fi
+                                # 将 8080:8080 修改为 18080:8080
+                                sed -i 's/8080:8080/18080:8080/g' deploy/docker-compose.yml
+                                echo "已将 8080 端口映射修改为 18080:8080"
+                            fi
+
                             # 检查容器是否已存在
                             if $DOCKER_COMPOSE -f deploy/docker-compose.yml ps | grep -q "Up\\|Exit"; then
                                 echo "检测到已存在的容器，执行 down 命令..."
@@ -93,8 +136,29 @@ pipeline {
                                 echo "未检测到已存在的容器，直接部署..."
                             fi
 
+                            # 尝试停止可能占用端口的容器
+                            echo "尝试停止可能占用端口的容器..."
+                            docker ps | grep -E '(80/tcp|443/tcp|8080/tcp)' | awk '{print $1}' | xargs -r docker stop
+
                             # 启动容器
+                            echo "开始部署容器..."
                             $DOCKER_COMPOSE -f deploy/docker-compose.yml up -d
+
+                            # 如果部署成功，显示服务状态
+                            if [ $? -eq 0 ]; then
+                                echo "部署成功，显示服务状态:"
+                                $DOCKER_COMPOSE -f deploy/docker-compose.yml ps
+
+                                # 如果修改了端口，提示用户
+                                if [ -f deploy/docker-compose.yml.bak ]; then
+                                    echo "注意: 由于端口冲突，已修改以下端口映射:"
+                                    diff deploy/docker-compose.yml.bak deploy/docker-compose.yml | grep -E '(443|8080)'
+                                fi
+                            else
+                                echo "部署失败，请检查日志"
+                                $DOCKER_COMPOSE -f deploy/docker-compose.yml logs
+                                exit 1
+                            fi
                         '''
                     }
                 }

@@ -6,9 +6,9 @@ services:
     command:
       - "--configfile=/etc/traefik/traefik.yml"
     ports:
-      - "80:80"      # HTTP
-      - "443:443"    # HTTPS
-      - "8080:8080"  # Traefik Dashboard
+      - "1180:80"      # HTTP
+      - "1443:443"    # HTTPS
+      - "18080:8080"  # Traefik Dashboard
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro  # 挂载Docker socket以监控容器
       - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro  # 挂载主配置文件
