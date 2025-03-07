@@ -38,6 +38,8 @@ services:
       - ../logs:/var/logs/fastapi_server  # 挂载日志目录
     expose:
       - "8000"  # 仅在内部网络暴露端口
+    ports:
+      - "8111:8000"      # HTTP
     networks:
       - app-network
     # depends_on:
